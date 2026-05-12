@@ -188,13 +188,19 @@ function listenScorers() {
     .limit(20)
     .onSnapshot(snapshot => {
       if (snapshot.empty) return;
-      // Sort client-side (avoids composite index requirement)
-      const all = snapshot.docs.map(doc => doc.data());
-      all.sort((a, b) => {
+      // Deduplicate by player name + team (in case of double-seed)
+      const seen = {};
+      const unique = [];
+      snapshot.docs.forEach(doc => {
+        const d = doc.data();
+        const key = (d.name || '') + '_' + (d.teamCode || '');
+        if (!seen[key]) { seen[key] = true; unique.push(d); }
+      });
+      unique.sort((a, b) => {
         if (b.goals !== a.goals) return b.goals - a.goals;
         return (b.assists || 0) - (a.assists || 0);
       });
-      STATS.scorers = all;
+      STATS.scorers = unique;
       renderScorers();
       console.log('[WC2026] Goleadores actualizados:', STATS.scorers.length);
     }, error => {
