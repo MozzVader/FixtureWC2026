@@ -301,14 +301,8 @@ function listenKnockout() {
     // Normalize: if home/away is an object (legacy bug), extract .code
     const docs = snapshot.docs.map(d => {
       const raw = { id: d.id, ...d.data() };
-      if (raw.home && typeof raw.home === 'object') {
-        console.log(`[WC2026 DEBUG] ${raw.id}.home era objeto:`, raw.home, '→ code:', raw.home.code);
-        raw.home = raw.home.code || null;
-      }
-      if (raw.away && typeof raw.away === 'object') {
-        console.log(`[WC2026 DEBUG] ${raw.id}.away era objeto:`, raw.away, '→ code:', raw.away.code);
-        raw.away = raw.away.code || null;
-      }
+      if (raw.home && typeof raw.home === 'object') raw.home = raw.home.code || null;
+      if (raw.away && typeof raw.away === 'object') raw.away = raw.away.code || null;
       return raw;
     });
 
@@ -326,17 +320,6 @@ function listenKnockout() {
     };
 
     console.log('[WC2026] Eliminatorias actualizadas. Re-renderizando bracket...');
-
-    // Diagnostic: log R32-13 through R32-16 fully
-    ['R32-13','R32-14','R32-15','R32-16'].forEach(id => {
-      const m = docs.find(d => d.id === id);
-      if (m) {
-        console.log(`[WC2026 DIAG] ${id}:`, JSON.stringify({ home: m.home, away: m.away, label: m.label, homeType: typeof m.home, awayType: typeof m.away }));
-      } else {
-        console.log(`[WC2026 DIAG] ${id}: NO EXISTE en Firestore`);
-      }
-    });
-
     initBracket();
   }, error => {
     console.error('[WC2026] Error en listener de eliminatorias:', error);
