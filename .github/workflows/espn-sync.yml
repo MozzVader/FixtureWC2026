@@ -1,20 +1,21 @@
 # ESPN → Firestore Sync — WC2026
-# Polls ESPN API every 5 minutes during match days
+# Polls ESPN API every 2 minutes during match days
 # and writes live scores, goals, and cards to Firestore.
 # The frontend's onSnapshot listeners auto-update for all users.
+# GitHub cron minimum is 5 min, so we loop 3x with 120s sleeps.
 
 name: ESPN Live Sync
 
 on:
   schedule:
-    # Every 5 minutes during the tournament (Jun 11 - Jul 19, 2026)
-    - cron: '*/5 * * 6-7 *'  # Runs every 5 min, Jun-Jul only
+    # Every 5 min (GitHub minimum), loops internally every 2 min
+    - cron: '*/5 * * 6-7 *'  # Jun-Jul only
   workflow_dispatch:  # Allow manual trigger for testing
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
 
     steps:
       - name: Checkout
@@ -54,7 +55,16 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FORCE_POLL: ${{ github.event_name == 'workflow_dispatch' && 'true' || '' }}
-        run: node scripts/espn-poller.js
+        run: |
+          for i in 1 2 3; do
+            echo "⏱️ Poll iteration $i/3"
+            node scripts/espn-poller.js
+            if [ $i -lt 3 ]; then
+              echo "😴 Waiting 120s before next poll..."
+              sleep 120
+            fi
+          done
+          echo "✅ All 3 iterations completed"
 
       - name: Log result
         if: always()
