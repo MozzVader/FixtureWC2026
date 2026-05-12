@@ -407,6 +407,55 @@ const KNOCKOUT = {
 };
 
 /**
+ * ESPN API — Mapeo de IDs
+ * Usado por el script de polling (GitHub Actions) para vincular
+ * eventos de ESPN con nuestros partidos locales y de Firestore.
+ *
+ * Group stage: mapeo directo local_id → espn_event_id (72 partidos)
+ * Knockout: se resuelve dinámicamente por fecha + equipos reales,
+ * porque ESPN usa placeholders (TBD) que no coinciden con nuestra estructura.
+ */
+const ESPN_GROUP_MAP = {
+  1: '760415',   2: '760414',   3: '760416',   4: '760417',
+  5: '760420',   6: '760419',   7: '760418',   8: '760421',
+  9: '760422',  10: '760423',  11: '760425',  12: '760424',
+  13: '760426',  14: '760427',  15: '760428',  16: '760429',
+  17: '760432',  18: '760430',  19: '760433',  20: '760431',
+  21: '760435',  22: '760436',  23: '760437',  24: '760434',
+  25: '760438',  26: '760441',  27: '760439',  28: '760440',
+  29: '760445',  30: '760444',  31: '760442',  32: '760443',
+  33: '760448',  34: '760446',  35: '760447',  36: '760449',
+  37: '760451',  38: '760452',  39: '760453',  40: '760450',
+  41: '760457',  42: '760454',  43: '760456',  44: '760455',
+  45: '760461',  46: '760459',  47: '760458',  48: '760460',
+  49: '760467',  50: '760466',  51: '760463',  52: '760462',
+  53: '760465',  54: '760464',  55: '760470',  56: '760469',
+  57: '760473',  58: '760468',  59: '760471',  60: '760472',
+  61: '760476',  62: '760477',  63: '760478',  64: '760479',
+  65: '760475',  66: '760474',  67: '760483',  68: '760484',
+  69: '760481',  70: '760482',  71: '760485',  72: '760480'
+};
+
+/**
+ * ESPN → Nuestro código de equipo.
+ * Los códigos de ESPN usualmente coinciden con FIFA, pero hay excepciones.
+ */
+const ESPN_TEAM_MAP = {
+  'MEX': 'MEX', 'RSA': 'RSA', 'KOR': 'KOR', 'CZE': 'CZE',
+  'CAN': 'CAN', 'BIH': 'BIH', 'QAT': 'QAT', 'SUI': 'SUI',
+  'BRA': 'BRA', 'MAR': 'MAR', 'HAI': 'HAI', 'SCO': 'SCO',
+  'USA': 'USA', 'PAR': 'PAR', 'AUS': 'AUS', 'TUR': 'TUR',
+  'GER': 'GER', 'CUW': 'CUW', 'CIV': 'CIV', 'ECU': 'ECU',
+  'NED': 'NED', 'JPN': 'JPN', 'SWE': 'SWE', 'TUN': 'TUN',
+  'BEL': 'BEL', 'EGY': 'EGY', 'IRN': 'IRN', 'NZL': 'NZL',
+  'ESP': 'ESP', 'CPV': 'CPV', 'KSA': 'KSA', 'URU': 'URU',
+  'FRA': 'FRA', 'SEN': 'SEN', 'IRQ': 'IRQ', 'NOR': 'NOR',
+  'ARG': 'ARG', 'ALG': 'ALG', 'AUT': 'AUT', 'JOR': 'JOR',
+  'POR': 'POR', 'COD': 'COD', 'UZB': 'UZB', 'COL': 'COL',
+  'ENG': 'ENG', 'CRO': 'CRO', 'GHA': 'GHA', 'PAN': 'PAN'
+};
+
+/**
  * STATS — Empty placeholders, will be populated during the tournament
  */
 const STATS = {
