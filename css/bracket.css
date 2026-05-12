@@ -1,48 +1,84 @@
-/* ===== BRACKET ===== */
+/* ===== BRACKET — CSS Grid with Elbow Connectors ===== */
 .bracket {
   overflow-x: auto;
   padding: 20px 0;
 }
 
-.bracket__container {
-  display: flex;
-  align-items: center;
+/* --- Round titles row (mirrors the grid columns) --- */
+.bracket-titles {
+  display: grid;
+  grid-template-columns:
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr);
   justify-content: center;
-  gap: 0;
-  min-width: 1100px;
-  padding: 20px;
+  padding: 0 20px;
+  margin-bottom: 8px;
+  min-width: 1125px;
 }
 
-.bracket__round {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  min-height: 600px;
-  flex-shrink: 0;
-}
-
-.bracket__round-title {
+.bracket-title {
   text-align: center;
   font-family: var(--font-display);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--dorado-500);
-  padding: 8px 0;
-  margin-bottom: 10px;
+  padding: 6px 0;
   border-bottom: 1px solid rgba(255, 215, 0, 0.2);
 }
 
-/* Match box */
+.bracket-title-gap {
+  /* Empty spacer for connector columns */
+}
+
+.bracket-title--final {
+  font-size: 0.92rem;
+  border-bottom-color: rgba(255, 215, 0, 0.4);
+}
+
+/* --- Main bracket grid ---
+ * 16 rows × 9 columns (5 match cols + 4 connector cols)
+ * Each R32 match = 1 row, R16 = 2 rows, QF = 4, SF = 8, Final = 16
+ * This guarantees perfect midpoint alignment at every round.
+ */
+.bracket-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr) 36px
+    minmax(185px, 1fr);
+  grid-template-rows: repeat(16, 60px);
+  row-gap: 6px;
+  column-gap: 0;
+  align-items: center;
+  justify-items: center;
+  min-width: 1125px;
+  padding: 0 20px;
+}
+
+/* --- Grid cell wrapper --- */
+.bracket-grid-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* --- Match box (compact for bracket) --- */
 .bracket__match {
   display: flex;
   flex-direction: column;
   background: rgba(1, 87, 155, 0.4);
   border: 1px solid var(--dorado-600);
   border-radius: var(--radius-sm);
-  margin: 8px 12px;
   overflow: hidden;
-  min-width: 200px;
+  width: calc(100% - 4px);
+  max-width: 210px;
   transition: all 0.2s;
 }
 
@@ -50,12 +86,13 @@
   box-shadow: var(--sombra-dorada);
 }
 
+/* --- Team row inside match --- */
 .bracket__team {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 0.85rem;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
   font-weight: 600;
   transition: background 0.2s;
 }
@@ -69,8 +106,8 @@
 }
 
 .bracket__team img {
-  width: 20px;
-  height: 14px;
+  width: 18px;
+  height: 13px;
   object-fit: cover;
   border-radius: 2px;
 }
@@ -84,9 +121,9 @@
 
 .bracket__team-score {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: 0.9rem;
   letter-spacing: 1px;
-  min-width: 20px;
+  min-width: 18px;
   text-align: center;
   color: var(--dorado-500);
 }
@@ -101,46 +138,110 @@
   font-weight: 400;
 }
 
+/* --- Match info bar --- */
 .bracket__match-info {
-  padding: 4px 12px;
-  font-size: 0.7rem;
+  padding: 3px 10px;
+  font-size: 0.63rem;
   color: var(--blanco-60);
   text-align: center;
   background: rgba(0, 0, 0, 0.1);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Connector lines */
-.bracket__connector {
+/* ===== ELBOW CONNECTORS =====
+ *
+ * Each connector group draws:
+ *
+ *   ──── top match centre
+ *        │
+ *        ├─────── next round match
+ *        │
+ *   ──── bottom match centre
+ *
+ * Using four child divs:
+ *   __h-top  : horizontal line at top-match centre
+ *   __h-bot  : horizontal line at bottom-match centre
+ *   __v      : vertical line connecting them
+ *   __h-mid  : horizontal line from midpoint to next round
+ *
+ * top/bottom offsets = 30px (half of 60px row height).
+ * Works for all connector sizes because every grid row is 60px.
+ */
+.bracket-conn {
+  position: relative;
+  pointer-events: none;
+}
+
+.bracket-conn__h-top {
+  position: absolute;
+  left: 0;
+  right: 50%;
+  top: 30px;
+  height: 2px;
+  background: var(--dorado-600);
+}
+
+.bracket-conn__h-bot {
+  position: absolute;
+  left: 0;
+  right: 50%;
+  bottom: 30px;
+  height: 2px;
+  background: var(--dorado-600);
+}
+
+.bracket-conn__v {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  bottom: 30px;
+  width: 2px;
+  background: var(--dorado-600);
+  transform: translateX(-50%);
+}
+
+.bracket-conn__h-mid {
+  position: absolute;
+  left: 50%;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  background: var(--dorado-600);
+  transform: translateY(-50%);
+}
+
+/* --- Final match special styling --- */
+.bracket-grid-item--final .bracket__match {
+  border-color: var(--dorado-500);
+  box-shadow: var(--sombra-dorada);
+}
+
+/* ===== 3RD PLACE (below the grid) ===== */
+.bracket-third {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  min-width: 30px;
-  color: var(--dorado-600);
-  font-size: 1.2rem;
+  margin-top: 24px;
+  min-width: 1125px;
+  padding: 0 20px;
 }
 
-/* Semifinals column - spacers push matches to align with QF positions */
-.bracket__round--semis {
-  justify-content: flex-start;
-}
-
-.bracket__spacer {
-  flex: 1;
-  min-height: 0;
-}
-
-/* Final column */
-.bracket__round--final {
-  justify-content: center;
-}
-
-.bracket__round-title--final {
+.bracket-third-title {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: var(--dorado-500);
-  font-size: 1rem;
-  border-bottom-color: rgba(255, 215, 0, 0.4);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  margin-bottom: 10px;
 }
 
-/* Placeholder for TBD */
+.bracket-third .bracket__match {
+  max-width: 210px;
+}
+
+/* ===== TBD placeholder ===== */
 .bracket__placeholder {
   text-align: center;
   color: var(--blanco-30);
@@ -151,12 +252,31 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
-  .bracket__container {
-    min-width: 900px;
+  .bracket-grid,
+  .bracket-titles,
+  .bracket-third {
+    min-width: 950px;
+  }
+
+  .bracket-grid {
+    grid-template-columns:
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr);
+  }
+
+  .bracket-titles {
+    grid-template-columns:
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr) 30px
+      minmax(165px, 1fr);
   }
 
   .bracket__match {
-    min-width: 170px;
-    margin: 6px 8px;
+    max-width: 175px;
   }
 }

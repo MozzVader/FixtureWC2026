@@ -299,61 +299,109 @@ function initGroups() {
   container.innerHTML = html;
 }
 
-/* ===== BRACKET ===== */
+/* ===== BRACKET (CSS Grid with elbow connectors) ===== */
 function initBracket() {
   const container = document.getElementById('bracket-content');
   if (!container) return;
 
-  let html = '<div class="bracket"><div class="bracket__container">';
+  const r32 = KNOCKOUT.roundOf32;
+  const r16 = KNOCKOUT.roundOf16;
+  const qf  = KNOCKOUT.quarterfinals;
+  const sf  = KNOCKOUT.semifinals;
+  const fin = KNOCKOUT.final;
+  const tp  = KNOCKOUT.thirdPlace;
 
-  // Round of 32
-  html += renderBracketRound('Dieciseisavos de Final', KNOCKOUT.roundOf32, 2);
-  html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
+  let html = '<div class="bracket">';
 
-  // Round of 16
-  html += renderBracketRound('Octavos de Final', KNOCKOUT.roundOf16, 2);
-  html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
-
-  // Quarterfinals
-  html += renderBracketRound('Cuartos de Final', KNOCKOUT.quarterfinals, 1);
-  html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
-
-  // Semifinals
-  html += '<div class="bracket__round bracket__round--semis">';
-  html += '<div class="bracket__round-title">Semifinales</div>';
-  html += '<div class="bracket__spacer"></div>';
-  html += renderBracketMatch(KNOCKOUT.semifinals[0]);
-  html += '<div class="bracket__spacer"></div>';
-  html += renderBracketMatch(KNOCKOUT.semifinals[1]);
-  html += '</div>';
-  html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
-
-  // Final + 3rd Place
-  html += '<div class="bracket__round bracket__round--final">';
-  html += '<div class="bracket__round-title bracket__round-title--final">Final</div>';
-  html += renderBracketMatch(KNOCKOUT.final, true);
-  html += '<div style="height: 40px"></div>';
-  html += '<div class="bracket__round-title">Tercer Puesto</div>';
-  html += renderBracketMatch(KNOCKOUT.thirdPlace);
+  // --- Round titles ---
+  html += '<div class="bracket-titles">';
+  html += '<div class="bracket-title">Dieciseisavos de Final</div><div class="bracket-title-gap"></div>';
+  html += '<div class="bracket-title">Octavos de Final</div><div class="bracket-title-gap"></div>';
+  html += '<div class="bracket-title">Cuartos de Final</div><div class="bracket-title-gap"></div>';
+  html += '<div class="bracket-title">Semifinales</div><div class="bracket-title-gap"></div>';
+  html += '<div class="bracket-title bracket-title--final">Final</div>';
   html += '</div>';
 
-  html += '</div></div>';
+  // --- Grid ---
+  html += '<div class="bracket-grid">';
+
+  // Col 1 — R32: 16 matches, 1 row each
+  for (let i = 0; i < 16; i++) {
+    html += `<div class="bracket-grid-item" style="grid-column:1;grid-row:${i + 1}">`;
+    html += renderBracketMatch(r32[i]);
+    html += '</div>';
+  }
+
+  // Col 2 — Connectors R32 → R16 (8 groups, 2 rows each)
+  for (let i = 0; i < 8; i++) {
+    const rs = i * 2 + 1;
+    html += buildConnector(2, rs, rs + 2);
+  }
+
+  // Col 3 — R16: 8 matches, 2 rows each
+  for (let i = 0; i < 8; i++) {
+    const rs = i * 2 + 1;
+    html += `<div class="bracket-grid-item" style="grid-column:3;grid-row:${rs}/${rs + 2}">`;
+    html += renderBracketMatch(r16[i]);
+    html += '</div>';
+  }
+
+  // Col 4 — Connectors R16 → QF (4 groups, 4 rows each)
+  for (let i = 0; i < 4; i++) {
+    const rs = i * 4 + 1;
+    html += buildConnector(4, rs, rs + 4);
+  }
+
+  // Col 5 — QF: 4 matches, 4 rows each
+  for (let i = 0; i < 4; i++) {
+    const rs = i * 4 + 1;
+    html += `<div class="bracket-grid-item" style="grid-column:5;grid-row:${rs}/${rs + 4}">`;
+    html += renderBracketMatch(qf[i]);
+    html += '</div>';
+  }
+
+  // Col 6 — Connectors QF → SF (2 groups, 8 rows each)
+  for (let i = 0; i < 2; i++) {
+    const rs = i * 8 + 1;
+    html += buildConnector(6, rs, rs + 8);
+  }
+
+  // Col 7 — SF: 2 matches, 8 rows each
+  for (let i = 0; i < 2; i++) {
+    const rs = i * 8 + 1;
+    html += `<div class="bracket-grid-item" style="grid-column:7;grid-row:${rs}/${rs + 8}">`;
+    html += renderBracketMatch(sf[i]);
+    html += '</div>';
+  }
+
+  // Col 8 — Connector SF → Final (1 group, 16 rows)
+  html += buildConnector(8, 1, 17);
+
+  // Col 9 — Final: 1 match, spans all 16 rows
+  html += '<div class="bracket-grid-item bracket-grid-item--final" style="grid-column:9;grid-row:1/17">';
+  html += renderBracketMatch(fin, true);
+  html += '</div>';
+
+  html += '</div>'; // bracket-grid
+
+  // --- 3rd Place (below the grid) ---
+  html += '<div class="bracket-third">';
+  html += '<div class="bracket-third-title">Tercer Puesto</div>';
+  html += renderBracketMatch(tp);
+  html += '</div>';
+
+  html += '</div>'; // bracket
   container.innerHTML = html;
 }
 
-function renderBracketRound(title, matches, spacing) {
-  let html = '<div class="bracket__round">';
-  html += `<div class="bracket__round-title">${title}</div>`;
-
-  matches.forEach((match, idx) => {
-    if (spacing === 2 && idx > 0 && idx % 2 === 0) {
-      html += '<div style="height: 20px"></div>';
-    }
-    html += renderBracketMatch(match);
-  });
-
-  html += '</div>';
-  return html;
+/** Build an elbow connector div */
+function buildConnector(col, rowStart, rowEnd) {
+  return `<div class="bracket-conn" style="grid-column:${col};grid-row:${rowStart}/${rowEnd}">
+    <div class="bracket-conn__h-top"></div>
+    <div class="bracket-conn__v"></div>
+    <div class="bracket-conn__h-bot"></div>
+    <div class="bracket-conn__h-mid"></div>
+  </div>`;
 }
 
 function renderBracketMatch(match, isFinal = false) {
