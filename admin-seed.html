@@ -88,6 +88,14 @@
       border: 1px solid rgba(229, 57, 53, 0.3);
     }
     .btn-danger:hover { background: rgba(229, 57, 53, 0.3); }
+    .btn-logout {
+      background: rgba(255, 255, 255, 0.05);
+      color: #8892b0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      font-size: 0.75rem;
+    }
+    .btn-logout:hover { background: rgba(229, 57, 53, 0.2); color: #E53935; }
     .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
     .status {
       margin-top: 16px;
@@ -100,29 +108,60 @@
     .status-error { background: rgba(229, 57, 53, 0.1); border: 1px solid rgba(229, 57, 53, 0.3); color: #E53935; }
     .status-info { background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); color: #2196F3; }
     .hidden { display: none !important; }
-    .step {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-      align-items: flex-start;
+
+    /* Auth Card */
+    .auth-card {
+      background: rgba(1, 87, 155, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 20px;
+      text-align: center;
     }
-    .step-num {
-      width: 24px;
-      height: 24px;
-      background: rgba(212, 175, 55, 0.2);
-      border: 1px solid #D4AF37;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
+    .auth-card h2 {
       justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: #D4AF37;
-      flex-shrink: 0;
+      margin-bottom: 4px;
     }
-    .step-text { font-size: 0.85rem; color: #b0b8c8; line-height: 1.5; }
-    .step-text a { color: #D4AF37; text-decoration: none; }
-    .step-text a:hover { text-decoration: underline; }
+    .auth-card .auth-subtitle {
+      font-size: 0.85rem;
+      color: #8892b0;
+      margin-bottom: 24px;
+    }
+    .auth-card input {
+      text-align: center;
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Header bar */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    .header-bar h1 { margin-bottom: 0; }
+    .user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: #4CAF50;
+      background: rgba(76, 175, 80, 0.1);
+      border: 1px solid rgba(76, 175, 80, 0.3);
+      padding: 6px 14px;
+      border-radius: 50px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .user-badge .user-dot {
+      width: 6px; height: 6px;
+      background: #4CAF50;
+      border-radius: 50%;
+    }
+
+    /* Connected badge */
     .connected-badge {
       display: inline-flex;
       align-items: center;
@@ -138,150 +177,137 @@
       background: #4CAF50;
       border-radius: 50%;
     }
-    .count-badge {
-      display: inline-block;
-      background: rgba(212, 175, 55, 0.2);
-      color: #D4AF37;
-      padding: 2px 10px;
-      border-radius: 50px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>WC2026 Firebase Admin</h1>
-    <p class="subtitle">Panel de administración para datos en tiempo real</p>
 
-    <!-- Instructions -->
-    <div class="section">
-      <h2><span class="icon">📋</span> Instrucciones</h2>
-      <div class="step">
-        <span class="step-num">1</span>
-        <span class="step-text">Crear proyecto en <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></span>
-      </div>
-      <div class="step">
-        <span class="step-num">2</span>
-        <span class="step-text">Habilitar <strong>Firestore Database</strong> (elegir modo de prueba para empezar)</span>
-      </div>
-      <div class="step">
-        <span class="step-num">3</span>
-        <span class="step-text">Ir a <strong>Configuración del proyecto</strong> → Agregar app web → copiar configuración</span>
-      </div>
-      <div class="step">
-        <span class="step-num">4</span>
-        <span class="step-text">Pegar la configuración abajo y conectar</span>
-      </div>
-      <div class="step">
-        <span class="step-num">5</span>
-        <span class="step-text">Hacer clic en <strong>"Cargar Partidos"</strong> para poblar la base de datos</span>
-      </div>
-      <div class="step">
-        <span class="step-num">6</span>
-        <span class="step-text">Copiar la config a <strong>js/firebase-config.js</strong> y cambiar <code>FIREBASE_ENABLED = true</code></span>
+    <!-- ===== NOT CONNECTED STATE ===== -->
+    <div id="not-connected-view">
+      <h1>WC2026 Firebase Admin</h1>
+      <p class="subtitle">Panel de administración para datos en tiempo real</p>
+
+      <div class="section">
+        <h2><span class="icon">⚡</span> Conexión Firebase</h2>
+        <p style="color:#8892b0;font-size:0.85rem;margin-bottom:16px;">
+          No se encontró <code>js/firebase-config.js</code> o <code>FIREBASE_ENABLED</code> está en <code>false</code>.
+          Configurá el archivo y volvé a cargar esta página.
+        </p>
+        <div class="status status-info">
+          <strong>Instrucciones:</strong><br>
+          1. Ir a Firebase Console → Agregar app web<br>
+          2. Copiar la config a <code>js/firebase-config.js</code><br>
+          3. Cambiar <code>FIREBASE_ENABLED = true</code><br>
+          4. Recargar esta página
+        </div>
       </div>
     </div>
 
-    <!-- Connection -->
-    <div class="section">
-      <h2><span class="icon">🔗</span> Conexión Firebase</h2>
-      <label for="cfg-projectId">Project ID *</label>
-      <input type="text" id="cfg-projectId" placeholder="tu-proyecto-id">
+    <!-- ===== LOGIN VIEW ===== -->
+    <div id="login-view" class="hidden">
+      <div class="auth-card">
+        <h2><span class="icon">🔐</span> Iniciar Sesión</h2>
+        <p class="auth-subtitle">Acceso exclusivo para administradores</p>
 
-      <label for="cfg-apiKey">API Key</label>
-      <input type="text" id="cfg-apiKey" placeholder="AIzaSy...">
+        <div id="login-error" class="status status-error hidden" style="max-width:340px;margin:0 auto 16px;"></div>
 
-      <label for="cfg-appId">App ID</label>
-      <input type="text" id="cfg-appId" placeholder="1:123456789:web:abc123">
-
-      <label for="cfg-senderId">Messaging Sender ID</label>
-      <input type="text" id="cfg-senderId" placeholder="123456789">
-
-      <div style="margin-top: 16px;">
-        <button class="btn btn-primary" id="connect-btn" onclick="connectFirebase()">
-          <span>⚡</span> Conectar
+        <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+        <input type="password" id="auth-password" placeholder="Contraseña" autocomplete="current-password">
+        <button class="btn btn-primary" onclick="doLogin()" style="max-width:340px;margin-top:4px;">
+          <span>🔐</span> Ingresar
         </button>
-        <span id="connected-badge" class="connected-badge hidden">
-          <span class="connected-dot"></span> Conectado
-        </span>
       </div>
     </div>
 
-    <!-- Actions -->
-    <div class="section hidden" id="actions-section">
-      <h2><span class="icon">⚽</span> Fase de Grupos</h2>
-      <div class="btn-group">
-        <button class="btn btn-primary" id="seed-btn" onclick="seedMatches()">
-          <span>⚽</span> Cargar 72 Partidos
-        </button>
-        <button class="btn btn-primary" id="seed-test-btn" onclick="seedTestData()">
-          <span>🧪</span> Cargar Predicción AI (72 partidos)
-        </button>
+    <!-- ===== ADMIN DASHBOARD ===== -->
+    <div id="admin-view" class="hidden">
+      <div class="header-bar">
+        <h1>WC2026 Admin</h1>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="user-badge" id="user-badge">
+            <span class="user-dot"></span>
+            <span id="user-email"></span>
+          </span>
+          <button class="btn btn-logout" onclick="doLogout()">Salir</button>
+        </div>
       </div>
-      <div id="status"></div>
-    </div>
 
-    <!-- Knockout Actions -->
-    <div class="section hidden" id="knockout-section">
-      <h2><span class="icon">🏆</span> Fase Eliminatoria</h2>
-      <div class="btn-group">
-        <button class="btn btn-primary" id="seed-ko-btn" onclick="seedKnockout()">
-          <span>🏟️</span> Cargar 60 Eliminatorias
-        </button>
-        <button class="btn btn-primary" id="qualify-btn" onclick="runCalculateQualifiers()" style="background:linear-gradient(135deg,#4CAF50,#388E3C)">
-          <span>📊</span> Calcular Clasificados
-        </button>
-        <button class="btn btn-primary" id="propagate-btn" onclick="runPropagateWinners()" style="background:linear-gradient(135deg,#2196F3,#1565C0)">
-          <span>➡️</span> Propagar Ganadores
-        </button>
+      <!-- Group Stage -->
+      <div class="section">
+        <h2><span class="icon">⚽</span> Fase de Grupos</h2>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="seed-btn" onclick="seedMatches()">
+            <span>⚽</span> Cargar 72 Partidos
+          </button>
+          <button class="btn btn-primary" id="seed-test-btn" onclick="seedTestData()">
+            <span>🧪</span> Cargar Predicción AI (72 partidos)
+          </button>
+        </div>
+        <div id="status"></div>
       </div>
-      <div id="knockout-status"></div>
-      <div id="qualify-details"></div>
-    </div>
 
-    <!-- Danger Zone -->
-    <div class="section hidden" id="danger-section">
-      <h2><span class="icon">⚠️</span> Zona de Peligro</h2>
-      <div class="btn-group">
+      <!-- Knockout -->
+      <div class="section">
+        <h2><span class="icon">🏆</span> Fase Eliminatoria</h2>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="seed-ko-btn" onclick="seedKnockout()">
+            <span>🏟️</span> Cargar 60 Eliminatorias
+          </button>
+          <button class="btn btn-primary" id="qualify-btn" onclick="runCalculateQualifiers()" style="background:linear-gradient(135deg,#4CAF50,#388E3C)">
+            <span>📊</span> Calcular Clasificados
+          </button>
+          <button class="btn btn-primary" id="propagate-btn" onclick="runPropagateWinners()" style="background:linear-gradient(135deg,#2196F3,#1565C0)">
+            <span>➡️</span> Propagar Ganadores
+          </button>
+        </div>
+        <div id="knockout-status"></div>
+        <div id="qualify-details"></div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="section">
+        <h2><span class="icon">⚠️</span> Zona de Peligro</h2>
         <button class="btn btn-danger" id="clear-btn" onclick="clearAll()">
           <span>🗑️</span> Limpiar Todo
         </button>
       </div>
+
+      <!-- Simulate Match -->
+      <div class="section">
+        <h2><span class="icon">🎮</span> Simular Partido (Testing)</h2>
+        <label for="test-match-id">Match ID (1-72)</label>
+        <input type="number" id="test-match-id" min="1" max="72" placeholder="Ej: 1">
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;">
+            <label for="test-home-score">Goles Local</label>
+            <input type="number" id="test-home-score" min="0" value="2">
+          </div>
+          <div style="flex:1;">
+            <label for="test-away-score">Goles Visitante</label>
+            <input type="number" id="test-away-score" min="0" value="1">
+          </div>
+        </div>
+        <label for="test-status">Estado</label>
+        <select id="test-status" style="width:100%;padding:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;font-size:0.9rem;margin-bottom:12px;">
+          <option value="live">EN VIVO</option>
+          <option value="completed" selected>Finalizado</option>
+        </select>
+        <button class="btn btn-primary" onclick="simulateMatch()">
+          <span>▶️</span> Actualizar Partido
+        </button>
+        <div id="test-status"></div>
+      </div>
     </div>
 
-    <!-- Quick Test -->
-    <div class="section hidden" id="test-section">
-      <h2><span class="icon">🎮</span> Simular Partido (Testing)</h2>
-      <label for="test-match-id">Match ID (1-72)</label>
-      <input type="number" id="test-match-id" min="1" max="72" placeholder="Ej: 1">
-      <div style="display:flex;gap:12px;">
-        <div style="flex:1;">
-          <label for="test-home-score">Goles Local</label>
-          <input type="number" id="test-home-score" min="0" value="2">
-        </div>
-        <div style="flex:1;">
-          <label for="test-away-score">Goles Visitante</label>
-          <input type="number" id="test-away-score" min="0" value="1">
-        </div>
-      </div>
-      <label for="test-status">Estado</label>
-      <select id="test-status" style="width:100%;padding:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;font-size:0.9rem;margin-bottom:12px;">
-        <option value="live">EN VIVO</option>
-        <option value="completed" selected>Finalizado</option>
-      </select>
-      <button class="btn btn-primary" onclick="simulateMatch()">
-        <span>▶️</span> Actualizar Partido
-      </button>
-      <div id="test-status"></div>
-    </div>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
-  <!-- Match Data -->
+  <!-- Config + Data -->
+  <script src="js/firebase-config.js"></script>
   <script src="js/data.js"></script>
   <script src="js/firebase.js"></script>
 
@@ -289,61 +315,122 @@
     // db ya está declarada en firebase.js (cargado arriba)
     let isConnected = false;
 
-    function connectFirebase() {
-      const projectId = document.getElementById('cfg-projectId').value.trim();
-      const apiKey = document.getElementById('cfg-apiKey').value.trim();
-      const appId = document.getElementById('cfg-appId').value.trim();
-      const senderId = document.getElementById('cfg-senderId').value.trim();
-
-      if (!projectId) {
-        showStatus('El Project ID es obligatorio.', 'error');
+    /* ══════════════════════════════════════════════════════════════
+     *  INICIALIZACIÓN — Se ejecuta al cargar la página
+     * ══════════════════════════════════════════════════════════════ */
+    (function init() {
+      // Verificar que firebase-config.js esté cargado y habilitado
+      if (typeof FIREBASE_CONFIG === 'undefined' || !FIREBASE_ENABLED) {
+        document.getElementById('not-connected-view').classList.remove('hidden');
         return;
       }
 
-      const config = {
-        apiKey: apiKey || '',
-        authDomain: projectId + '.firebaseapp.com',
-        projectId: projectId,
-        storageBucket: projectId + '.appspot.com',
-        messagingSenderId: senderId || '',
-        appId: appId || ''
-      };
+      if (!FIREBASE_CONFIG.projectId) {
+        document.getElementById('not-connected-view').classList.remove('hidden');
+        return;
+      }
 
+      // Inicializar Firebase (app ya puede estar creada por firebase.js,
+      // pero admin-seed se abre en una pestaña separada sin initFirebase())
       try {
         if (!firebase.apps.length) {
-          firebase.initializeApp(config);
+          firebase.initializeApp(FIREBASE_CONFIG);
         }
         db = firebase.firestore();
         isConnected = true;
 
-        document.getElementById('connected-badge').classList.remove('hidden');
-        document.getElementById('actions-section').classList.remove('hidden');
-        document.getElementById('knockout-section').classList.remove('hidden');
-        document.getElementById('test-section').classList.remove('hidden');
-        document.getElementById('danger-section').classList.remove('hidden');
-
-        showStatus('Conectado a Firestore: ' + projectId, 'success');
-
-        // Check existing data
-        db.collection('matches').get().then(snap => {
-          if (snap.size > 0) {
-            showStatus(`Base de datos tiene ${snap.size} documentos.`, 'info');
+        // Escuchar estado de auth — si ya está logueado, mostrar admin directo
+        firebase.auth().onAuthStateChanged(user => {
+          if (user) {
+            showAdminView(user);
+          } else {
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('admin-view').classList.add('hidden');
           }
         });
       } catch (e) {
-        showStatus('Error: ' + e.message, 'error');
+        document.getElementById('not-connected-view').classList.remove('hidden');
+        console.error('[Admin] Error al inicializar Firebase:', e);
+      }
+    })();
+
+    /* ══════════════════════════════════════════════════════════════
+     *  AUTH — Login / Logout
+     * ══════════════════════════════════════════════════════════════ */
+    async function doLogin() {
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const errEl = document.getElementById('login-error');
+
+      if (!email || !password) {
+        errEl.textContent = 'Completá email y contraseña.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+        errEl.classList.add('hidden');
+      } catch (e) {
+        let msg = 'Error al iniciar sesión.';
+        if (e.code === 'auth/user-not-found') msg = 'Usuario no encontrado.';
+        else if (e.code === 'auth/wrong-password') msg = 'Contraseña incorrecta.';
+        else if (e.code === 'auth/invalid-email') msg = 'Email inválido.';
+        else if (e.code === 'auth/invalid-credential') msg = 'Email o contraseña incorrectos.';
+        else if (e.code === 'auth/too-many-requests') msg = 'Demasiados intentos. Intentá de nuevo más tarde.';
+        else msg = 'Error: ' + e.message;
+        errEl.textContent = msg;
+        errEl.classList.remove('hidden');
       }
     }
 
+    function doLogout() {
+      firebase.auth().signOut();
+    }
+
+    function showAdminView(user) {
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('admin-view').classList.remove('hidden');
+      document.getElementById('user-email').textContent = user.email;
+
+      // Check existing data count
+      db.collection('matches').get().then(snap => {
+        if (snap.size > 0) {
+          showStatus(`Base de datos: ${snap.size} partidos de grupos.`, 'info');
+        }
+      });
+    }
+
+    /* Enter key para login */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !document.getElementById('login-view').classList.contains('hidden')) {
+        doLogin();
+      }
+    });
+
+    /* ══════════════════════════════════════════════════════════════
+     *  GUARD — Verifica autenticación antes de cualquier escritura
+     * ══════════════════════════════════════════════════════════════ */
+    function requireAuth() {
+      const user = firebase.auth().currentUser;
+      if (!user) {
+        showStatus('Sesión expirada. Recargá la página.', 'error');
+        return false;
+      }
+      return true;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+     *  SEED MATCHES
+     * ══════════════════════════════════════════════════════════════ */
     async function seedMatches() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
       const btn = document.getElementById('seed-btn');
       btn.disabled = true;
       btn.innerHTML = '<span>⏳</span> Cargando...';
       showStatus('Escribiendo 72 partidos en Firestore...', 'info');
 
       try {
-        // Firestore allows max 500 writes per batch
         const batch = db.batch();
         MATCHES.forEach(m => {
           const ref = db.collection('matches').doc(String(m.id));
@@ -366,7 +453,7 @@
         });
 
         await batch.commit();
-        showStatus(`72 partidos cargados correctamente. Firestore listo para recibir resultados.`, 'success');
+        showStatus('72 partidos cargados correctamente.', 'success');
       } catch (e) {
         showStatus('Error al cargar: ' + e.message, 'error');
       }
@@ -375,8 +462,11 @@
       btn.innerHTML = '<span>⚽</span> Cargar 72 Partidos';
     }
 
+    /* ══════════════════════════════════════════════════════════════
+     *  SEED TEST DATA (Predicción AI)
+     * ══════════════════════════════════════════════════════════════ */
     async function seedTestData() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
       const btn = document.getElementById('seed-test-btn');
       btn.disabled = true;
       btn.innerHTML = '<span>⏳</span> Cargando...';
@@ -386,95 +476,86 @@
         const batch = db.batch();
 
         // ═══════════════════════════════════════════════════════════════
-        //  🎯 PREDICCIÓN COMPLETA — FASE DE GRUPOS WC2026
-        //  Criterios: ranking FIFA, plantilla, rendimiento reciente,
-        //  factor local (México/USA/Canadá) y algo de intuición.
+        //  PREDICCIÓN COMPLETA — FASE DE GRUPOS WC2026
         // ═══════════════════════════════════════════════════════════════
-
-        // ── GRUPO A: MEX 9pts | CZE 4pts | KOR 4pts | RSA 0pts ──
-        // México se lleva el grupo como local. Chequia y Corea pelean el 2do.
         const testResults = [
           // === MATCHDAY 1 ===
-          { id: 1,  homeScore: 2, awayScore: 0, status: 'completed' }, // MEX 2-0 RSA (inauguración en Azteca)
-          { id: 2,  homeScore: 1, awayScore: 1, status: 'completed' }, // KOR 1-1 CZE
-          { id: 3,  homeScore: 2, awayScore: 1, status: 'completed' }, // CAN 2-1 BIH (Canadá local)
-          { id: 4,  homeScore: 2, awayScore: 1, status: 'completed' }, // USA 2-1 PAR (USA local)
-          { id: 5,  homeScore: 0, awayScore: 2, status: 'completed' }, // QAT 0-2 SUI
-          { id: 6,  homeScore: 2, awayScore: 0, status: 'completed' }, // BRA 2-0 MAR (Brasil frena a Marruecos)
-          { id: 7,  homeScore: 0, awayScore: 3, status: 'completed' }, // HAI 0-3 SCO
-          { id: 8,  homeScore: 1, awayScore: 1, status: 'completed' }, // AUS 1-1 TUR
-
-          { id: 9,  homeScore: 3, awayScore: 0, status: 'completed' }, // GER 3-0 CUW
-          { id: 10, homeScore: 1, awayScore: 1, status: 'completed' }, // CIV 1-1 ECU
-          { id: 11, homeScore: 2, awayScore: 1, status: 'completed' }, // NED 2-1 JPN (clásico en Dallas)
-          { id: 12, homeScore: 1, awayScore: 0, status: 'completed' }, // SWE 1-0 TUN
-          { id: 13, homeScore: 1, awayScore: 0, status: 'completed' }, // BEL 1-0 EGY (ajustadísimo)
-          { id: 14, homeScore: 2, awayScore: 1, status: 'completed' }, // IRN 2-1 NZL
-          { id: 15, homeScore: 3, awayScore: 0, status: 'completed' }, // ESP 3-0 CPV (Spain goleadora)
-          { id: 16, homeScore: 0, awayScore: 2, status: 'completed' }, // KSA 0-2 URU
-
-          { id: 17, homeScore: 2, awayScore: 1, status: 'completed' }, // FRA 2-1 SEN
-          { id: 18, homeScore: 0, awayScore: 2, status: 'completed' }, // IRQ 0-2 NOR (doblete Haaland)
-          { id: 19, homeScore: 2, awayScore: 0, status: 'completed' }, // ARG 2-0 ALG (Argentina arranca fuerte)
-          { id: 20, homeScore: 2, awayScore: 0, status: 'completed' }, // AUT 2-0 JOR
-          { id: 21, homeScore: 2, awayScore: 0, status: 'completed' }, // POR 2-0 COD
-          { id: 22, homeScore: 0, awayScore: 2, status: 'completed' }, // UZB 0-2 COL
-          { id: 23, homeScore: 2, awayScore: 1, status: 'completed' }, // ENG 2-1 CRO (secome emocionante)
-          { id: 24, homeScore: 1, awayScore: 0, status: 'completed' }, // GHA 1-0 PAN
+          { id: 1,  homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 2,  homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 3,  homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 4,  homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 5,  homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 6,  homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 7,  homeScore: 0, awayScore: 3, status: 'completed' },
+          { id: 8,  homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 9,  homeScore: 3, awayScore: 0, status: 'completed' },
+          { id: 10, homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 11, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 12, homeScore: 1, awayScore: 0, status: 'completed' },
+          { id: 13, homeScore: 1, awayScore: 0, status: 'completed' },
+          { id: 14, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 15, homeScore: 3, awayScore: 0, status: 'completed' },
+          { id: 16, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 17, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 18, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 19, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 20, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 21, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 22, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 23, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 24, homeScore: 1, awayScore: 0, status: 'completed' },
 
           // === MATCHDAY 2 ===
-          { id: 25, homeScore: 2, awayScore: 1, status: 'completed' }, // CZE 2-1 RSA
-          { id: 26, homeScore: 2, awayScore: 1, status: 'completed' }, // MEX 2-1 KOR (México casi campeón de grupo)
-          { id: 27, homeScore: 1, awayScore: 0, status: 'completed' }, // SUI 1-0 BIH
-          { id: 28, homeScore: 3, awayScore: 0, status: 'completed' }, // CAN 3-0 QAT (Canadá local)
-          { id: 29, homeScore: 1, awayScore: 2, status: 'completed' }, // SCO 1-2 MAR (Marruecos remonta)
-          { id: 30, homeScore: 4, awayScore: 0, status: 'completed' }, // BRA 4-0 HAI (Brasil demoledor)
-          { id: 31, homeScore: 2, awayScore: 0, status: 'completed' }, // USA 2-0 AUS
-          { id: 32, homeScore: 2, awayScore: 0, status: 'completed' }, // TUR 2-0 PAR
-
-          { id: 33, homeScore: 2, awayScore: 1, status: 'completed' }, // GER 2-1 CIV
-          { id: 34, homeScore: 2, awayScore: 0, status: 'completed' }, // ECU 2-0 CUW
-          { id: 35, homeScore: 2, awayScore: 0, status: 'completed' }, // NED 2-0 SWE
-          { id: 36, homeScore: 0, awayScore: 2, status: 'completed' }, // TUN 0-2 JPN
-          { id: 37, homeScore: 2, awayScore: 0, status: 'completed' }, // BEL 2-0 IRN
-          { id: 38, homeScore: 0, awayScore: 3, status: 'completed' }, // NZL 0-3 EGY (Salah doblete)
-          { id: 39, homeScore: 2, awayScore: 0, status: 'completed' }, // ESP 2-0 KSA
-          { id: 40, homeScore: 3, awayScore: 0, status: 'completed' }, // URU 3-0 CPV
-
-          { id: 41, homeScore: 3, awayScore: 0, status: 'completed' }, // FRA 3-0 IRQ
-          { id: 42, homeScore: 2, awayScore: 1, status: 'completed' }, // NOR 2-1 SEN (Haaland otra vez)
-          { id: 43, homeScore: 1, awayScore: 1, status: 'completed' }, // ARG 1-1 AUT (Argentina no logra cerrar)
-          { id: 44, homeScore: 0, awayScore: 3, status: 'completed' }, // JOR 0-3 ALG
-          { id: 45, homeScore: 3, awayScore: 0, status: 'completed' }, // POR 3-0 UZB
-          { id: 46, homeScore: 1, awayScore: 1, status: 'completed' }, // COL 1-1 COD
-          { id: 47, homeScore: 3, awayScore: 1, status: 'completed' }, // ENG 3-1 GHA
-          { id: 48, homeScore: 0, awayScore: 2, status: 'completed' }, // PAN 0-2 CRO
+          { id: 25, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 26, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 27, homeScore: 1, awayScore: 0, status: 'completed' },
+          { id: 28, homeScore: 3, awayScore: 0, status: 'completed' },
+          { id: 29, homeScore: 1, awayScore: 2, status: 'completed' },
+          { id: 30, homeScore: 4, awayScore: 0, status: 'completed' },
+          { id: 31, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 32, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 33, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 34, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 35, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 36, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 37, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 38, homeScore: 0, awayScore: 3, status: 'completed' },
+          { id: 39, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 40, homeScore: 3, awayScore: 0, status: 'completed' },
+          { id: 41, homeScore: 3, awayScore: 0, status: 'completed' },
+          { id: 42, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 43, homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 44, homeScore: 0, awayScore: 3, status: 'completed' },
+          { id: 45, homeScore: 3, awayScore: 0, status: 'completed' },
+          { id: 46, homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 47, homeScore: 3, awayScore: 1, status: 'completed' },
+          { id: 48, homeScore: 0, awayScore: 2, status: 'completed' },
 
           // === MATCHDAY 3 ===
-          { id: 49, homeScore: 0, awayScore: 1, status: 'completed' }, // CZE 0-1 MEX (México 100%)
-          { id: 50, homeScore: 0, awayScore: 2, status: 'completed' }, // RSA 0-2 KOR
-          { id: 51, homeScore: 1, awayScore: 1, status: 'completed' }, // SUI 1-1 CAN (SUI 1ro por GD)
-          { id: 52, homeScore: 2, awayScore: 1, status: 'completed' }, // BIH 2-1 QAT (BIH se va con dignidad)
-          { id: 53, homeScore: 0, awayScore: 2, status: 'completed' }, // SCO 0-2 BRA (Brasil perfecto)
-          { id: 54, homeScore: 2, awayScore: 0, status: 'completed' }, // MAR 2-0 HAI
-          { id: 55, homeScore: 1, awayScore: 2, status: 'completed' }, // TUR 1-2 USA (USA invicto)
-          { id: 56, homeScore: 1, awayScore: 2, status: 'completed' }, // PAR 1-2 AUS
-          { id: 57, homeScore: 0, awayScore: 3, status: 'completed' }, // CUW 0-3 CIV
-          { id: 58, homeScore: 0, awayScore: 1, status: 'completed' }, // ECU 0-1 GER (Alemania perfecto)
-          { id: 59, homeScore: 1, awayScore: 1, status: 'completed' }, // JPN 1-1 SWE
-          { id: 60, homeScore: 0, awayScore: 1, status: 'completed' }, // TUN 0-1 NED (Países Bajos perfecto)
-          { id: 61, homeScore: 1, awayScore: 0, status: 'completed' }, // EGY 1-0 IRN
-          { id: 62, homeScore: 0, awayScore: 2, status: 'completed' }, // NZL 0-2 BEL (Bélgica perfecto)
-          { id: 63, homeScore: 0, awayScore: 2, status: 'completed' }, // CPV 0-2 KSA (Arabia gana y queda 3ro)
-          { id: 64, homeScore: 1, awayScore: 2, status: 'completed' }, // URU 1-2 ESP (clásico final)
-          { id: 65, homeScore: 0, awayScore: 1, status: 'completed' }, // NOR 0-1 FRA (Francia perfecto)
-          { id: 66, homeScore: 2, awayScore: 0, status: 'completed' }, // SEN 2-0 IRQ
-          { id: 67, homeScore: 0, awayScore: 2, status: 'completed' }, // JOR 0-2 ARG (Argentina perfecto)
-          { id: 68, homeScore: 1, awayScore: 2, status: 'completed' }, // ALG 1-2 AUT (Austria clasifica 2da)
-          { id: 69, homeScore: 0, awayScore: 2, status: 'completed' }, // COL 0-2 POR (Portugal perfecto)
-          { id: 70, homeScore: 2, awayScore: 0, status: 'completed' }, // COD 2-0 UZB
-          { id: 71, homeScore: 0, awayScore: 3, status: 'completed' }, // PAN 0-3 ENG (Inglaterra perfecto)
-          { id: 72, homeScore: 2, awayScore: 0, status: 'completed' }, // CRO 2-0 GHA
+          { id: 49, homeScore: 0, awayScore: 1, status: 'completed' },
+          { id: 50, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 51, homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 52, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 53, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 54, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 55, homeScore: 1, awayScore: 2, status: 'completed' },
+          { id: 56, homeScore: 1, awayScore: 2, status: 'completed' },
+          { id: 57, homeScore: 0, awayScore: 3, status: 'completed' },
+          { id: 58, homeScore: 0, awayScore: 1, status: 'completed' },
+          { id: 59, homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 60, homeScore: 0, awayScore: 1, status: 'completed' },
+          { id: 61, homeScore: 1, awayScore: 0, status: 'completed' },
+          { id: 62, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 63, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 64, homeScore: 1, awayScore: 2, status: 'completed' },
+          { id: 65, homeScore: 0, awayScore: 1, status: 'completed' },
+          { id: 66, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 67, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 68, homeScore: 1, awayScore: 2, status: 'completed' },
+          { id: 69, homeScore: 0, awayScore: 2, status: 'completed' },
+          { id: 70, homeScore: 2, awayScore: 0, status: 'completed' },
+          { id: 71, homeScore: 0, awayScore: 3, status: 'completed' },
+          { id: 72, homeScore: 2, awayScore: 0, status: 'completed' },
         ];
 
         testResults.forEach(r => {
@@ -487,18 +568,13 @@
           });
         });
 
-        // ═══════════════════════════════════════════════════════════════
-        //  ⚽ GOLEADORES — Top 25 del torneo según predicción
-        // ═══════════════════════════════════════════════════════════════
+        // GOLEADORES
         const scorers = [
-          // ── 4 goles ──
           { name: 'K. Mbappé',        teamCode: 'FRA', goals: 4, assists: 1 },
           { name: 'E. Haaland',       teamCode: 'NOR', goals: 4, assists: 0 },
           { name: 'V. Jiménez',       teamCode: 'MEX', goals: 4, assists: 1 },
           { name: 'C. Pulisic',       teamCode: 'USA', goals: 4, assists: 2 },
           { name: 'Vinícius Jr',      teamCode: 'BRA', goals: 4, assists: 2 },
-
-          // ── 3 goles ──
           { name: 'J. Álvarez',       teamCode: 'ARG', goals: 3, assists: 1 },
           { name: 'L. Yamal',         teamCode: 'ESP', goals: 3, assists: 3 },
           { name: 'M. Salah',         teamCode: 'EGY', goals: 3, assists: 1 },
@@ -509,8 +585,6 @@
           { name: 'J. Bellingham',    teamCode: 'ENG', goals: 3, assists: 2 },
           { name: 'Son Heung-min',    teamCode: 'KOR', goals: 3, assists: 1 },
           { name: 'F. Valverde',      teamCode: 'URU', goals: 3, assists: 1 },
-
-          // ── 2 goles ──
           { name: 'A. Davies',        teamCode: 'CAN', goals: 2, assists: 2 },
           { name: 'Y. En-Nesyri',     teamCode: 'MAR', goals: 2, assists: 0 },
           { name: 'C. Gakpo',         teamCode: 'NED', goals: 2, assists: 2 },
@@ -521,8 +595,6 @@
           { name: 'L. de Bruyne',     teamCode: 'BEL', goals: 1, assists: 3 },
           { name: 'L. Luis Díaz',     teamCode: 'COL', goals: 2, assists: 1 },
           { name: 'R. Jiménez',       teamCode: 'MEX', goals: 2, assists: 0 },
-
-          // ── 1 gol (notables) ──
           { name: 'L. Sane',          teamCode: 'GER', goals: 1, assists: 1 },
           { name: 'C. Palmer',        teamCode: 'ENG', goals: 1, assists: 1 },
           { name: 'D. Olmo',          teamCode: 'ESP', goals: 1, assists: 2 },
@@ -543,11 +615,8 @@
           batch.set(ref, s);
         });
 
-        // ═══════════════════════════════════════════════════════════════
-        //  🟨🟥 TARJETAS — Amarillas y rojas destacadas
-        // ═══════════════════════════════════════════════════════════════
+        // TARJETAS
         const cards = [
-          // Amarillas (jugadores defensivos / intensos)
           { name: 'R. Araújo',         teamCode: 'URU', type: 'yellow', count: 3 },
           { name: 'M. Acuña',          teamCode: 'ARG', type: 'yellow', count: 3 },
           { name: 'J. Kimmich',        teamCode: 'GER', type: 'yellow', count: 2 },
@@ -568,8 +637,6 @@
           { name: 'J. Vertonghen',     teamCode: 'BEL', type: 'yellow', count: 1 },
           { name: 'C. Romero',         teamCode: 'ARG', type: 'yellow', count: 1 },
           { name: 'A. Trossard',       teamCode: 'BEL', type: 'yellow', count: 1 },
-
-          // Rojas (drama del torneo)
           { name: 'G. Martínez',       teamCode: 'ARG', type: 'red',    count: 1 },
           { name: 'M. Ugarte',         teamCode: 'URU', type: 'red',    count: 1 },
         ];
@@ -580,7 +647,7 @@
         });
 
         await batch.commit();
-        showStatus(`Predicción completa: 72 partidos, ${scorers.length} goleadores, ${cards.length} tarjetas cargadas.`, 'success');
+        showStatus(`Predicción completa: 72 partidos, ${scorers.length} goleadores, ${cards.length} tarjetas.`, 'success');
       } catch (e) {
         showStatus('Error: ' + e.message, 'error');
       }
@@ -589,8 +656,11 @@
       btn.innerHTML = '<span>🧪</span> Cargar Predicción AI';
     }
 
+    /* ══════════════════════════════════════════════════════════════
+     *  SIMULATE MATCH
+     * ══════════════════════════════════════════════════════════════ */
     async function simulateMatch() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
 
       const matchId = document.getElementById('test-match-id').value;
       const homeScore = parseInt(document.getElementById('test-home-score').value) || 0;
@@ -615,12 +685,15 @@
         const matchLabel = match ? `${match.home} vs ${match.away}` : `Match #${matchId}`;
         showTestStatus(`Actualizado: ${matchLabel} → ${homeScore}-${awayScore} (${status === 'live' ? "EN VIVO " + minute + "'" : 'FT'})`, 'success');
       } catch (e) {
-        showTestStatus('Error: ' + e.message + ' (¿Cargaste los partidos primero?)', 'error');
+        showTestStatus('Error: ' + e.message, 'error');
       }
     }
 
+    /* ══════════════════════════════════════════════════════════════
+     *  CLEAR ALL
+     * ══════════════════════════════════════════════════════════════ */
     async function clearAll() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
       if (!confirm('¿Eliminar TODOS los datos? Esta acción no se puede deshacer.')) return;
 
       showStatus('Eliminando datos...', 'info');
@@ -653,10 +726,11 @@
       }
     }
 
-    /* ===== KNOCKOUT PHASE ===== */
-
+    /* ══════════════════════════════════════════════════════════════
+     *  KNOCKOUT PHASE
+     * ══════════════════════════════════════════════════════════════ */
     async function seedKnockout() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
       const btn = document.getElementById('seed-ko-btn');
       btn.disabled = true;
       btn.innerHTML = '<span>⏳</span> Cargando...';
@@ -689,7 +763,7 @@
         });
 
         await batch.commit();
-        showKOStatus(`60 eliminatorias cargadas (R32×16 + R16×8 + QF×4 + SF×2 + TP + Final).`, 'success');
+        showKOStatus('60 eliminatorias cargadas (R32x16 + R16x8 + QFx4 + SFx2 + TP + Final).', 'success');
       } catch (e) {
         showKOStatus('Error: ' + e.message, 'error');
       }
@@ -699,14 +773,13 @@
     }
 
     async function runCalculateQualifiers() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
       const btn = document.getElementById('qualify-btn');
       btn.disabled = true;
       btn.innerHTML = '<span>⏳</span> Calculando...';
       showKOStatus('Calculando clasificados...', 'info');
 
       try {
-        // First sync group match results from Firestore into local MATCHES
         const groupSnapshot = await db.collection('matches').get();
         let completedCount = 0;
         groupSnapshot.docs.forEach(doc => {
@@ -722,17 +795,16 @@
 
         showKOStatus(`${completedCount}/72 partidos completados. Calculando standings...`, 'info');
 
-        // Now calculate using the shared logic from firebase.js
         const result = await calculateAndAssignQualifiers();
 
         if (result.success) {
-          let details = `<div class="status status-success" style="margin-top:12px">`;
-          details += `<strong>${result.message}</strong><br><br>`;
-          details += `<strong>Mejores terceros clasificados:</strong><br>`;
+          let details = '<div class="status status-success" style="margin-top:12px">';
+          details += '<strong>' + result.message + '</strong><br><br>';
+          details += '<strong>Mejores terceros clasificados:</strong><br>';
           result.thirds.forEach((t, i) => {
-            details += `${i + 1}. ${t}<br>`;
+            details += (i + 1) + '. ' + t + '<br>';
           });
-          details += `</div>`;
+          details += '</div>';
           document.getElementById('qualify-details').innerHTML = details;
         }
 
@@ -746,7 +818,7 @@
     }
 
     async function runPropagateWinners() {
-      if (!db) return;
+      if (!db || !requireAuth()) return;
       const btn = document.getElementById('propagate-btn');
       btn.disabled = true;
       btn.innerHTML = '<span>⏳</span> Propagando...';
@@ -762,10 +834,13 @@
       btn.innerHTML = '<span>➡️</span> Propagar Ganadores';
     }
 
+    /* ══════════════════════════════════════════════════════════════
+     *  UI HELPERS
+     * ══════════════════════════════════════════════════════════════ */
     function showKOStatus(msg, type) {
       const el = document.getElementById('knockout-status');
       if (!el) return;
-      el.className = `status status-${type}`;
+      el.className = 'status status-' + type;
       el.textContent = msg;
       el.classList.remove('hidden');
     }
@@ -773,7 +848,7 @@
     function showStatus(msg, type) {
       const el = document.getElementById('status');
       if (!el) return;
-      el.className = `status status-${type}`;
+      el.className = 'status status-' + type;
       el.textContent = msg;
       el.classList.remove('hidden');
     }
@@ -781,7 +856,7 @@
     function showTestStatus(msg, type) {
       const el = document.getElementById('test-status');
       if (!el) return;
-      el.className = `status status-${type}`;
+      el.className = 'status status-' + type;
       el.textContent = msg;
       el.classList.remove('hidden');
     }
