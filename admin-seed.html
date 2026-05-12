@@ -210,7 +210,7 @@
 
     <!-- Actions -->
     <div class="section hidden" id="actions-section">
-      <h2><span class="icon">🚀</span> Acciones</h2>
+      <h2><span class="icon">⚽</span> Fase de Grupos</h2>
       <div class="btn-group">
         <button class="btn btn-primary" id="seed-btn" onclick="seedMatches()">
           <span>⚽</span> Cargar 72 Partidos
@@ -218,11 +218,36 @@
         <button class="btn btn-primary" id="seed-test-btn" onclick="seedTestData()">
           <span>🧪</span> Cargar Datos de Prueba
         </button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <!-- Knockout Actions -->
+    <div class="section hidden" id="knockout-section">
+      <h2><span class="icon">🏆</span> Fase Eliminatoria</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="seed-ko-btn" onclick="seedKnockout()">
+          <span>🏟️</span> Cargar 60 Eliminatorias
+        </button>
+        <button class="btn btn-primary" id="qualify-btn" onclick="runCalculateQualifiers()" style="background:linear-gradient(135deg,#4CAF50,#388E3C)">
+          <span>📊</span> Calcular Clasificados
+        </button>
+        <button class="btn btn-primary" id="propagate-btn" onclick="runPropagateWinners()" style="background:linear-gradient(135deg,#2196F3,#1565C0)">
+          <span>➡️</span> Propagar Ganadores
+        </button>
+      </div>
+      <div id="knockout-status"></div>
+      <div id="qualify-details"></div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="section hidden" id="danger-section">
+      <h2><span class="icon">⚠️</span> Zona de Peligro</h2>
+      <div class="btn-group">
         <button class="btn btn-danger" id="clear-btn" onclick="clearAll()">
           <span>🗑️</span> Limpiar Todo
         </button>
       </div>
-      <div id="status"></div>
     </div>
 
     <!-- Quick Test -->
@@ -258,6 +283,7 @@
 
   <!-- Match Data -->
   <script src="js/data.js"></script>
+  <script src="js/firebase.js"></script>
 
   <script>
     let db = null;
@@ -292,7 +318,9 @@
 
         document.getElementById('connected-badge').classList.remove('hidden');
         document.getElementById('actions-section').classList.remove('hidden');
+        document.getElementById('knockout-section').classList.remove('hidden');
         document.getElementById('test-section').classList.remove('hidden');
+        document.getElementById('danger-section').classList.remove('hidden');
 
         showStatus('Conectado a Firestore: ' + projectId, 'success');
 
@@ -440,14 +468,13 @@
       showStatus('Eliminando datos...', 'info');
 
       try {
-        const collections = ['matches', 'scorers', 'cards'];
+        const collections = ['matches', 'knockout', 'scorers', 'cards'];
         let total = 0;
 
         for (const colName of collections) {
           const snapshot = await db.collection(colName).get();
           if (snapshot.empty) continue;
 
-          // Firestore max 500 per batch
           let batch = db.batch();
           let count = 0;
           snapshot.docs.forEach(doc => {
@@ -466,6 +493,123 @@
       } catch (e) {
         showStatus('Error: ' + e.message, 'error');
       }
+    }
+
+    /* ===== KNOCKOUT PHASE ===== */
+
+    async function seedKnockout() {
+      if (!db) return;
+      const btn = document.getElementById('seed-ko-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Cargando...';
+      showKOStatus('Escribiendo 60 partidos de eliminatoria...', 'info');
+
+      try {
+        const batch = db.batch();
+        const allKnockout = [
+          ...KNOCKOUT.roundOf32,
+          ...KNOCKOUT.roundOf16,
+          ...KNOCKOUT.quarterfinals,
+          ...KNOCKOUT.semifinals,
+          KNOCKOUT.thirdPlace,
+          KNOCKOUT.final
+        ];
+
+        allKnockout.forEach(m => {
+          const ref = db.collection('knockout').doc(m.id);
+          batch.set(ref, {
+            id: m.id,
+            label: m.label,
+            date: m.date,
+            home: null,
+            away: null,
+            homeScore: null,
+            awayScore: null,
+            status: 'upcoming',
+            minute: null
+          });
+        });
+
+        await batch.commit();
+        showKOStatus(`60 eliminatorias cargadas (R32×16 + R16×8 + QF×4 + SF×2 + TP + Final).`, 'success');
+      } catch (e) {
+        showKOStatus('Error: ' + e.message, 'error');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>🏟️</span> Cargar 60 Eliminatorias';
+    }
+
+    async function runCalculateQualifiers() {
+      if (!db) return;
+      const btn = document.getElementById('qualify-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Calculando...';
+      showKOStatus('Calculando clasificados...', 'info');
+
+      try {
+        // First sync group match results from Firestore into local MATCHES
+        const groupSnapshot = await db.collection('matches').get();
+        let completedCount = 0;
+        groupSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          const localMatch = MATCHES.find(m => m.id === data.id);
+          if (localMatch && data.status === 'completed') {
+            localMatch.homeScore = data.homeScore;
+            localMatch.awayScore = data.awayScore;
+            localMatch.status = 'completed';
+            completedCount++;
+          }
+        });
+
+        showKOStatus(`${completedCount}/72 partidos completados. Calculando standings...`, 'info');
+
+        // Now calculate using the shared logic from firebase.js
+        const result = await calculateAndAssignQualifiers();
+
+        if (result.success) {
+          let details = `<div class="status status-success" style="margin-top:12px">`;
+          details += `<strong>${result.message}</strong><br><br>`;
+          details += `<strong>Mejores terceros clasificados:</strong><br>`;
+          result.thirds.forEach((t, i) => {
+            details += `${i + 1}. ${t}<br>`;
+          });
+          details += `</div>`;
+          document.getElementById('qualify-details').innerHTML = details;
+        }
+
+        showKOStatus(result.message, result.success ? 'success' : 'error');
+      } catch (e) {
+        showKOStatus('Error: ' + e.message, 'error');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>📊</span> Calcular Clasificados';
+    }
+
+    async function runPropagateWinners() {
+      if (!db) return;
+      const btn = document.getElementById('propagate-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Propagando...';
+
+      try {
+        const result = await propagateWinners();
+        showKOStatus(result.message, result.success ? 'success' : 'error');
+      } catch (e) {
+        showKOStatus('Error: ' + e.message, 'error');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>➡️</span> Propagar Ganadores';
+    }
+
+    function showKOStatus(msg, type) {
+      const el = document.getElementById('knockout-status');
+      if (!el) return;
+      el.className = `status status-${type}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
     }
 
     function showStatus(msg, type) {

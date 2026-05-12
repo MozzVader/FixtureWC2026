@@ -493,12 +493,15 @@ function initBracket() {
   const container = document.getElementById('bracket-content');
   if (!container) return;
 
-  const r32 = KNOCKOUT.roundOf32;
-  const r16 = KNOCKOUT.roundOf16;
-  const qf  = KNOCKOUT.quarterfinals;
-  const sf  = KNOCKOUT.semifinals;
-  const fin = KNOCKOUT.final;
-  const tp  = KNOCKOUT.thirdPlace;
+  // Use live Firebase data if available, otherwise static KNOCKOUT
+  const src = (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) ? KNOCKOUT_LIVE : KNOCKOUT;
+
+  const r32 = src.roundOf32 || KNOCKOUT.roundOf32;
+  const r16 = src.roundOf16 || KNOCKOUT.roundOf16;
+  const qf  = src.quarterfinals || KNOCKOUT.quarterfinals;
+  const sf  = src.semifinals || KNOCKOUT.semifinals;
+  const fin = src.final || KNOCKOUT.final;
+  const tp  = src.thirdPlace || KNOCKOUT.thirdPlace;
 
   let html = '<div class="bracket">';
 
@@ -603,22 +606,40 @@ function buildConnector(col, rs, re, offset) {
 }
 
 function renderBracketMatch(match, isFinal = false) {
+  if (!match) return '';
   const homeTeam = match.home ? TEAMS[match.home] : null;
   const awayTeam = match.away ? TEAMS[match.away] : null;
 
+  // Parse label for display when teams are TBD
+  const labelParts = (match.label || '').split(' vs ');
+  const homeLabel = homeTeam ? homeTeam.name : (labelParts[0] || 'Por definir');
+  const awayLabel = awayTeam ? awayTeam.name : (labelParts[1] || 'Por definir');
+
+  // Scores (from Firebase knockout or group matches)
+  const hasScore = match.homeScore != null && match.awayScore != null;
+  const status = match.status || 'upcoming';
+  const isLive = status === 'live';
+  const isCompleted = status === 'completed';
+
+  // Status badge
+  let statusHtml = '';
+  if (isLive) statusHtml = `<span class="live-badge"><span class="live-dot"></span>${match.minute ? match.minute + "'" : 'EN VIVO'}</span>`;
+  else if (isCompleted) statusHtml = '<span class="ft-badge">FT</span>';
+
   return `
     <div class="bracket__match" ${isFinal ? 'style="border-color: var(--dorado-500); box-shadow: var(--sombra-dorada);"' : ''}>
+      ${statusHtml ? '<div style="text-align:center;margin-bottom:4px">' + statusHtml + '</div>' : ''}
       <div class="bracket__team ${homeTeam ? '' : 'bracket__team--tbd'}">
         ${homeTeam ? getFlagHtml(homeTeam.code) : ''}
-        <span class="bracket__team-name">${homeTeam ? homeTeam.name : match.label.split(' vs ')[0] || 'Por definir'}</span>
-        ${match.homeScore !== undefined ? `<span class="bracket__team-score">${match.homeScore}</span>` : ''}
+        <span class="bracket__team-name">${homeLabel}</span>
+        ${hasScore ? `<span class="bracket__team-score">${match.homeScore}</span>` : ''}
       </div>
       <div class="bracket__team ${awayTeam ? '' : 'bracket__team--tbd'}">
         ${awayTeam ? getFlagHtml(awayTeam.code) : ''}
-        <span class="bracket__team-name">${awayTeam ? awayTeam.name : match.label.split(' vs ')[1] || 'Por definir'}</span>
-        ${match.awayScore !== undefined ? `<span class="bracket__team-score">${match.awayScore}</span>` : ''}
+        <span class="bracket__team-name">${awayLabel}</span>
+        ${hasScore ? `<span class="bracket__team-score">${match.awayScore}</span>` : ''}
       </div>
-      <div class="bracket__match-info">${formatDate(match.date)}</div>
+      <div class="bracket__match-info">${match.date ? formatDate(match.date) : ''}</div>
     </div>
   `;
 }
