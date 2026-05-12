@@ -16,31 +16,35 @@ const TOURNAMENT = {
 };
 
 /**
- * Country codes follow ISO 3166-1 alpha-3 / FIFA codes
- * Flags loaded from: https://flagcdn.com/w40/{code}.png
- *   Some exceptions mapped in FLAG_MAP below
+ * Country codes follow FIFA codes (alpha-3)
+ * Flags rendered via flag-icons CSS library (no CORS issues)
+ *   https://flag-icons.github.io/flag-icons/
+ *   Uses ISO 3166-1 alpha-2 codes internally
  */
 const FLAG_MAP = {
-  'eng': 'gb-eng',
-  'sco': 'gb-sct',
-  'cze': 'cz',
-  'kor': 'kr',
-  'irn': 'ir',
-  'cod': 'cd',
-  'cpv': 'cv',
-  'cuw': 'cw'
+  'mex': 'mx',  'rsa': 'za',  'kor': 'kr',  'cze': 'cz',
+  'can': 'ca',  'bih': 'ba',  'qat': 'qa',  'sui': 'ch',
+  'bra': 'br',  'mar': 'ma',  'hai': 'ht',  'sco': 'gb-sct',
+  'usa': 'us',  'par': 'py',  'aus': 'au',  'tur': 'tr',
+  'ger': 'de',  'cuw': 'cw',  'civ': 'ci',  'ecu': 'ec',
+  'ned': 'nl',  'jpn': 'jp',  'swe': 'se',  'tun': 'tn',
+  'bel': 'be',  'egy': 'eg',  'irn': 'ir',  'nzl': 'nz',
+  'esp': 'es',  'cpv': 'cv',  'ksa': 'sa',  'uru': 'uy',
+  'fra': 'fr',  'sen': 'sn',  'irq': 'iq',  'nor': 'no',
+  'arg': 'ar',  'alg': 'dz',  'aut': 'at',  'jor': 'jo',
+  'por': 'pt',  'cod': 'cd',  'uzb': 'uz',  'col': 'co',
+  'eng': 'gb-eng', 'cro': 'hr', 'gha': 'gh', 'pan': 'pa'
 };
 
-function getFlagUrl(code) {
+function getFlagClass(code) {
   const normalized = code.toLowerCase();
   const mapped = FLAG_MAP[normalized] || normalized;
-  return `https://flagcdn.com/w40/${mapped}.png`;
+  return `fi fi-${mapped}`;
 }
 
-function getFlagUrlLg(code) {
-  const normalized = code.toLowerCase();
-  const mapped = FLAG_MAP[normalized] || normalized;
-  return `https://flagcdn.com/w80/${mapped}.png`;
+function getFlagHtml(code, size) {
+  const cls = size === 'lg' ? `${getFlagClass(code)} flag-img--lg` : getFlagClass(code);
+  return `<span class="${cls}"></span>`;
 }
 
 /**
@@ -129,7 +133,7 @@ Object.keys(TEAMS).forEach(code => {
   if (!GROUPS[team.group]) GROUPS[team.group] = [];
   GROUPS[team.group].push({
     ...team,
-    flag: getFlagUrl(code),
+    flagCode: code,
     played: 0, won: 0, drawn: 0, lost: 0,
     goalsFor: 0, goalsAgainst: 0, points: 0
   });

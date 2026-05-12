@@ -121,12 +121,12 @@ function renderUpcomingMatches() {
       <div class="upcoming__match">
         <div class="upcoming__teams">
           <div class="upcoming__team">
-            <img src="${home.flag}" alt="${home.code}" class="flag-img--lg" onerror="this.style.display='none'">
+            ${getFlagHtml(home.code, 'lg')}
             <span class="upcoming__team-name">${home.name}</span>
           </div>
           <span class="upcoming__vs">VS</span>
           <div class="upcoming__team">
-            <img src="${away.flag}" alt="${away.code}" class="flag-img--lg" onerror="this.style.display='none'">
+            ${getFlagHtml(away.code, 'lg')}
             <span class="upcoming__team-name">${away.name}</span>
           </div>
         </div>
@@ -209,12 +209,12 @@ function renderCalendar(container, matches, filter) {
           <div class="calendar__match-time">${match.time}</div>
           <div class="calendar__match-teams">
             <div class="calendar__match-team">
-              <img src="${home.flag}" alt="${home.code}" class="flag-img" onerror="this.style.display='none'">
+              ${getFlagHtml(home.code)}
               <span>${home.name}</span>
             </div>
             <span class="calendar__match-vs">VS</span>
             <div class="calendar__match-team">
-              <img src="${away.flag}" alt="${away.code}" class="flag-img" onerror="this.style.display='none'">
+              ${getFlagHtml(away.code)}
               <span>${away.name}</span>
             </div>
           </div>
@@ -276,7 +276,7 @@ function initGroups() {
           <td><span class="pos-badge ${badgeClass}">${pos}</span></td>
           <td>
             <div class="team-cell">
-              <img src="${team.flag}" alt="${team.code}" onerror="this.style.display='none'">
+              ${getFlagHtml(team.flagCode)}
               <span>${team.name}</span>
             </div>
           </td>
@@ -358,12 +358,12 @@ function renderBracketMatch(match, isFinal = false) {
   return `
     <div class="bracket__match" ${isFinal ? 'style="border-color: var(--dorado-500); box-shadow: var(--sombra-dorada);"' : ''}>
       <div class="bracket__team ${homeTeam ? '' : 'bracket__team--tbd'}">
-        ${homeTeam ? `<img src="${homeTeam.flag}" alt="${homeTeam.code}" onerror="this.style.display='none'">` : ''}
+        ${homeTeam ? getFlagHtml(homeTeam.code) : ''}
         <span class="bracket__team-name">${homeTeam ? homeTeam.name : match.label.split(' vs ')[0] || 'Por definir'}</span>
         ${match.homeScore !== undefined ? `<span class="bracket__team-score">${match.homeScore}</span>` : ''}
       </div>
       <div class="bracket__team ${awayTeam ? '' : 'bracket__team--tbd'}">
-        ${awayTeam ? `<img src="${awayTeam.flag}" alt="${awayTeam.code}" onerror="this.style.display='none'">` : ''}
+        ${awayTeam ? getFlagHtml(awayTeam.code) : ''}
         <span class="bracket__team-name">${awayTeam ? awayTeam.name : match.label.split(' vs ')[1] || 'Por definir'}</span>
         ${match.awayScore !== undefined ? `<span class="bracket__team-score">${match.awayScore}</span>` : ''}
       </div>
@@ -388,12 +388,12 @@ function renderVenues() {
   html += '</tr></thead><tbody>';
 
   VENUES.forEach(v => {
-    const countryFlag = getFlagUrl(v.country);
+    const flagCls = getFlagClass(v.country);
     html += `
       <tr>
         <td>
           <div class="team-cell">
-            <img src="${countryFlag}" alt="${v.country}" onerror="this.style.display='none'">
+            <span class="${flagCls}"></span>
             <span>${v.city}</span>
           </div>
         </td>

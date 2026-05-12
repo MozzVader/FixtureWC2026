@@ -265,16 +265,49 @@ tbody tr:last-child td {
 }
 
 /* ===== FLAG PLACEHOLDER ===== */
-.flag-img {
-  width: 24px;
-  height: 16px;
-  object-fit: cover;
-  border-radius: 2px;
+.flag-img,
+.flag-img--lg {
   display: inline-block;
   vertical-align: middle;
 }
 
+.flag-img {
+  width: 24px;
+  height: 18px;
+}
+
 .flag-img--lg {
-  width: 40px;
-  height: 28px;
+  width: 36px;
+  height: 27px;
+}
+
+/* flag-icons overrides for consistent sizing */
+.fi {
+  border-radius: 2px;
+}
+
+.team-cell .fi {
+  width: 24px;
+  height: 18px;
+}
+
+.upcoming__team .fi,
+.flag-img--lg.fi {
+  width: 36px;
+  height: 27px;
+}
+
+.bracket__team .fi {
+  width: 20px;
+  height: 15px;
+}
+
+.calendar__match-team .fi {
+  width: 24px;
+  height: 18px;
+}
+
+.stat-card__table .team-cell .fi {
+  width: 20px;
+  height: 15px;
 }

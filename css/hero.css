@@ -75,56 +75,32 @@
   position: relative;
   width: 90px;
   height: 110px;
-  perspective: 400px;
-}
-
-.countdown__flip-top,
-.countdown__flip-bottom {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 50%;
-  overflow: hidden;
   background: rgba(1, 87, 155, 0.5);
   border: 1px solid var(--dorado-600);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
-.countdown__flip-top {
-  top: 0;
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
-  border-bottom: none;
-  align-items: flex-end;
-  padding-bottom: 0;
-  line-height: 110px;
-}
-
-.countdown__flip-bottom {
-  bottom: 0;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  border-top: 1px solid rgba(255, 215, 0, 0.3);
-  align-items: flex-start;
-  padding-top: 0;
-  line-height: 110px;
-}
-
-.countdown__flip-top::after {
+.countdown__flip-card::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(0, 0, 0, 0.15);
+  top: 50%;
+  left: 4px;
+  right: 4px;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 1;
 }
 
 .countdown__number {
   font-family: var(--font-display);
-  font-size: 3.2rem;
+  font-size: 3.6rem;
   color: var(--blanco);
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+ line-height: 1;
 }
 
 .countdown__label {
@@ -227,13 +203,8 @@
     height: 82px;
   }
 
-  .countdown__flip-top,
-  .countdown__flip-bottom {
-    line-height: 82px;
-  }
-
   .countdown__number {
-    font-size: 2.2rem;
+    font-size: 2.5rem;
   }
 
   .countdown__label {
@@ -255,13 +226,8 @@
     height: 70px;
   }
 
-  .countdown__flip-top,
-  .countdown__flip-bottom {
-    line-height: 70px;
-  }
-
   .countdown__number {
-    font-size: 1.8rem;
+    font-size: 2rem;
   }
 
   .countdown {
