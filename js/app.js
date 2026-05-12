@@ -318,18 +318,22 @@ function initBracket() {
   html += renderBracketRound('Cuartos de Final', KNOCKOUT.quarterfinals, 1);
   html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
 
-  // Semifinals + Final column
+  // Semifinals
   html += '<div class="bracket__round">';
   html += '<div class="bracket__round-title">Semifinales</div>';
   KNOCKOUT.semifinals.forEach(match => {
     html += renderBracketMatch(match);
   });
-  html += '<div style="height: 20px"></div>';
+  html += '</div>';
+  html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
+
+  // Final + 3rd Place
+  html += '<div class="bracket__round bracket__round--final">';
+  html += '<div class="bracket__round-title bracket__round-title--final">Final</div>';
+  html += renderBracketMatch(KNOCKOUT.final, true);
+  html += '<div style="height: 40px"></div>';
   html += '<div class="bracket__round-title">Tercer Puesto</div>';
   html += renderBracketMatch(KNOCKOUT.thirdPlace);
-  html += '<div style="height: 20px"></div>';
-  html += '<div class="bracket__round-title" style="color: var(--dorado-500); font-size: 1rem;">Final</div>';
-  html += renderBracketMatch(KNOCKOUT.final, true);
   html += '</div>';
 
   html += '</div></div>';

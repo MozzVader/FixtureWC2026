@@ -119,6 +119,17 @@
   font-size: 1.2rem;
 }
 
+/* Final column */
+.bracket__round--final {
+  justify-content: center;
+}
+
+.bracket__round-title--final {
+  color: var(--dorado-500);
+  font-size: 1rem;
+  border-bottom-color: rgba(255, 215, 0, 0.4);
+}
+
 /* Placeholder for TBD */
 .bracket__placeholder {
   text-align: center;
