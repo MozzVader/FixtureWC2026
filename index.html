@@ -205,5 +205,24 @@
   <script src="js/data.js"></script>
   <script src="js/firebase.js"></script>
   <script src="js/app.js"></script>
+  <script>
+    /* ═══ HOTFIX: normalizar objetos en home/away de knockout ═══
+       Si firebase.js (cacheado) escribió objetos en vez de strings,
+       este patch los convierte a .code antes de renderizar. */
+    const _origRenderBracketMatch = typeof renderBracketMatch === 'function' ? renderBracketMatch : null;
+    if (_origRenderBracketMatch) {
+      window.renderBracketMatch = function(match, isFinal) {
+        if (match) {
+          if (match.home && typeof match.home === 'object') match.home = match.home.code || null;
+          if (match.away && typeof match.away === 'object') match.away = match.away.code || null;
+        }
+        return _origRenderBracketMatch(match, isFinal);
+      };
+      // Re-render si ya hay datos live
+      if (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) {
+        initBracket();
+      }
+    }
+  </script>
 </body>
 </html>

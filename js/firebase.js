@@ -298,7 +298,19 @@ function listenKnockout() {
     }
 
     // Organize docs by round into KNOCKOUT-compatible structure
-    const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Normalize: if home/away is an object (legacy bug), extract .code
+    const docs = snapshot.docs.map(d => {
+      const raw = { id: d.id, ...d.data() };
+      if (raw.home && typeof raw.home === 'object') {
+        console.log(`[WC2026 DEBUG] ${raw.id}.home era objeto:`, raw.home, '→ code:', raw.home.code);
+        raw.home = raw.home.code || null;
+      }
+      if (raw.away && typeof raw.away === 'object') {
+        console.log(`[WC2026 DEBUG] ${raw.id}.away era objeto:`, raw.away, '→ code:', raw.away.code);
+        raw.away = raw.away.code || null;
+      }
+      return raw;
+    });
 
     KNOCKOUT_LIVE = {
       roundOf32: docs.filter(d => d.id.startsWith('R32'))
@@ -314,6 +326,17 @@ function listenKnockout() {
     };
 
     console.log('[WC2026] Eliminatorias actualizadas. Re-renderizando bracket...');
+
+    // Diagnostic: log R32-13 through R32-16 fully
+    ['R32-13','R32-14','R32-15','R32-16'].forEach(id => {
+      const m = docs.find(d => d.id === id);
+      if (m) {
+        console.log(`[WC2026 DIAG] ${id}:`, JSON.stringify({ home: m.home, away: m.away, label: m.label, homeType: typeof m.home, awayType: typeof m.away }));
+      } else {
+        console.log(`[WC2026 DIAG] ${id}: NO EXISTE en Firestore`);
+      }
+    });
+
     initBracket();
   }, error => {
     console.error('[WC2026] Error en listener de eliminatorias:', error);
@@ -402,30 +425,30 @@ function assignThirdPlaceTeams(bestThirds) {
 
   const used = new Set();
 
-  // Helper: pick best unused from a set
-  const pick = (set) => set.find(t => !used.has(t.code)) || null;
+  // Helper: pick best unused from a set (returns only the code string)
+  const pick = (set) => set.find(t => !used.has(t.code))?.code || null;
 
   // R32-13 and R32-14: {A,B,C} vs {D,E,F}
   assignments['R32-13'].home = pick(setABC);
-  if (assignments['R32-13'].home) used.add(assignments['R32-13'].home.code);
+  if (assignments['R32-13'].home) used.add(assignments['R32-13'].home);
   assignments['R32-13'].away = pick(setDEF);
-  if (assignments['R32-13'].away) used.add(assignments['R32-13'].away.code);
+  if (assignments['R32-13'].away) used.add(assignments['R32-13'].away);
 
   assignments['R32-14'].home = pick(setABC);
-  if (assignments['R32-14'].home) used.add(assignments['R32-14'].home.code);
+  if (assignments['R32-14'].home) used.add(assignments['R32-14'].home);
   assignments['R32-14'].away = pick(setDEF);
-  if (assignments['R32-14'].away) used.add(assignments['R32-14'].away.code);
+  if (assignments['R32-14'].away) used.add(assignments['R32-14'].away);
 
   // R32-15 and R32-16: {G,H,I} vs {J,K,L}
   assignments['R32-15'].home = pick(setGHI);
-  if (assignments['R32-15'].home) used.add(assignments['R32-15'].home.code);
+  if (assignments['R32-15'].home) used.add(assignments['R32-15'].home);
   assignments['R32-15'].away = pick(setJKL);
-  if (assignments['R32-15'].away) used.add(assignments['R32-15'].away.code);
+  if (assignments['R32-15'].away) used.add(assignments['R32-15'].away);
 
   assignments['R32-16'].home = pick(setGHI);
-  if (assignments['R32-16'].home) used.add(assignments['R32-16'].home.code);
+  if (assignments['R32-16'].home) used.add(assignments['R32-16'].home);
   assignments['R32-16'].away = pick(setJKL);
-  if (assignments['R32-16'].away) used.add(assignments['R32-16'].away.code);
+  if (assignments['R32-16'].away) used.add(assignments['R32-16'].away);
 
   // Fill any remaining nulls with unused thirds (edge case)
   const unused = bestThirds.filter(t => !used.has(t.code));

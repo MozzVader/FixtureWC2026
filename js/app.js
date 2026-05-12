@@ -608,8 +608,11 @@ function buildConnector(col, rs, re, offset) {
 
 function renderBracketMatch(match, isFinal = false) {
   if (!match) return '';
-  const homeTeam = match.home ? TEAMS[match.home] : null;
-  const awayTeam = match.away ? TEAMS[match.away] : null;
+  // Defensive: if home/away is an object instead of a code string, extract the code
+  const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
+  const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
+  const homeTeam = homeCode ? TEAMS[homeCode] : null;
+  const awayTeam = awayCode ? TEAMS[awayCode] : null;
 
   // Parse label for display when teams are TBD
   const labelParts = (match.label || '').split(' vs ');
