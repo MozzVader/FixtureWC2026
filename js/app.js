@@ -321,9 +321,11 @@ function initBracket() {
   // Semifinals
   html += '<div class="bracket__round bracket__round--semis">';
   html += '<div class="bracket__round-title">Semifinales</div>';
+  html += '<div class="bracket__semis-matches">';
   KNOCKOUT.semifinals.forEach(match => {
     html += renderBracketMatch(match);
   });
+  html += '</div>';
   html += '</div>';
   html += '<div class="bracket__connector"><i class="fas fa-chevron-right"></i></div>';
 

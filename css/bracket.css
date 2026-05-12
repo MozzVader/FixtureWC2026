@@ -122,6 +122,11 @@
 /* Semifinals column - compact vertical spacing */
 .bracket__round--semis {
   justify-content: center;
+}
+
+.bracket__semis-matches {
+  display: flex;
+  flex-direction: column;
   gap: 60px;
 }
 
