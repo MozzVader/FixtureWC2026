@@ -4,26 +4,20 @@
   padding: 20px 0;
 }
 
-/* --- Shared column template for titles, grid, and 3rd-place --- */
-.bracket-cols {
+/* --- Round titles row (mirrors the grid columns) --- */
+.bracket-titles {
+  display: grid;
   grid-template-columns:
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr);
-  min-width: 1180px;
-}
-
-/* --- Round titles row --- */
-.bracket-titles {
-  display: grid;
   justify-content: center;
   padding: 0 20px;
   margin-bottom: 8px;
+  min-width: 1180px;
 }
-
-.bracket-titles .bracket-cols { /* extends via selector */ }
 
 .bracket-title {
   text-align: center;
@@ -45,7 +39,7 @@
 
 /* --- Main bracket grid ---
  * 16 rows × 9 columns (5 match cols + 4 connector cols)
- * Row height: 70px — enough for match card (~63px) + breathing room
+ * Row height: 80px
  * Each round's matches span proportionally:
  *   R32 = 1 row, R16 = 2 rows, QF = 4 rows, SF = 8 rows, Final = 16 rows
  */
@@ -57,7 +51,7 @@
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr);
-  grid-template-rows: repeat(16, 70px);
+  grid-template-rows: repeat(16, 80px);
   row-gap: 6px;
   column-gap: 0;
   align-items: center;
@@ -161,12 +155,6 @@
  *        │
  *   ──── bottom feeder centre
  *
- * Four absolutely-positioned children:
- *   __h-top  : horizontal line at top feeder's vertical centre
- *   __v      : vertical line between the two feeders
- *   __h-bot  : horizontal line at bottom feeder's vertical centre
- *   __h-mid  : horizontal line from midpoint to the next round
- *
  * Offsets are set via CSS custom properties (--top-off, --bot-off)
  * calculated in JS based on how many grid rows each feeder spans.
  */
@@ -181,7 +169,7 @@
   position: absolute;
   left: 0;
   right: 50%;
-  top: var(--top-off, 35px);
+  top: var(--top-off, 40px);
   height: 2px;
   background: var(--dorado-600);
 }
@@ -189,8 +177,8 @@
 .bracket-conn__v {
   position: absolute;
   left: 50%;
-  top: var(--top-off, 35px);
-  bottom: var(--bot-off, 35px);
+  top: var(--top-off, 40px);
+  bottom: var(--bot-off, 40px);
   width: 2px;
   background: var(--dorado-600);
   transform: translateX(-50%);
@@ -200,7 +188,7 @@
   position: absolute;
   left: 0;
   right: 50%;
-  bottom: var(--bot-off, 35px);
+  bottom: var(--bot-off, 40px);
   height: 2px;
   background: var(--dorado-600);
 }
@@ -221,26 +209,17 @@
   box-shadow: var(--sombra-dorada);
 }
 
-/* ===== 3RD PLACE (below the grid, aligned with Final column) ===== */
+/* ===== 3RD PLACE (simple, right below the grid) ===== */
 .bracket-third {
-  display: grid;
-  grid-template-columns:
-    minmax(180px, 1fr) 40px
-    minmax(180px, 1fr) 40px
-    minmax(180px, 1fr) 40px
-    minmax(180px, 1fr) 40px
-    minmax(180px, 1fr);
-  grid-template-rows: auto auto;
-  gap: 8px 0;
-  min-width: 1180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
   padding: 0 20px;
-  margin-top: 16px;
 }
 
 .bracket-third-title {
-  grid-column: 9;
-  grid-row: 1;
-  justify-self: center;
   font-family: var(--font-display);
   font-size: 0.78rem;
   letter-spacing: 2px;
@@ -248,19 +227,10 @@
   color: var(--dorado-500);
   padding: 6px 0;
   border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  margin-bottom: 10px;
 }
 
-.bracket-third-match {
-  grid-column: 9;
-  grid-row: 2;
-  justify-self: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.bracket-third-match .bracket__match {
+.bracket-third .bracket__match {
   max-width: 210px;
 }
 
@@ -276,8 +246,7 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
   .bracket-grid,
-  .bracket-titles,
-  .bracket-third {
+  .bracket-titles {
     min-width: 980px;
   }
 
@@ -291,15 +260,6 @@
   }
 
   .bracket-titles {
-    grid-template-columns:
-      minmax(160px, 1fr) 32px
-      minmax(160px, 1fr) 32px
-      minmax(160px, 1fr) 32px
-      minmax(160px, 1fr) 32px
-      minmax(160px, 1fr);
-  }
-
-  .bracket-third {
     grid-template-columns:
       minmax(160px, 1fr) 32px
       minmax(160px, 1fr) 32px
