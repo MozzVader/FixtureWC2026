@@ -78,10 +78,10 @@
 }
 
 .calendar__match-teams {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto auto auto 1fr;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .calendar__match-team {
@@ -90,6 +90,32 @@
   gap: 8px;
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+/* Home team: right-aligned toward VS */
+.calendar__match-team:first-child {
+  justify-content: flex-end;
+}
+
+/* Away team: left-aligned toward VS */
+.calendar__match-team:last-child {
+  justify-content: flex-start;
+}
+
+/* Score placeholder box (25×25) */
+.calendar__match-score {
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--dorado-500);
 }
 
 .calendar__match-vs {

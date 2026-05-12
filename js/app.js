@@ -212,7 +212,9 @@ function renderCalendar(container, matches, filter) {
               ${getFlagHtml(home.code)}
               <span>${home.name}</span>
             </div>
+            <div class="calendar__match-score"></div>
             <span class="calendar__match-vs">VS</span>
+            <div class="calendar__match-score"></div>
             <div class="calendar__match-team">
               ${getFlagHtml(away.code)}
               <span>${away.name}</span>
