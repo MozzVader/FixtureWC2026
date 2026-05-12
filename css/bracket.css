@@ -1,10 +1,19 @@
 /* ===== BRACKET — CSS Grid with Elbow Connectors ===== */
+/* Outer wrapper: same 9-column grid so 3rd-place aligns with Final column */
 .bracket {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr);
   overflow-x: auto;
   padding: 20px 0;
+  min-width: 1180px;
 }
 
-/* --- Round titles row (mirrors the grid columns) --- */
+/* --- Round titles row (spans all columns) --- */
 .bracket-titles {
   display: grid;
   grid-template-columns:
@@ -13,10 +22,10 @@
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr);
+  grid-column: 1 / -1;
   justify-content: center;
   padding: 0 20px;
   margin-bottom: 8px;
-  min-width: 1180px;
 }
 
 .bracket-title {
@@ -56,7 +65,7 @@
   column-gap: 0;
   align-items: center;
   justify-items: center;
-  min-width: 1180px;
+  grid-column: 1 / -1;
   padding: 0 20px;
 }
 
@@ -209,14 +218,13 @@
   box-shadow: var(--sombra-dorada);
 }
 
-/* ===== 3RD PLACE (simple, right below the grid) ===== */
+/* ===== 3RD PLACE (aligned with Final column = col 9) ===== */
 .bracket-third {
+  grid-column: 9;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin-top: 12px;
-  padding: 0 20px;
+  margin-top: 20px;
 }
 
 .bracket-third-title {
@@ -245,8 +253,13 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
-  .bracket-grid,
-  .bracket-titles {
+  .bracket {
+    grid-template-columns:
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr);
     min-width: 980px;
   }
 
