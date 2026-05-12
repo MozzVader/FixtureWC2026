@@ -185,11 +185,16 @@ function listenScorers() {
 
   db.collection('scorers')
     .orderBy('goals', 'desc')
-    .orderBy('assists', 'desc')
     .limit(20)
     .onSnapshot(snapshot => {
       if (snapshot.empty) return;
-      STATS.scorers = snapshot.docs.map(doc => doc.data());
+      // Sort client-side (avoids composite index requirement)
+      const all = snapshot.docs.map(doc => doc.data());
+      all.sort((a, b) => {
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        return (b.assists || 0) - (a.assists || 0);
+      });
+      STATS.scorers = all;
       renderScorers();
       console.log('[WC2026] Goleadores actualizados:', STATS.scorers.length);
     }, error => {
