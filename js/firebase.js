@@ -472,11 +472,18 @@ async function calculateAndAssignQualifiers() {
     if (!teams.home || !teams.away) return;
     const homeName = TEAMS[teams.home]?.name || teams.home;
     const awayName = TEAMS[teams.away]?.name || teams.away;
-    batch.update(db.collection('knockout').doc(id), {
+    // set con merge: crea si no existe, actualiza si existe
+    batch.set(db.collection('knockout').doc(id), {
+      id: id,
       home: teams.home,
       away: teams.away,
-      label: `${homeName} vs ${awayName}`
-    });
+      label: `${homeName} vs ${awayName}`,
+      date: '',
+      homeScore: null,
+      awayScore: null,
+      status: 'upcoming',
+      minute: null
+    }, { merge: true });
   });
 
   // R32-13 through R32-16: Third-placed teams
@@ -486,11 +493,17 @@ async function calculateAndAssignQualifiers() {
     if (!teams.home || !teams.away) return;
     const homeName = TEAMS[teams.home]?.name || teams.home;
     const awayName = TEAMS[teams.away]?.name || teams.away;
-    batch.update(db.collection('knockout').doc(id), {
+    batch.set(db.collection('knockout').doc(id), {
+      id: id,
       home: teams.home,
       away: teams.away,
-      label: `${homeName} vs ${awayName}`
-    });
+      label: `${homeName} vs ${awayName}`,
+      date: '',
+      homeScore: null,
+      awayScore: null,
+      status: 'upcoming',
+      minute: null
+    }, { merge: true });
   });
 
   await batch.commit();
@@ -566,11 +579,11 @@ async function propagateWinners() {
     if (needsUpdate) {
       const homeName = target.home ? (TEAMS[target.home]?.name || target.home) : 'Por definir';
       const awayName = target.away ? (TEAMS[target.away]?.name || target.away) : 'Por definir';
-      batch.update(db.collection('knockout').doc(targetId), {
+      batch.set(db.collection('knockout').doc(targetId), {
         home: target.home || null,
         away: target.away || null,
         label: `${homeName} vs ${awayName}`
-      });
+      }, { merge: true });
       propagated++;
     }
   });
