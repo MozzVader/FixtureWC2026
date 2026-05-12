@@ -119,6 +119,12 @@
   font-size: 1.2rem;
 }
 
+/* Semifinals column - compact vertical spacing */
+.bracket__round--semis {
+  justify-content: center;
+  gap: 60px;
+}
+
 /* Final column */
 .bracket__round--final {
   justify-content: center;
