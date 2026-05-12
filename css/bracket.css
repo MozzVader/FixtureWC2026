@@ -4,20 +4,26 @@
   padding: 20px 0;
 }
 
-/* --- Round titles row (mirrors the grid columns) --- */
+/* --- Shared column template for titles, grid, and 3rd-place --- */
+.bracket-cols {
+  grid-template-columns:
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr);
+  min-width: 1180px;
+}
+
+/* --- Round titles row --- */
 .bracket-titles {
   display: grid;
-  grid-template-columns:
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr);
   justify-content: center;
   padding: 0 20px;
   margin-bottom: 8px;
-  min-width: 1125px;
 }
+
+.bracket-titles .bracket-cols { /* extends via selector */ }
 
 .bracket-title {
   text-align: center;
@@ -30,9 +36,7 @@
   border-bottom: 1px solid rgba(255, 215, 0, 0.2);
 }
 
-.bracket-title-gap {
-  /* Empty spacer for connector columns */
-}
+.bracket-title-gap { /* spacer for connector columns */ }
 
 .bracket-title--final {
   font-size: 0.92rem;
@@ -41,23 +45,24 @@
 
 /* --- Main bracket grid ---
  * 16 rows × 9 columns (5 match cols + 4 connector cols)
- * Each R32 match = 1 row, R16 = 2 rows, QF = 4, SF = 8, Final = 16
- * This guarantees perfect midpoint alignment at every round.
+ * Row height: 70px — enough for match card (~63px) + breathing room
+ * Each round's matches span proportionally:
+ *   R32 = 1 row, R16 = 2 rows, QF = 4 rows, SF = 8 rows, Final = 16 rows
  */
 .bracket-grid {
   display: grid;
   grid-template-columns:
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr) 36px
-    minmax(185px, 1fr);
-  grid-template-rows: repeat(16, 60px);
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr);
+  grid-template-rows: repeat(16, 70px);
   row-gap: 6px;
   column-gap: 0;
   align-items: center;
   justify-items: center;
-  min-width: 1125px;
+  min-width: 1180px;
   padding: 0 20px;
 }
 
@@ -69,7 +74,7 @@
   width: 100%;
 }
 
-/* --- Match box (compact for bracket) --- */
+/* --- Match box --- */
 .bracket__match {
   display: flex;
   flex-direction: column;
@@ -86,12 +91,12 @@
   box-shadow: var(--sombra-dorada);
 }
 
-/* --- Team row inside match --- */
+/* --- Team row --- */
 .bracket__team {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
+  padding: 4px 10px;
   font-size: 0.76rem;
   font-weight: 600;
   transition: background 0.2s;
@@ -128,9 +133,7 @@
   color: var(--dorado-500);
 }
 
-.bracket__team--winner {
-  color: var(--dorado-300);
-}
+.bracket__team--winner { color: var(--dorado-300); }
 
 .bracket__team--tbd {
   color: var(--blanco-60);
@@ -140,7 +143,7 @@
 
 /* --- Match info bar --- */
 .bracket__match-info {
-  padding: 3px 10px;
+  padding: 2px 10px;
   font-size: 0.63rem;
   color: var(--blanco-60);
   text-align: center;
@@ -150,42 +153,35 @@
 
 /* ===== ELBOW CONNECTORS =====
  *
- * Each connector group draws:
+ * Draws bracket lines connecting feeder matches to the next-round match:
  *
- *   ──── top match centre
+ *   ──── top feeder centre
  *        │
- *        ├─────── next round match
+ *        ├─────── next match
  *        │
- *   ──── bottom match centre
+ *   ──── bottom feeder centre
  *
- * Using four child divs:
- *   __h-top  : horizontal line at top-match centre
- *   __h-bot  : horizontal line at bottom-match centre
- *   __v      : vertical line connecting them
- *   __h-mid  : horizontal line from midpoint to next round
+ * Four absolutely-positioned children:
+ *   __h-top  : horizontal line at top feeder's vertical centre
+ *   __v      : vertical line between the two feeders
+ *   __h-bot  : horizontal line at bottom feeder's vertical centre
+ *   __h-mid  : horizontal line from midpoint to the next round
  *
- * top/bottom offsets = 30px (half of 60px row height).
- * Works for all connector sizes because every grid row is 60px.
+ * Offsets are set via CSS custom properties (--top-off, --bot-off)
+ * calculated in JS based on how many grid rows each feeder spans.
  */
 .bracket-conn {
   position: relative;
   pointer-events: none;
+  width: 100%;
+  height: 100%;
 }
 
 .bracket-conn__h-top {
   position: absolute;
   left: 0;
   right: 50%;
-  top: 30px;
-  height: 2px;
-  background: var(--dorado-600);
-}
-
-.bracket-conn__h-bot {
-  position: absolute;
-  left: 0;
-  right: 50%;
-  bottom: 30px;
+  top: var(--top-off, 35px);
   height: 2px;
   background: var(--dorado-600);
 }
@@ -193,11 +189,20 @@
 .bracket-conn__v {
   position: absolute;
   left: 50%;
-  top: 30px;
-  bottom: 30px;
+  top: var(--top-off, 35px);
+  bottom: var(--bot-off, 35px);
   width: 2px;
   background: var(--dorado-600);
   transform: translateX(-50%);
+}
+
+.bracket-conn__h-bot {
+  position: absolute;
+  left: 0;
+  right: 50%;
+  bottom: var(--bot-off, 35px);
+  height: 2px;
+  background: var(--dorado-600);
 }
 
 .bracket-conn__h-mid {
@@ -216,17 +221,26 @@
   box-shadow: var(--sombra-dorada);
 }
 
-/* ===== 3RD PLACE (below the grid) ===== */
+/* ===== 3RD PLACE (below the grid, aligned with Final column) ===== */
 .bracket-third {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 24px;
-  min-width: 1125px;
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr) 40px
+    minmax(180px, 1fr);
+  grid-template-rows: auto auto;
+  gap: 8px 0;
+  min-width: 1180px;
   padding: 0 20px;
+  margin-top: 16px;
 }
 
 .bracket-third-title {
+  grid-column: 9;
+  grid-row: 1;
+  justify-self: center;
   font-family: var(--font-display);
   font-size: 0.78rem;
   letter-spacing: 2px;
@@ -234,10 +248,19 @@
   color: var(--dorado-500);
   padding: 6px 0;
   border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-  margin-bottom: 10px;
 }
 
-.bracket-third .bracket__match {
+.bracket-third-match {
+  grid-column: 9;
+  grid-row: 2;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.bracket-third-match .bracket__match {
   max-width: 210px;
 }
 
@@ -255,25 +278,34 @@
   .bracket-grid,
   .bracket-titles,
   .bracket-third {
-    min-width: 950px;
+    min-width: 980px;
   }
 
   .bracket-grid {
     grid-template-columns:
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr);
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr);
   }
 
   .bracket-titles {
     grid-template-columns:
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr) 30px
-      minmax(165px, 1fr);
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr);
+  }
+
+  .bracket-third {
+    grid-template-columns:
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr) 32px
+      minmax(160px, 1fr);
   }
 
   .bracket__match {

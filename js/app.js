@@ -332,10 +332,11 @@ function initBracket() {
     html += '</div>';
   }
 
-  // Col 2 — Connectors R32 → R16 (8 groups, 2 rows each)
+  // Col 2 — Connectors R32 → R16 (8 groups of 2 rows)
+  // Each feeder is 1 row → offset = 35px (half of 70px row)
   for (let i = 0; i < 8; i++) {
     const rs = i * 2 + 1;
-    html += buildConnector(2, rs, rs + 2);
+    html += buildConnector(2, rs, rs + 2, 35);
   }
 
   // Col 3 — R16: 8 matches, 2 rows each
@@ -346,10 +347,11 @@ function initBracket() {
     html += '</div>';
   }
 
-  // Col 4 — Connectors R16 → QF (4 groups, 4 rows each)
+  // Col 4 — Connectors R16 → QF (4 groups of 4 rows)
+  // Each feeder is 2 rows → offset = (2×70 + 6) / 2 = 73px
   for (let i = 0; i < 4; i++) {
     const rs = i * 4 + 1;
-    html += buildConnector(4, rs, rs + 4);
+    html += buildConnector(4, rs, rs + 4, 73);
   }
 
   // Col 5 — QF: 4 matches, 4 rows each
@@ -360,10 +362,11 @@ function initBracket() {
     html += '</div>';
   }
 
-  // Col 6 — Connectors QF → SF (2 groups, 8 rows each)
+  // Col 6 — Connectors QF → SF (2 groups of 8 rows)
+  // Each feeder is 4 rows → offset = (4×70 + 3×6) / 2 = 149px
   for (let i = 0; i < 2; i++) {
     const rs = i * 8 + 1;
-    html += buildConnector(6, rs, rs + 8);
+    html += buildConnector(6, rs, rs + 8, 149);
   }
 
   // Col 7 — SF: 2 matches, 8 rows each
@@ -374,29 +377,37 @@ function initBracket() {
     html += '</div>';
   }
 
-  // Col 8 — Connector SF → Final (1 group, 16 rows)
-  html += buildConnector(8, 1, 17);
+  // Col 8 — Connector SF → Final (1 group of 16 rows)
+  // Each feeder is 8 rows → offset = (8×70 + 7×6) / 2 = 301px
+  html += buildConnector(8, 1, 17, 301);
 
-  // Col 9 — Final: 1 match, spans all 16 rows
+  // Col 9 — Final: 1 match, spans all 16 rows (row 1/17)
   html += '<div class="bracket-grid-item bracket-grid-item--final" style="grid-column:9;grid-row:1/17">';
   html += renderBracketMatch(fin, true);
   html += '</div>';
 
   html += '</div>'; // bracket-grid
 
-  // --- 3rd Place (below the grid) ---
+  // --- 3rd Place (below the grid, aligned with Final column) ---
   html += '<div class="bracket-third">';
   html += '<div class="bracket-third-title">Tercer Puesto</div>';
+  html += '<div class="bracket-third-match">';
   html += renderBracketMatch(tp);
+  html += '</div>';
   html += '</div>';
 
   html += '</div>'; // bracket
   container.innerHTML = html;
 }
 
-/** Build an elbow connector div */
-function buildConnector(col, rowStart, rowEnd) {
-  return `<div class="bracket-conn" style="grid-column:${col};grid-row:${rowStart}/${rowEnd}">
+/** Build an elbow connector with correct offsets for each round transition.
+ *  @param {number} col     - Grid column
+ *  @param {number} rs      - Grid row start (line)
+ *  @param {number} re      - Grid row end (line)
+ *  @param {number} offset  - Vertical offset in px (centre of each feeder match group)
+ */
+function buildConnector(col, rs, re, offset) {
+  return `<div class="bracket-conn" style="grid-column:${col};grid-row:${rs}/${re};--top-off:${offset}px;--bot-off:${offset}px">
     <div class="bracket-conn__h-top"></div>
     <div class="bracket-conn__v"></div>
     <div class="bracket-conn__h-bot"></div>
