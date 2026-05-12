@@ -1,0 +1,141 @@
+/* ===== BRACKET ===== */
+.bracket {
+  overflow-x: auto;
+  padding: 20px 0;
+}
+
+.bracket__container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: 1100px;
+  padding: 20px;
+}
+
+.bracket__round {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  min-height: 600px;
+  flex-shrink: 0;
+}
+
+.bracket__round-title {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dorado-500);
+  padding: 8px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+/* Match box */
+.bracket__match {
+  display: flex;
+  flex-direction: column;
+  background: rgba(1, 87, 155, 0.4);
+  border: 1px solid var(--dorado-600);
+  border-radius: var(--radius-sm);
+  margin: 8px 12px;
+  overflow: hidden;
+  min-width: 200px;
+  transition: all 0.2s;
+}
+
+.bracket__match:hover {
+  box-shadow: var(--sombra-dorada);
+}
+
+.bracket__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.bracket__team:first-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bracket__team:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bracket__team img {
+  width: 20px;
+  height: 14px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+.bracket__team-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bracket__team-score {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 1px;
+  min-width: 20px;
+  text-align: center;
+  color: var(--dorado-500);
+}
+
+.bracket__team--winner {
+  color: var(--dorado-300);
+}
+
+.bracket__team--tbd {
+  color: var(--blanco-60);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.bracket__match-info {
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  color: var(--blanco-60);
+  text-align: center;
+  background: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Connector lines */
+.bracket__connector {
+  display: flex;
+  align-items: center;
+  min-width: 30px;
+  color: var(--dorado-600);
+  font-size: 1.2rem;
+}
+
+/* Placeholder for TBD */
+.bracket__placeholder {
+  text-align: center;
+  color: var(--blanco-30);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .bracket__container {
+    min-width: 900px;
+  }
+
+  .bracket__match {
+    min-width: 170px;
+    margin: 6px 8px;
+  }
+}

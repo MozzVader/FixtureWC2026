@@ -1,0 +1,167 @@
+/* ===== CALENDAR ===== */
+.calendar__filters {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.calendar__filter-btn {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 8px 18px;
+  border: 1px solid var(--dorado-600);
+  border-radius: 50px;
+  background: transparent;
+  color: var(--blanco-80);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.calendar__filter-btn:hover,
+.calendar__filter-btn.active {
+  background: linear-gradient(135deg, var(--dorado-500), var(--dorado-600));
+  color: var(--celeste-900);
+  border-color: var(--dorado-500);
+}
+
+.calendar__date-group {
+  margin-bottom: 30px;
+}
+
+.calendar__date-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dorado-500);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.calendar__match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calendar__match {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(1, 87, 155, 0.3);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.calendar__match:hover {
+  background: rgba(1, 87, 155, 0.45);
+  border-color: var(--dorado-600);
+  transform: translateX(4px);
+}
+
+.calendar__match-time {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 1px;
+  color: var(--dorado-500);
+  min-width: 60px;
+  text-align: center;
+}
+
+.calendar__match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.calendar__match-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.calendar__match-vs {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--blanco-60);
+  letter-spacing: 1px;
+}
+
+.calendar__match-venue {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--blanco-60);
+  min-width: 120px;
+}
+
+.calendar__match-venue span {
+  display: block;
+}
+
+.calendar__match-venue--city {
+  color: var(--blanco-80);
+  font-weight: 600;
+}
+
+/* Group badge in calendar */
+.calendar__match-group {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 50px;
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--dorado-500);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .calendar__match {
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .calendar__match-venue {
+    grid-column: 1 / -1;
+    text-align: left;
+    min-width: unset;
+  }
+
+  .calendar__match-venue span {
+    display: inline;
+  }
+
+  .calendar__match-venue--city::after {
+    content: ' - ';
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar__match-teams {
+    gap: 8px;
+  }
+
+  .calendar__match-team img {
+    width: 18px;
+    height: 12px;
+  }
+
+  .calendar__match-team span {
+    font-size: 0.85rem;
+  }
+}
