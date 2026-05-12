@@ -177,6 +177,205 @@
       background: #4CAF50;
       border-radius: 50%;
     }
+
+    /* ═══ ESPN Live Test ═══ */
+    .espn-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .espn-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .espn-controls select {
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .espn-controls select:focus { border-color: #D4AF37; }
+    .poll-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 50px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .poll-badge.active {
+      color: #4CAF50;
+      background: rgba(76,175,80,0.1);
+      border: 1px solid rgba(76,175,80,0.3);
+    }
+    .poll-badge.active .poll-dot {
+      width: 6px; height: 6px;
+      background: #4CAF50;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+    }
+    .poll-badge.inactive {
+      color: #8892b0;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .espn-match-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .espn-match-card {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .espn-match-card:hover {
+      border-color: rgba(212,175,55,0.3);
+      background: rgba(0,0,0,0.35);
+    }
+    .espn-match-card.is-live {
+      border-color: rgba(229,57,53,0.4);
+      background: rgba(229,57,53,0.05);
+    }
+    .espn-match-card.is-completed {
+      opacity: 0.7;
+    }
+    .espn-match-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .espn-match-league {
+      font-size: 0.7rem;
+      color: #8892b0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .espn-match-status {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 50px;
+    }
+    .espn-match-status.live {
+      color: #E53935;
+      background: rgba(229,57,53,0.15);
+      animation: pulse-dot 1.5s infinite;
+    }
+    .espn-match-status.scheduled {
+      color: #2196F3;
+      background: rgba(33,150,243,0.1);
+    }
+    .espn-match-status.completed {
+      color: #4CAF50;
+      background: rgba(76,175,80,0.1);
+    }
+    .espn-teams {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .espn-team {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .espn-team.away { flex-direction: row-reverse; text-align: right; }
+    .espn-team-logo {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: rgba(255,255,255,0.05);
+    }
+    .espn-team-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e0e0e0;
+    }
+    .espn-team-record {
+      font-size: 0.7rem;
+      color: #8892b0;
+    }
+    .espn-score {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      min-width: 60px;
+      text-align: center;
+    }
+    .espn-score .dash { color: #4a5568; }
+    .espn-match-detail {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: none;
+    }
+    .espn-match-card.expanded .espn-match-detail { display: block; }
+    .espn-goal-list,
+    .espn-card-list {
+      list-style: none;
+      font-size: 0.8rem;
+    }
+    .espn-goal-list li,
+    .espn-card-list li {
+      padding: 4px 0;
+      display: flex;
+      justify-content: space-between;
+      color: #b0b0b0;
+    }
+    .espn-goal-list li .goal-minute {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+    .espn-card-list li .card-yellow { color: #FFC107; }
+    .espn-card-list li .card-red { color: #E53935; }
+    .espn-detail-title {
+      font-size: 0.7rem;
+      color: #8892b0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      margin-top: 10px;
+    }
+    .espn-detail-title:first-child { margin-top: 0; }
+    .espn-empty {
+      text-align: center;
+      padding: 24px;
+      color: #8892b0;
+      font-size: 0.85rem;
+    }
+    .espn-last-update {
+      font-size: 0.7rem;
+      color: #4a5568;
+      margin-top: 8px;
+    }
+    .espn-timer {
+      font-size: 0.7rem;
+      color: #8892b0;
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
@@ -270,6 +469,38 @@
         <button class="btn btn-danger" id="clear-btn" onclick="clearAll()">
           <span>🗑️</span> Limpiar Todo
         </button>
+      </div>
+
+      <!-- ESPN Live Test -->
+      <div class="section">
+        <h2><span class="icon">📡</span> ESPN Live Test</h2>
+        <p style="color:#8892b0;font-size:0.82rem;margin-bottom:16px;">
+          Consulta partidos en vivo desde la API pública de ESPN. Pollea cada 2 minutos para verificar la pipeline de datos en tiempo real.
+        </p>
+        <div class="espn-header">
+          <div class="espn-controls">
+            <select id="espn-league">
+              <option value="usa.1">MLS (14 partidos hoy)</option>
+              <option value="arg.1">Liga Profesional</option>
+              <option value="conmebol.libertadores">Copa Libertadores</option>
+              <option value="fifa.world">FIFA World Cup</option>
+            </select>
+            <button class="btn btn-primary" onclick="espnFetchNow()" style="padding:8px 16px;font-size:0.8rem;">
+              <span>🔍</span> Consultar
+            </button>
+            <button class="btn btn-primary" id="espn-poll-btn" onclick="espnTogglePoll()" style="padding:8px 16px;font-size:0.8rem;background:linear-gradient(135deg,#4CAF50,#388E3C);">
+              <span>▶️</span> Auto-Poll 2 min
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="poll-badge inactive" id="espn-poll-badge">
+              <span class="poll-dot"></span> OFF
+            </span>
+            <span class="espn-timer" id="espn-timer"></span>
+          </div>
+        </div>
+        <div id="espn-results"></div>
+        <div class="espn-last-update" id="espn-last-update"></div>
       </div>
 
       <!-- Simulate Match -->
@@ -892,6 +1123,359 @@
       el.className = 'status status-' + type;
       el.textContent = msg;
       el.classList.remove('hidden');
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+     *  ESPN LIVE TEST — Poll ESPN API from browser
+     * ══════════════════════════════════════════════════════════════ */
+    const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
+    const CORS_PROXY = 'https://corsproxy.io/?url=';
+    let espnPollInterval = null;
+    let espnTimerInterval = null;
+    let espnPollSecondsLeft = 0;
+    let espnLastData = [];
+
+    /* Get today in multiple dates (today, yesterday, tomorrow) to catch matches */
+    function getEspnDates() {
+      const dates = [];
+      const now = new Date();
+      for (let offset = -1; offset <= 2; offset++) {
+        const d = new Date(now);
+        d.setDate(d.getDate() + offset);
+        dates.push(d.toISOString().split('T')[0].replace(/-/g, ''));
+      }
+      return dates;
+    }
+
+    /* Fetch with CORS proxy fallback */
+    async function espnFetch(url) {
+      try {
+        // Try direct first
+        const res = await fetch(url);
+        if (res.ok) return await res.json();
+      } catch (e) {
+        // CORS blocked — use proxy
+        try {
+          const proxyRes = await fetch(CORS_PROXY + encodeURIComponent(url));
+          if (proxyRes.ok) return await proxyRes.json();
+        } catch (e2) {
+          console.error('[ESPN] Both direct and proxy failed:', e2);
+        }
+      }
+      return null;
+    }
+
+    /* Fetch scoreboard for selected league */
+    async function espnFetchNow() {
+      const league = document.getElementById('espn-league').value;
+      const resultsEl = document.getElementById('espn-results');
+      resultsEl.innerHTML = '<div class="espn-empty">Consultando ESPN...</div>';
+
+      const dates = getEspnDates();
+      let allEvents = [];
+
+      for (const date of dates) {
+        const url = `${ESPN_BASE}/${league}/scoreboard?dates=${date}`;
+        const data = await espnFetch(url);
+        if (data && data.events) {
+          allEvents.push(...data.events);
+        }
+      }
+
+      if (allEvents.length === 0) {
+        resultsEl.innerHTML = '<div class="espn-empty">No se encontraron partidos para esta liga en las fechas cercanas.</div>';
+        document.getElementById('espn-last-update').textContent = '';
+        return;
+      }
+
+      // Sort: live first, then scheduled by time, then completed
+      allEvents.sort((a, b) => {
+        const order = { STATUS_IN_PROGRESS: 0, STATUS_SCHEDULED: 1, STATUS_FULL_TIME: 2, STATUS_FINAL: 2, STATUS_POSTPONED: 3, STATUS_SUSPENDED: 3 };
+        const oa = order[a.status.type.name] ?? 4;
+        const ob = order[b.status.type.name] ?? 4;
+        if (oa !== ob) return oa - ob;
+        return new Date(a.date) - new Date(b.date);
+      });
+
+      espnLastData = allEvents;
+      renderEspnMatches(allEvents);
+
+      // Fetch details for live/completed matches
+      for (const ev of allEvents) {
+        if (ev.status.type.name === 'STATUS_IN_PROGRESS' || ev.status.type.name === 'STATUS_FULL_TIME' || ev.status.type.name === 'STATUS_FINAL') {
+          await espnFetchDetails(ev.id);
+        }
+      }
+
+      const now = new Date();
+      document.getElementById('espn-last-update').textContent =
+        `Última consulta: ${now.toLocaleTimeString('es-AR')} — ${allEvents.length} partido(s) encontrado(s)`;
+    }
+
+    /* Fetch detailed summary for a specific match */
+    async function espnFetchDetails(eventId) {
+      const league = document.getElementById('espn-league').value;
+      const url = `${ESPN_BASE}/${league}/summary?event=${eventId}`;
+      const data = await espnFetch(url);
+      if (!data) return;
+
+      const card = document.getElementById(`espn-match-${eventId}`);
+      if (!card) return;
+
+      const detailEl = card.querySelector('.espn-match-detail');
+
+      // Parse goals from scoring plays
+      let goalsHtml = '';
+      const goals = [];
+      if (data.scoringPlays) {
+        data.scoringPlays.forEach(play => {
+          if (play.scoringType && play.scoringType.name === 'goal') {
+            const athletes = play.athletes || [];
+            const scorer = athletes.find(a => a.type === 'goal')?.athlete?.displayName || athletes[0]?.athlete?.displayName || '?';
+            const minute = play.clock?.displayValue || play.period?.number ? `${play.period?.number || ''}${play.clock?.displayValue || ''}'` : '';
+            const type = play.type?.text || '';
+            const isHome = play.homeTeam === true;
+            goals.push({ scorer, minute, type, isHome });
+          }
+        });
+      }
+
+      // Also try header if available
+      if (goals.length === 0 && data.header && data.header.competitions) {
+        const comp = data.header.competitions[0];
+        if (comp.scoringPlays) {
+          comp.scoringPlays.forEach(play => {
+            const athletes = play.athletes || [];
+            const scorer = athletes.find(a => a.type === 'goal')?.athlete?.displayName || athletes[0]?.athlete?.displayName || '?';
+            const minute = play.clock?.displayValue || '';
+            const isHome = play.homeTeam === true;
+            goals.push({ scorer, minute, type: '', isHome });
+          });
+        }
+      }
+
+      if (goals.length > 0) {
+        goalsHtml = '<div class="espn-detail-title">Goles</div><ul class="espn-goal-list">';
+        goals.forEach(g => {
+          goalsHtml += `<li><span>${g.isHome ? '→ ' : ''}${g.scorer} ${g.type ? '(' + g.type + ')' : ''}</span><span class="goal-minute">${g.minute}</span></li>`;
+        });
+        goalsHtml += '</ul>';
+      }
+
+      // Parse cards
+      let cardsHtml = '';
+      const cards = [];
+      const allDetails = data.roster || [];
+      if (data.boxscore && data.boxscore.players) {
+        for (const teamData of data.boxscore.players) {
+          const isHome = teamData.team.type === 'home';
+          const teamName = teamData.team.abbreviation || '';
+          for (const stat of (teamData.statistics || [])) {
+            if (stat.displayName === 'cards' || stat.displayName === 'disciplinary') {
+              for (const athlete of (stat.athletes || [])) {
+                const name = athlete.athlete?.displayName || '?';
+                for (const entry of (athlete.stats || [])) {
+                  if (entry.label === 'yellowCards' && parseInt(entry.value) > 0) {
+                    cards.push({ name, teamName, color: 'yellow', count: entry.value, isHome });
+                  }
+                  if (entry.label === 'redCards' && parseInt(entry.value) > 0) {
+                    cards.push({ name, teamName, color: 'red', count: entry.value, isHome });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (cards.length > 0) {
+        cardsHtml = '<div class="espn-detail-title">Tarjetas</div><ul class="espn-card-list">';
+        cards.forEach(c => {
+          const cls = c.color === 'red' ? 'card-red' : 'card-yellow';
+          const icon = c.color === 'red' ? '🟥' : '🟨';
+          cardsHtml += `<li><span>${icon} ${c.name}</span><span class="${cls}">${c.count}x</span></li>`;
+        });
+        cardsHtml += '</ul>';
+      }
+
+      // Match info
+      let infoHtml = '<div class="espn-detail-title">Info</div>';
+      infoHtml += `<div style="font-size:0.78rem;color:#8892b0;">`;
+      if (data.gameInfo && data.gameInfo.venue) {
+        infoHtml += `🏟️ ${data.gameInfo.venue.fullName}<br>`;
+      }
+      if (data.header && data.header.competitions) {
+        const comp = data.header.competitions[0];
+        if (comp.attendance) infoHtml += `👥 ${comp.attendance.toLocaleString()} espectadores<br>`;
+        if (comp.status && comp.status.type.detail) infoHtml += `⏱️ ${comp.status.type.detail}`;
+      }
+      infoHtml += '</div>';
+
+      detailEl.innerHTML = goalsHtml + cardsHtml + infoHtml + (goalsHtml || cardsHtml ? '' : '<div style="color:#8892b0;font-size:0.8rem;">Sin datos de goles/tarjetas disponibles para este partido.</div>');
+
+      // Update score in card if changed
+      if (data.header && data.header.competitions) {
+        const comp = data.header.competitions[0];
+        const scoreEl = card.querySelector('.espn-score');
+        if (scoreEl && comp.competitors) {
+          const homeTeam = comp.competitors.find(c => c.homeAway === 'home');
+          const awayTeam = comp.competitors.find(c => c.homeAway === 'away');
+          if (homeTeam && awayTeam) {
+            scoreEl.innerHTML = `${homeTeam.score} <span class="dash">-</span> ${awayTeam.score}`;
+          }
+        }
+        // Update minute
+        const statusEl = card.querySelector('.espn-match-status');
+        if (statusEl) {
+          const st = comp.status.type;
+          if (st.name === 'STATUS_IN_PROGRESS') {
+            const min = st.displayClock || '';
+            statusEl.className = 'espn-match-status live';
+            statusEl.textContent = min || 'EN VIVO';
+          } else if (st.name === 'STATUS_FULL_TIME' || st.name === 'STATUS_FINAL') {
+            statusEl.className = 'espn-match-status completed';
+            statusEl.textContent = 'FT';
+          }
+        }
+      }
+    }
+
+    /* Render match cards */
+    function renderEspnMatches(events) {
+      const resultsEl = document.getElementById('espn-results');
+
+      if (events.length === 0) {
+        resultsEl.innerHTML = '<div class="espn-empty">No hay partidos.</div>';
+        return;
+      }
+
+      let html = '<div class="espn-match-list">';
+      events.forEach(ev => {
+        const comp = ev.competitions[0];
+        const home = comp.competitors.find(c => c.homeAway === 'home');
+        const away = comp.competitors.find(c => c.homeAway === 'away');
+        const status = ev.status.type;
+        const isLive = status.name === 'STATUS_IN_PROGRESS';
+        const isCompleted = status.name === 'STATUS_FULL_TIME' || status.name === 'STATUS_FINAL';
+        const isScheduled = status.name === 'STATUS_SCHEDULED' || status.name === 'STATUS_POSTPONED';
+        const matchTime = new Date(ev.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+        let statusClass = 'scheduled';
+        let statusText = matchTime;
+        if (isLive) {
+          statusClass = 'live';
+          statusText = status.displayClock || 'EN VIVO';
+        } else if (isCompleted) {
+          statusClass = 'completed';
+          statusText = 'FT';
+        }
+
+        const cardClass = [
+          'espn-match-card',
+          isLive ? 'is-live' : '',
+          isCompleted ? 'is-completed' : ''
+        ].filter(Boolean).join(' ');
+
+        const homeLogo = home.team.logo || '';
+        const awayLogo = away.team.logo || '';
+        const homeRecord = home.records && home.records[0] ? home.records[0].summary : '';
+        const awayRecord = away.records && away.records[0] ? away.records[0].summary : '';
+
+        html += `
+          <div class="${cardClass}" id="espn-match-${ev.id}" onclick="espnToggleDetail('${ev.id}')">
+            <div class="espn-match-top">
+              <span class="espn-match-league">${ev.leagues[0]?.name || ''} ${isScheduled ? '· ' + matchTime : ''}</span>
+              <span class="espn-match-status ${statusClass}">${statusText}</span>
+            </div>
+            <div class="espn-teams">
+              <div class="espn-team home">
+                ${homeLogo ? `<img class="espn-team-logo" src="${homeLogo}" alt="${home.team.abbreviation}" onerror="this.style.display='none'">` : ''}
+                <div>
+                  <div class="espn-team-name">${home.team.displayName}</div>
+                  ${homeRecord ? `<div class="espn-team-record">${homeRecord}</div>` : ''}
+                </div>
+              </div>
+              <div class="espn-score">
+                ${isScheduled ? `<span class="dash">vs</span>` : `${home.score} <span class="dash">-</span> ${away.score}`}
+              </div>
+              <div class="espn-team away">
+                ${awayLogo ? `<img class="espn-team-logo" src="${awayLogo}" alt="${away.team.abbreviation}" onerror="this.style.display='none'">` : ''}
+                <div>
+                  <div class="espn-team-name">${away.team.displayName}</div>
+                  ${awayRecord ? `<div class="espn-team-record">${awayRecord}</div>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="espn-match-detail">
+              <div class="espn-empty" style="padding:8px;">Cargando detalles...</div>
+            </div>
+          </div>`;
+      });
+      html += '</div>';
+      resultsEl.innerHTML = html;
+    }
+
+    /* Toggle match detail expansion */
+    function espnToggleDetail(eventId) {
+      const card = document.getElementById(`espn-match-${eventId}`);
+      if (card) card.classList.toggle('expanded');
+    }
+
+    /* Auto-poll toggle */
+    function espnTogglePoll() {
+      if (espnPollInterval) {
+        // Stop polling
+        clearInterval(espnPollInterval);
+        clearInterval(espnTimerInterval);
+        espnPollInterval = null;
+        espnTimerInterval = null;
+        espnPollSecondsLeft = 0;
+
+        const badge = document.getElementById('espn-poll-badge');
+        badge.className = 'poll-badge inactive';
+        badge.innerHTML = '<span class="poll-dot"></span> OFF';
+
+        const btn = document.getElementById('espn-poll-btn');
+        btn.innerHTML = '<span>▶️</span> Auto-Poll 2 min';
+        btn.style.background = 'linear-gradient(135deg,#4CAF50,#388E3C)';
+
+        document.getElementById('espn-timer').textContent = '';
+      } else {
+        // Start polling
+        const badge = document.getElementById('espn-poll-badge');
+        badge.className = 'poll-badge active';
+        badge.innerHTML = '<span class="poll-dot"></span> POLLING';
+
+        const btn = document.getElementById('espn-poll-btn');
+        btn.innerHTML = '<span>⏹️</span> Detener';
+        btn.style.background = 'linear-gradient(135deg,#E53935,#C62828)';
+
+        espnPollSecondsLeft = 120;
+        updateEspnTimer();
+
+        // Fetch immediately
+        espnFetchNow();
+
+        // Poll every 2 minutes
+        espnPollInterval = setInterval(() => {
+          espnFetchNow();
+          espnPollSecondsLeft = 120;
+        }, 120000);
+
+        // Countdown timer
+        espnTimerInterval = setInterval(() => {
+          espnPollSecondsLeft--;
+          if (espnPollSecondsLeft <= 0) espnPollSecondsLeft = 120;
+          updateEspnTimer();
+        }, 1000);
+      }
+    }
+
+    function updateEspnTimer() {
+      const min = Math.floor(espnPollSecondsLeft / 60);
+      const sec = espnPollSecondsLeft % 60;
+      document.getElementById('espn-timer').textContent =
+        `Next poll: ${min}:${sec.toString().padStart(2, '0')}`;
     }
   </script>
 </body>
