@@ -119,16 +119,14 @@
   font-size: 1.2rem;
 }
 
-/* Semifinals column - matches distributed evenly */
+/* Semifinals column - spacers push matches to align with QF positions */
 .bracket__round--semis {
   justify-content: flex-start;
 }
 
-.bracket__semis-matches {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
+.bracket__spacer {
   flex: 1;
+  min-height: 0;
 }
 
 /* Final column */
