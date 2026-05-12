@@ -92,7 +92,7 @@
   right: 4px;
   height: 1px;
   background: rgba(0, 0, 0, 0.2);
-  z-index: 1;
+  z-index: -1;
 }
 
 .countdown__number {
