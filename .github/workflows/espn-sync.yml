@@ -1,0 +1,61 @@
+# ESPN → Firestore Sync — WC2026
+# Polls ESPN API every 5 minutes during match days
+# and writes live scores, goals, and cards to Firestore.
+# The frontend's onSnapshot listeners auto-update for all users.
+
+name: ESPN Live Sync
+
+on:
+  schedule:
+    # Every 5 minutes during the tournament (Jun 11 - Jul 19, 2026)
+    - cron: '*/5 * * 6-7 *'  # Runs every 5 min, Jun-Jul only
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase Admin SDK
+        run: npm install firebase-admin
+
+      - name: Check tournament dates
+        id: check
+        run: |
+          START="2026-06-11"
+          END="2026-07-20"
+          NOW=$(date -u +%Y-%m-%d)
+          if [[ "$NOW" < "$START" || "$NOW" > "$END" ]]; then
+            if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+              echo "SKIP=true" >> $GITHUB_OUTPUT
+              echo "⏭️ Fuera del rango del torneo ($NOW). Skipping."
+            else
+              echo "SKIP=false" >> $GITHUB_OUTPUT
+              echo "🔄 Manual trigger - forcing poll"
+            fi
+          else
+            echo "SKIP=false" >> $GITHUB_OUTPUT
+            echo "⚽ Estamos en el torneo! Polling ESPN..."
+          fi
+
+      - name: Run ESPN Poller
+        if: steps.check.outputs.SKIP != 'true'
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FORCE_POLL: ${{ github.event_name == 'workflow_dispatch' && 'true' || '' }}
+        run: node scripts/espn-poller.js
+
+      - name: Log result
+        if: always()
+        run: echo "✅ ESPN sync completed at $(date -u)"
