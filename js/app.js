@@ -496,10 +496,11 @@ function initBracket() {
   // Use live Firebase data if available, otherwise static KNOCKOUT
   const src = (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) ? KNOCKOUT_LIVE : KNOCKOUT;
 
-  const r32 = src.roundOf32 || KNOCKOUT.roundOf32;
-  const r16 = src.roundOf16 || KNOCKOUT.roundOf16;
-  const qf  = src.quarterfinals || KNOCKOUT.quarterfinals;
-  const sf  = src.semifinals || KNOCKOUT.semifinals;
+  // Fallback to static KNOCKOUT if a round array is empty in live data
+  const r32 = (src.roundOf32 && src.roundOf32.length) ? src.roundOf32 : KNOCKOUT.roundOf32;
+  const r16 = (src.roundOf16 && src.roundOf16.length) ? src.roundOf16 : KNOCKOUT.roundOf16;
+  const qf  = (src.quarterfinals && src.quarterfinals.length) ? src.quarterfinals : KNOCKOUT.quarterfinals;
+  const sf  = (src.semifinals && src.semifinals.length) ? src.semifinals : KNOCKOUT.semifinals;
   const fin = src.final || KNOCKOUT.final;
   const tp  = src.thirdPlace || KNOCKOUT.thirdPlace;
 

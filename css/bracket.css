@@ -60,7 +60,7 @@
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr);
-  grid-template-rows: repeat(16, 80px);
+  grid-template-rows: repeat(16, 86px);
   row-gap: 6px;
   column-gap: 0;
   align-items: center;
@@ -99,7 +99,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   font-size: 0.76rem;
   font-weight: 600;
   transition: background 0.2s;
@@ -146,12 +146,13 @@
 
 /* --- Match info bar --- */
 .bracket__match-info {
-  padding: 2px 10px;
-  font-size: 0.63rem;
+  padding: 3px 10px;
+  font-size: 0.65rem;
   color: var(--blanco-60);
   text-align: center;
   background: rgba(0, 0, 0, 0.1);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
 }
 
 /* ===== ELBOW CONNECTORS =====

@@ -452,6 +452,27 @@ async function calculateAndAssignQualifiers() {
   const { groupWinners, groupRunnersUp, bestThirds } = result;
   const batch = db.batch();
 
+  // Build a date lookup from static KNOCKOUT data
+  const staticDates = {};
+  if (typeof KNOCKOUT !== 'undefined') {
+    [...KNOCKOUT.roundOf32, ...KNOCKOUT.roundOf16, ...KNOCKOUT.quarterfinals,
+     ...KNOCKOUT.semifinals, KNOCKOUT.thirdPlace, KNOCKOUT.final]
+      .forEach(m => { if (m && m.id) staticDates[m.id] = m.date; });
+  }
+
+  // Helper: safely write a knockout match (creates if missing, merges if exists)
+  const writeKO = (id, data) => {
+    batch.set(db.collection('knockout').doc(id), {
+      id: id,
+      date: staticDates[id] || '',
+      homeScore: null,
+      awayScore: null,
+      status: 'upcoming',
+      minute: null,
+      ...data
+    }, { merge: true });
+  };
+
   // R32-1 through R32-12: Group winners and runners-up
   const r32GroupMatchups = {
     'R32-1':  { home: groupWinners['1A'], away: groupRunnersUp['2B'] },
@@ -472,39 +493,45 @@ async function calculateAndAssignQualifiers() {
     if (!teams.home || !teams.away) return;
     const homeName = TEAMS[teams.home]?.name || teams.home;
     const awayName = TEAMS[teams.away]?.name || teams.away;
-    // set con merge: crea si no existe, actualiza si existe
-    batch.set(db.collection('knockout').doc(id), {
-      id: id,
+    writeKO(id, {
       home: teams.home,
       away: teams.away,
-      label: `${homeName} vs ${awayName}`,
-      date: '',
-      homeScore: null,
-      awayScore: null,
-      status: 'upcoming',
-      minute: null
-    }, { merge: true });
+      label: `${homeName} vs ${awayName}`
+    });
   });
 
-  // R32-13 through R32-16: Third-placed teams
+  // R32-13 through R32-16: Third-placed teams with descriptive labels
   const thirdAssignments = assignThirdPlaceTeams(bestThirds);
 
   Object.entries(thirdAssignments).forEach(([id, teams]) => {
     if (!teams.home || !teams.away) return;
     const homeName = TEAMS[teams.home]?.name || teams.home;
     const awayName = TEAMS[teams.away]?.name || teams.away;
-    batch.set(db.collection('knockout').doc(id), {
-      id: id,
+    // Show which group the 3rd place came from
+    const homeTeam = bestThirds.find(t => t.code === teams.home);
+    const awayTeam = bestThirds.find(t => t.code === teams.away);
+    const homeGroup = homeTeam ? `(3° ${homeTeam.group})` : '';
+    const awayGroup = awayTeam ? `(3° ${awayTeam.group})` : '';
+    writeKO(id, {
       home: teams.home,
       away: teams.away,
-      label: `${homeName} vs ${awayName}`,
-      date: '',
-      homeScore: null,
-      awayScore: null,
-      status: 'upcoming',
-      minute: null
-    }, { merge: true });
+      label: `${homeName} ${homeGroup} vs ${awayName} ${awayGroup}`
+    });
   });
+
+  // Ensure all remaining rounds exist in Firestore (with placeholder labels)
+  if (typeof KNOCKOUT !== 'undefined') {
+    // R16
+    KNOCKOUT.roundOf16.forEach(m => writeKO(m.id, { label: m.label }));
+    // QF
+    KNOCKOUT.quarterfinals.forEach(m => writeKO(m.id, { label: m.label }));
+    // SF
+    KNOCKOUT.semifinals.forEach(m => writeKO(m.id, { label: m.label }));
+    // TP
+    writeKO(KNOCKOUT.thirdPlace.id, { label: KNOCKOUT.thirdPlace.label });
+    // Final
+    writeKO(KNOCKOUT.final.id, { label: KNOCKOUT.final.label });
+  }
 
   await batch.commit();
 
