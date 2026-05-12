@@ -14,13 +14,13 @@
  */
 
 const FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyCEFRiPpwe5iylULMPaCBQR6SPJ3JO0F0o",
+  authDomain: "wc2026-b5078.firebaseapp.com",
+  projectId: "wc2026-b5078",
+  storageBucket: "wc2026-b5078.firebasestorage.app",
+  messagingSenderId: "120662227375",
+  appId: "1:120662227375:web:73a9985773e47548b2575a"
 };
 
 // Cambiar a true una vez configurado
-const FIREBASE_ENABLED = false;
+const FIREBASE_ENABLED = true;
