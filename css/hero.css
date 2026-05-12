@@ -388,6 +388,29 @@
   color: var(--blanco-80);
 }
 
+/* ===== UPCOMING MATCH LIVE/COMPLETED STATES ===== */
+.upcoming__match--live {
+  border-color: #4CAF50 !important;
+  box-shadow: 0 0 25px rgba(76, 175, 80, 0.2);
+}
+
+.upcoming__match--completed {
+  opacity: 0.8;
+}
+
+.upcoming__match-badge {
+  margin-bottom: 10px;
+}
+
+.upcoming__score {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--dorado-500, #D4AF37);
+  min-width: 50px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .countdown {

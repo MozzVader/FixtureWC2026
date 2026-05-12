@@ -154,6 +154,170 @@
   border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
+/* ===== LIVE & COMPLETED MATCH STATES ===== */
+.calendar__match--live {
+  border-left: 3px solid #4CAF50;
+  background: rgba(76, 175, 80, 0.06);
+}
+
+.calendar__match--live:hover {
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.calendar__match--completed {
+  opacity: 0.78;
+}
+
+.calendar__match--completed:hover {
+  opacity: 1;
+}
+
+/* Live badge — pulsing green dot */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4CAF50;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #4CAF50;
+  border-radius: 50%;
+  animation: livePulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.85);
+    box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+  }
+}
+
+/* FT badge — final time */
+.ft-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--blanco-60, #8892b0);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Filled score (replaces empty placeholder) */
+.calendar__match-score--filled {
+  background: var(--dorado-500, #D4AF37) !important;
+  color: var(--celeste-900, #0a1628) !important;
+  border-color: var(--dorado-500, #D4AF37) !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Dash separator between scores */
+.calendar__match-vs--dash {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--blanco-60, #8892b0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== LIVE & COMPLETED MATCH STATES ===== */
+.calendar__match--live {
+  border-left: 3px solid #4CAF50;
+  background: rgba(76, 175, 80, 0.06);
+}
+
+.calendar__match--live:hover {
+  background: rgba(76, 175, 80, 0.12);
+}
+
+.calendar__match--completed {
+  opacity: 0.78;
+}
+
+.calendar__match--completed:hover {
+  opacity: 1;
+}
+
+/* Live badge — pulsing green dot */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4CAF50;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #4CAF50;
+  border-radius: 50%;
+  animation: livePulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.85);
+    box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+  }
+}
+
+/* FT badge — final time */
+.ft-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--blanco-60, #8892b0);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Filled score (replaces empty placeholder) */
+.calendar__match-score--filled {
+  background: var(--dorado-500, #D4AF37) !important;
+  color: var(--celeste-900, #0a1628) !important;
+  border-color: var(--dorado-500, #D4AF37) !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Dash separator between scores */
+.calendar__match-vs--dash {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--blanco-60, #8892b0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .calendar__match {

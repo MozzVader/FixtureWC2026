@@ -7,6 +7,7 @@ const LS_TEAM_KEY = 'wc2026_selected_team';
 let selectedTeam = localStorage.getItem(LS_TEAM_KEY) || '';
 
 document.addEventListener('DOMContentLoaded', () => {
+  initFirebase();   // Firebase real-time listeners (non-blocking)
   initNavbar();
   initTeamPicker();
   initCountdown();
@@ -253,14 +254,35 @@ function renderUpcomingMatches() {
     const away = TEAMS[match.away];
     if (!home || !away) return;
 
+    const status = match.status || 'upcoming';
+    const isLive = status === 'live';
+    const isCompleted = status === 'completed';
+    const hasScore = match.homeScore != null && match.awayScore != null;
+
+    // Status badge (LIVE or FT)
+    let statusBadge = '';
+    if (isLive) statusBadge = `<div class="upcoming__match-badge"><span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span></div>`;
+    else if (isCompleted) statusBadge = `<div class="upcoming__match-badge"><span class="ft-badge">Final</span></div>`;
+
+    // Score or VS
+    let vsOrScore;
+    if (hasScore) {
+      vsOrScore = `<span class="upcoming__score">${match.homeScore} - ${match.awayScore}</span>`;
+    } else {
+      vsOrScore = '<span class="upcoming__vs">VS</span>';
+    }
+
+    const matchClass = isLive ? 'upcoming__match--live' : (isCompleted ? 'upcoming__match--completed' : '');
+
     html += `
-      <div class="upcoming__match">
+      <div class="upcoming__match ${matchClass}">
+        ${statusBadge}
         <div class="upcoming__teams">
           <div class="upcoming__team">
             ${getFlagHtml(home.code, 'lg')}
             <span class="upcoming__team-name">${home.name}</span>
           </div>
-          <span class="upcoming__vs">VS</span>
+          ${vsOrScore}
           <div class="upcoming__team">
             ${getFlagHtml(away.code, 'lg')}
             <span class="upcoming__team-name">${away.name}</span>
@@ -340,17 +362,46 @@ function renderCalendar(container, matches, filter) {
       const away = TEAMS[match.away];
       if (!home || !away) return;
 
+      const status = match.status || 'upcoming';
+      const isLive = status === 'live';
+      const isCompleted = status === 'completed';
+      const hasScore = match.homeScore != null && match.awayScore != null;
+
+      // Match wrapper class
+      const matchClasses = ['calendar__match'];
+      if (isLive) matchClasses.push('calendar__match--live');
+      if (isCompleted) matchClasses.push('calendar__match--completed');
+
+      // Time/status column
+      let timeDisplay = match.time;
+      if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
+      else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
+
+      // Score or VS display
+      let scoreHtml;
+      if (hasScore) {
+        scoreHtml = `
+          <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
+          <span class="calendar__match-vs--dash">-</span>
+          <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
+        `;
+      } else {
+        scoreHtml = `
+          <div class="calendar__match-score"></div>
+          <span class="calendar__match-vs">VS</span>
+          <div class="calendar__match-score"></div>
+        `;
+      }
+
       html += `
-        <div class="calendar__match">
-          <div class="calendar__match-time">${match.time}</div>
+        <div class="${matchClasses.join(' ')}">
+          <div class="calendar__match-time">${timeDisplay}</div>
           <div class="calendar__match-teams">
             <div class="calendar__match-team">
               ${getFlagHtml(home.code)}
               <span>${home.name}</span>
             </div>
-            <div class="calendar__match-score"></div>
-            <span class="calendar__match-vs">VS</span>
-            <div class="calendar__match-score"></div>
+            ${scoreHtml}
             <div class="calendar__match-team">
               ${getFlagHtml(away.code)}
               <span>${away.name}</span>
@@ -611,24 +662,96 @@ function renderVenues() {
 function renderScorers() {
   const container = document.getElementById('scorers-content');
   if (!container) return;
-  container.innerHTML = `
-    <div class="stat-empty">
-      <i class="fas fa-futbol"></i>
-      Los goleadores aparecerán aquí una vez que comience el torneo.
-    </div>
-  `;
+
+  // Check for live data from Firebase
+  const scorers = (typeof STATS !== 'undefined' && STATS.scorers && STATS.scorers.length > 0)
+    ? STATS.scorers
+    : [];
+
+  if (scorers.length === 0) {
+    container.innerHTML = `
+      <div class="stat-empty">
+        <i class="fas fa-futbol"></i>
+        Los goleadores aparecerán aquí una vez que comience el torneo.
+      </div>
+    `;
+    return;
+  }
+
+  let html = '<div class="stat-card__body" style="padding:0"><table class="stat-card__table"><thead><tr>';
+  html += '<th style="width:30px">#</th><th style="text-align:left">Jugador</th><th>Selección</th><th style="text-align:center">Goles</th><th style="text-align:center">Asist.</th>';
+  html += '</tr></thead><tbody>';
+
+  scorers.forEach((s, i) => {
+    const badgeClass = i < 3 ? `pos-badge--${i + 1}` : 'pos-badge--4';
+    html += `
+      <tr>
+        <td><span class="pos-badge ${badgeClass}">${i + 1}</span></td>
+        <td style="text-align:left;font-weight:600">${s.name}</td>
+        <td style="text-align:center">${getFlagHtml(s.teamCode)}</td>
+        <td style="text-align:center"><strong>${s.goals}</strong></td>
+        <td style="text-align:center">${s.assists || 0}</td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
 }
 
 function renderCards() {
   const container = document.getElementById('cards-content');
   if (!container) return;
-  container.innerHTML = `
-    <div class="stat-empty">
-      <i class="fas fa-square" style="color: #FFD700"></i>
-      <i class="fas fa-square" style="color: #E53935"></i>
-      Las tarjetas aparecerán aquí una vez que comience el torneo.
-    </div>
-  `;
+
+  // Check for live data from Firebase
+  const yellows = (typeof STATS !== 'undefined' && STATS.yellowCards) ? STATS.yellowCards : [];
+  const reds = (typeof STATS !== 'undefined' && STATS.redCards) ? STATS.redCards : [];
+
+  if (yellows.length === 0 && reds.length === 0) {
+    container.innerHTML = `
+      <div class="stat-empty">
+        <i class="fas fa-square" style="color: #FFD700"></i>
+        <i class="fas fa-square" style="color: #E53935"></i>
+        Las tarjetas aparecerán aquí una vez que comience el torneo.
+      </div>
+    `;
+    return;
+  }
+
+  // Merge yellow and red cards by player
+  const playerMap = {};
+  yellows.forEach(y => {
+    const key = y.name + '_' + y.teamCode;
+    if (!playerMap[key]) playerMap[key] = { name: y.name, teamCode: y.teamCode, yellow: 0, red: 0 };
+    playerMap[key].yellow = y.count || 1;
+  });
+  reds.forEach(r => {
+    const key = r.name + '_' + r.teamCode;
+    if (!playerMap[key]) playerMap[key] = { name: r.name, teamCode: r.teamCode, yellow: 0, red: 0 };
+    playerMap[key].red = r.count || 1;
+  });
+
+  const players = Object.values(playerMap).sort((a, b) => (b.yellow + b.red) - (a.yellow + a.red));
+
+  let html = '<div class="stat-card__body" style="padding:0"><table class="stat-card__table"><thead><tr>';
+  html += '<th style="width:30px">#</th><th style="text-align:left">Jugador</th><th>Selección</th><th style="text-align:center">Amarillas</th><th style="text-align:center">Rojas</th>';
+  html += '</tr></thead><tbody>';
+
+  players.forEach((p, i) => {
+    const badgeClass = i < 3 ? `pos-badge--${i + 1}` : 'pos-badge--4';
+    html += `
+      <tr>
+        <td><span class="pos-badge ${badgeClass}">${i + 1}</span></td>
+        <td style="text-align:left;font-weight:600">${p.name}</td>
+        <td style="text-align:center">${getFlagHtml(p.teamCode)}</td>
+        <td style="text-align:center">${p.yellow > 0 ? '<span style="color:#FFD700">■</span> ' + p.yellow : '-'}</td>
+        <td style="text-align:center">${p.red > 0 ? '<span style="color:#E53935">■</span> ' + p.red : '-'}</td>
+      </tr>
+    `;
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
 }
 
 /* ===== UTILITIES ===== */

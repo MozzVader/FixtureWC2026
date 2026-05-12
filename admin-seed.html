@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WC2026 — Firebase Admin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0a1628;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 700px; margin: 0 auto; }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      color: #D4AF37;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #8892b0;
+      margin-bottom: 30px;
+    }
+    .section {
+      background: rgba(1, 87, 155, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      font-size: 1.1rem;
+      color: #D4AF37;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section h2 .icon { font-size: 1.2rem; }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: #8892b0;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #D4AF37; }
+    input::placeholder { color: #4a5568; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #D4AF37, #b8962e);
+      color: #0a1628;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-danger {
+      background: rgba(229, 57, 53, 0.2);
+      color: #E53935;
+      border: 1px solid rgba(229, 57, 53, 0.3);
+    }
+    .btn-danger:hover { background: rgba(229, 57, 53, 0.3); }
+    .btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+    .status {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+    .status-success { background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); color: #4CAF50; }
+    .status-error { background: rgba(229, 57, 53, 0.1); border: 1px solid rgba(229, 57, 53, 0.3); color: #E53935; }
+    .status-info { background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); color: #2196F3; }
+    .hidden { display: none !important; }
+    .step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      background: rgba(212, 175, 55, 0.2);
+      border: 1px solid #D4AF37;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #D4AF37;
+      flex-shrink: 0;
+    }
+    .step-text { font-size: 0.85rem; color: #b0b8c8; line-height: 1.5; }
+    .step-text a { color: #D4AF37; text-decoration: none; }
+    .step-text a:hover { text-decoration: underline; }
+    .connected-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #4CAF50;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .connected-dot {
+      width: 8px; height: 8px;
+      background: #4CAF50;
+      border-radius: 50%;
+    }
+    .count-badge {
+      display: inline-block;
+      background: rgba(212, 175, 55, 0.2);
+      color: #D4AF37;
+      padding: 2px 10px;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WC2026 Firebase Admin</h1>
+    <p class="subtitle">Panel de administración para datos en tiempo real</p>
+
+    <!-- Instructions -->
+    <div class="section">
+      <h2><span class="icon">📋</span> Instrucciones</h2>
+      <div class="step">
+        <span class="step-num">1</span>
+        <span class="step-text">Crear proyecto en <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-text">Habilitar <strong>Firestore Database</strong> (elegir modo de prueba para empezar)</span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-text">Ir a <strong>Configuración del proyecto</strong> → Agregar app web → copiar configuración</span>
+      </div>
+      <div class="step">
+        <span class="step-num">4</span>
+        <span class="step-text">Pegar la configuración abajo y conectar</span>
+      </div>
+      <div class="step">
+        <span class="step-num">5</span>
+        <span class="step-text">Hacer clic en <strong>"Cargar Partidos"</strong> para poblar la base de datos</span>
+      </div>
+      <div class="step">
+        <span class="step-num">6</span>
+        <span class="step-text">Copiar la config a <strong>js/firebase-config.js</strong> y cambiar <code>FIREBASE_ENABLED = true</code></span>
+      </div>
+    </div>
+
+    <!-- Connection -->
+    <div class="section">
+      <h2><span class="icon">🔗</span> Conexión Firebase</h2>
+      <label for="cfg-projectId">Project ID *</label>
+      <input type="text" id="cfg-projectId" placeholder="tu-proyecto-id">
+
+      <label for="cfg-apiKey">API Key</label>
+      <input type="text" id="cfg-apiKey" placeholder="AIzaSy...">
+
+      <label for="cfg-appId">App ID</label>
+      <input type="text" id="cfg-appId" placeholder="1:123456789:web:abc123">
+
+      <label for="cfg-senderId">Messaging Sender ID</label>
+      <input type="text" id="cfg-senderId" placeholder="123456789">
+
+      <div style="margin-top: 16px;">
+        <button class="btn btn-primary" id="connect-btn" onclick="connectFirebase()">
+          <span>⚡</span> Conectar
+        </button>
+        <span id="connected-badge" class="connected-badge hidden">
+          <span class="connected-dot"></span> Conectado
+        </span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="section hidden" id="actions-section">
+      <h2><span class="icon">🚀</span> Acciones</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="seed-btn" onclick="seedMatches()">
+          <span>⚽</span> Cargar 72 Partidos
+        </button>
+        <button class="btn btn-primary" id="seed-test-btn" onclick="seedTestData()">
+          <span>🧪</span> Cargar Datos de Prueba
+        </button>
+        <button class="btn btn-danger" id="clear-btn" onclick="clearAll()">
+          <span>🗑️</span> Limpiar Todo
+        </button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <!-- Quick Test -->
+    <div class="section hidden" id="test-section">
+      <h2><span class="icon">🎮</span> Simular Partido (Testing)</h2>
+      <label for="test-match-id">Match ID (1-72)</label>
+      <input type="number" id="test-match-id" min="1" max="72" placeholder="Ej: 1">
+      <div style="display:flex;gap:12px;">
+        <div style="flex:1;">
+          <label for="test-home-score">Goles Local</label>
+          <input type="number" id="test-home-score" min="0" value="2">
+        </div>
+        <div style="flex:1;">
+          <label for="test-away-score">Goles Visitante</label>
+          <input type="number" id="test-away-score" min="0" value="1">
+        </div>
+      </div>
+      <label for="test-status">Estado</label>
+      <select id="test-status" style="width:100%;padding:10px;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#fff;font-size:0.9rem;margin-bottom:12px;">
+        <option value="live">EN VIVO</option>
+        <option value="completed" selected>Finalizado</option>
+      </select>
+      <button class="btn btn-primary" onclick="simulateMatch()">
+        <span>▶️</span> Actualizar Partido
+      </button>
+      <div id="test-status"></div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Match Data -->
+  <script src="js/data.js"></script>
+
+  <script>
+    let db = null;
+    let isConnected = false;
+
+    function connectFirebase() {
+      const projectId = document.getElementById('cfg-projectId').value.trim();
+      const apiKey = document.getElementById('cfg-apiKey').value.trim();
+      const appId = document.getElementById('cfg-appId').value.trim();
+      const senderId = document.getElementById('cfg-senderId').value.trim();
+
+      if (!projectId) {
+        showStatus('El Project ID es obligatorio.', 'error');
+        return;
+      }
+
+      const config = {
+        apiKey: apiKey || '',
+        authDomain: projectId + '.firebaseapp.com',
+        projectId: projectId,
+        storageBucket: projectId + '.appspot.com',
+        messagingSenderId: senderId || '',
+        appId: appId || ''
+      };
+
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(config);
+        }
+        db = firebase.firestore();
+        isConnected = true;
+
+        document.getElementById('connected-badge').classList.remove('hidden');
+        document.getElementById('actions-section').classList.remove('hidden');
+        document.getElementById('test-section').classList.remove('hidden');
+
+        showStatus('Conectado a Firestore: ' + projectId, 'success');
+
+        // Check existing data
+        db.collection('matches').get().then(snap => {
+          if (snap.size > 0) {
+            showStatus(`Base de datos tiene ${snap.size} documentos.`, 'info');
+          }
+        });
+      } catch (e) {
+        showStatus('Error: ' + e.message, 'error');
+      }
+    }
+
+    async function seedMatches() {
+      if (!db) return;
+      const btn = document.getElementById('seed-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Cargando...';
+      showStatus('Escribiendo 72 partidos en Firestore...', 'info');
+
+      try {
+        // Firestore allows max 500 writes per batch
+        const batch = db.batch();
+        MATCHES.forEach(m => {
+          const ref = db.collection('matches').doc(String(m.id));
+          batch.set(ref, {
+            id: m.id,
+            home: m.home,
+            away: m.away,
+            date: m.date,
+            time: m.time,
+            venue: m.venue,
+            city: m.city,
+            group: m.group,
+            stage: m.stage,
+            matchday: m.matchday,
+            homeScore: null,
+            awayScore: null,
+            status: 'upcoming',
+            minute: null
+          });
+        });
+
+        await batch.commit();
+        showStatus(`72 partidos cargados correctamente. Firestore listo para recibir resultados.`, 'success');
+      } catch (e) {
+        showStatus('Error al cargar: ' + e.message, 'error');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>⚽</span> Cargar 72 Partidos';
+    }
+
+    async function seedTestData() {
+      if (!db) return;
+      const btn = document.getElementById('seed-test-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Cargando...';
+      showStatus('Cargando datos de prueba (resultados + goleadores)...', 'info');
+
+      try {
+        const batch = db.batch();
+
+        // Simulate first 3 matches as completed (Group A)
+        const testResults = [
+          { id: 1, homeScore: 2, awayScore: 1, status: 'completed' },
+          { id: 2, homeScore: 1, awayScore: 1, status: 'completed' },
+          { id: 3, homeScore: 3, awayScore: 0, status: 'completed' },
+        ];
+
+        testResults.forEach(r => {
+          const ref = db.collection('matches').doc(String(r.id));
+          batch.update(ref, r);
+        });
+
+        // Add sample scorers
+        const scorers = [
+          { name: 'J. Hernández', teamCode: 'MEX', goals: 2, assists: 0 },
+          { name: 'Son Heung-min', teamCode: 'KOR', goals: 1, assists: 1 },
+          { name: 'A. Davies', teamCode: 'CAN', goals: 2, assists: 0 },
+          { name: 'E. Edžan', teamCode: 'BIH', goals: 0, assists: 1 },
+        ];
+
+        scorers.forEach(s => {
+          const ref = db.collection('scorers').doc();
+          batch.set(ref, s);
+        });
+
+        // Add sample cards
+        const cards = [
+          { name: 'P. Bělík', teamCode: 'CZE', type: 'yellow', count: 1 },
+          { name: 'A. Davies', teamCode: 'CAN', type: 'yellow', count: 1 },
+        ];
+
+        cards.forEach(c => {
+          const ref = db.collection('cards').doc();
+          batch.set(ref, c);
+        });
+
+        await batch.commit();
+        showStatus(`Datos de prueba cargados: 3 resultados, 4 goleadores, 2 tarjetas.`, 'success');
+      } catch (e) {
+        showStatus('Error: ' + e.message, 'error');
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>🧪</span> Cargar Datos de Prueba';
+    }
+
+    async function simulateMatch() {
+      if (!db) return;
+
+      const matchId = document.getElementById('test-match-id').value;
+      const homeScore = parseInt(document.getElementById('test-home-score').value) || 0;
+      const awayScore = parseInt(document.getElementById('test-away-score').value) || 0;
+      const status = document.getElementById('test-status').value;
+      const minute = status === 'live' ? Math.floor(Math.random() * 90) + 1 : null;
+
+      if (!matchId || matchId < 1 || matchId > 72) {
+        showTestStatus('Match ID debe ser entre 1 y 72.', 'error');
+        return;
+      }
+
+      try {
+        await db.collection('matches').doc(String(matchId)).update({
+          homeScore: homeScore,
+          awayScore: awayScore,
+          status: status,
+          minute: minute
+        });
+
+        const match = MATCHES.find(m => m.id === parseInt(matchId));
+        const matchLabel = match ? `${match.home} vs ${match.away}` : `Match #${matchId}`;
+        showTestStatus(`Actualizado: ${matchLabel} → ${homeScore}-${awayScore} (${status === 'live' ? "EN VIVO " + minute + "'" : 'FT'})`, 'success');
+      } catch (e) {
+        showTestStatus('Error: ' + e.message + ' (¿Cargaste los partidos primero?)', 'error');
+      }
+    }
+
+    async function clearAll() {
+      if (!db) return;
+      if (!confirm('¿Eliminar TODOS los datos? Esta acción no se puede deshacer.')) return;
+
+      showStatus('Eliminando datos...', 'info');
+
+      try {
+        const collections = ['matches', 'scorers', 'cards'];
+        let total = 0;
+
+        for (const colName of collections) {
+          const snapshot = await db.collection(colName).get();
+          if (snapshot.empty) continue;
+
+          // Firestore max 500 per batch
+          let batch = db.batch();
+          let count = 0;
+          snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+            count++;
+            if (count % 500 === 0) {
+              batch.commit();
+              batch = db.batch();
+            }
+          });
+          await batch.commit();
+          total += snapshot.size;
+        }
+
+        showStatus(`${total} documentos eliminados. Base de datos vacía.`, 'success');
+      } catch (e) {
+        showStatus('Error: ' + e.message, 'error');
+      }
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      if (!el) return;
+      el.className = `status status-${type}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function showTestStatus(msg, type) {
+      const el = document.getElementById('test-status');
+      if (!el) return;
+      el.className = `status status-${type}`;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
