@@ -133,6 +133,8 @@ function listenMatches() {
       console.log('[WC2026] Datos actualizados. Refrescando UI...');
       recalculateStandings();
       refreshUI();
+      // Auto-update knockout qualifiers as groups complete
+      autoUpdateQualifiers();
     }
   }, error => {
     console.error('[WC2026] Error en listener de partidos:', error);
@@ -321,6 +323,8 @@ function listenKnockout() {
 
     console.log('[WC2026] Eliminatorias actualizadas. Re-renderizando bracket...');
     initBracket();
+    // Auto-propagate winners when knockout matches are completed
+    autoPropagateWinners();
   }, error => {
     console.error('[WC2026] Error en listener de eliminatorias:', error);
   });
@@ -632,6 +636,230 @@ async function propagateWinners() {
       : 'No hay nuevos ganadores para propagar.',
     propagated: propagated
   };
+}
+
+/* ===== AUTO-QUALIFIERS (REAL-TIME) ===== */
+/**
+ * Automatically populates R32 slots as groups complete.
+ * - When a group's 6 matches are all completed → writes 1st and 2nd to their R32 slots
+ * - When all 72 group matches are completed → also calculates and assigns best 8 thirds
+ *
+ * Called from listenMatches() after every match update.
+ * Uses a Set to track already-written groups to avoid redundant Firestore writes.
+ */
+const _writtenGroups = new Set();
+
+async function autoUpdateQualifiers() {
+  if (!db) return;
+
+  recalculateStandings();
+
+  // Check which groups are fully complete (all 6 matches played)
+  const newlyCompleted = [];
+  let totalComplete = 0;
+
+  for (const g of 'ABCDEFGHIJKL'.split('')) {
+    const groupMatches = MATCHES.filter(m => m.group === g);
+    const allDone = groupMatches.length === 6 && groupMatches.every(m => m.status === 'completed');
+    if (allDone) {
+      totalComplete++;
+      if (!_writtenGroups.has(g)) {
+        newlyCompleted.push(g);
+      }
+    }
+  }
+
+  // Nothing new to process
+  if (newlyCompleted.length === 0 && !(_writtenGroups.has('THIRDS') && totalComplete === 12)) return;
+
+  // Build a date lookup from static KNOCKOUT data
+  const staticDates = {};
+  if (typeof KNOCKOUT !== 'undefined') {
+    [...KNOCKOUT.roundOf32, ...KNOCKOUT.roundOf16, ...KNOCKOUT.quarterfinals,
+     ...KNOCKOUT.semifinals, KNOCKOUT.thirdPlace, KNOCKOUT.final]
+      .forEach(m => { if (m && m.id) staticDates[m.id] = m.date; });
+  }
+
+  // Helper: safely write a knockout match
+  const writeKO = (id, data) => {
+    db.collection('knockout').doc(id).set({
+      id: id,
+      date: staticDates[id] || '',
+      homeScore: null,
+      awayScore: null,
+      status: 'upcoming',
+      minute: null,
+      ...data
+    }, { merge: true });
+  };
+
+  // Write 1st/2nd for newly completed groups
+  const r32GroupMatchups = {
+    'R32-1':  { home: 'A', homePos: 0, away: 'B', awayPos: 1 },
+    'R32-2':  { home: 'C', homePos: 0, away: 'D', awayPos: 1 },
+    'R32-3':  { home: 'E', homePos: 0, away: 'F', awayPos: 1 },
+    'R32-4':  { home: 'G', homePos: 0, away: 'H', awayPos: 1 },
+    'R32-5':  { home: 'I', homePos: 0, away: 'J', awayPos: 1 },
+    'R32-6':  { home: 'K', homePos: 0, away: 'L', awayPos: 1 },
+    'R32-7':  { home: 'B', homePos: 0, away: 'A', awayPos: 1 },
+    'R32-8':  { home: 'D', homePos: 0, away: 'C', awayPos: 1 },
+    'R32-9':  { home: 'F', homePos: 0, away: 'E', awayPos: 1 },
+    'R32-10': { home: 'H', homePos: 0, away: 'G', awayPos: 1 },
+    'R32-11': { home: 'J', homePos: 0, away: 'I', awayPos: 1 },
+    'R32-12': { home: 'L', homePos: 0, away: 'K', awayPos: 1 }
+  };
+
+  try {
+    for (const [matchId, matchup] of Object.entries(r32GroupMatchups)) {
+      const homeGroup = matchup.home;
+      const awayGroup = matchup.away;
+
+      // Only write if both groups are complete
+      const homeGroupDone = MATCHES.filter(m => m.group === homeGroup).every(m => m.status === 'completed');
+      const awayGroupDone = MATCHES.filter(m => m.group === awayGroup).every(m => m.status === 'completed');
+      if (!homeGroupDone || !awayGroupDone) continue;
+
+      const homeCode = GROUPS[homeGroup][matchup.homePos]?.code;
+      const awayCode = GROUPS[awayGroup][matchup.awayPos]?.code;
+      if (!homeCode || !awayCode) continue;
+
+      const homeName = TEAMS[homeCode]?.name || homeCode;
+      const awayName = TEAMS[awayCode]?.name || awayCode;
+
+      writeKO(matchId, {
+        home: homeCode,
+        away: awayCode,
+        label: `${homeName} vs ${awayName}`
+      });
+
+      console.log(`[WC2026 AUTO] ${matchId}: ${homeName} vs ${awayName}`);
+    }
+
+    // If ALL 72 matches complete, also assign thirds
+    const allDone = MATCHES.filter(m => m.stage === 'group').every(m => m.status === 'completed');
+    if (allDone && !_writtenGroups.has('THIRDS')) {
+      const result = determineQualifiers();
+      if (result) {
+        const thirdAssignments = assignThirdPlaceTeams(result.bestThirds);
+        Object.entries(thirdAssignments).forEach(([id, teams]) => {
+          if (!teams.home || !teams.away) return;
+          const homeName = TEAMS[teams.home]?.name || teams.home;
+          const awayName = TEAMS[teams.away]?.name || teams.away;
+          const homeTeam = result.bestThirds.find(t => t.code === teams.home);
+          const awayTeam = result.bestThirds.find(t => t.code === teams.away);
+          const homeGroup = homeTeam ? `(3° ${homeTeam.group})` : '';
+          const awayGroup = awayTeam ? `(3° ${awayTeam.group})` : '';
+          writeKO(id, {
+            home: teams.home,
+            away: teams.away,
+            label: `${homeName} ${homeGroup} vs ${awayName} ${awayGroup}`
+          });
+          console.log(`[WC2026 AUTO] ${id}: ${homeName} ${homeGroup} vs ${awayName} ${awayGroup}`);
+        });
+        _writtenGroups.add('THIRDS');
+
+        // Ensure all remaining rounds exist
+        if (typeof KNOCKOUT !== 'undefined') {
+          KNOCKOUT.roundOf16.forEach(m => writeKO(m.id, { label: m.label }));
+          KNOCKOUT.quarterfinals.forEach(m => writeKO(m.id, { label: m.label }));
+          KNOCKOUT.semifinals.forEach(m => writeKO(m.id, { label: m.label }));
+          writeKO(KNOCKOUT.thirdPlace.id, { label: KNOCKOUT.thirdPlace.label });
+          writeKO(KNOCKOUT.final.id, { label: KNOCKOUT.final.label });
+        }
+
+        console.log('[WC2026 AUTO] ✅ Todos los clasificados calculados automáticamente.');
+      }
+    }
+
+    // Mark completed groups as written
+    for (const g of 'ABCDEFGHIJKL'.split('')) {
+      if (MATCHES.filter(m => m.group === g).every(m => m.status === 'completed')) {
+        _writtenGroups.add(g);
+      }
+    }
+
+  } catch (e) {
+    console.error('[WC2026 AUTO] Error en autoUpdateQualifiers:', e);
+  }
+}
+
+/* ===== AUTO-PROPAGATION (REAL-TIME) ===== */
+/**
+ * Automatically propagates winners through the knockout bracket.
+ * When a knockout match is completed, the winner advances to the next round.
+ *
+ * Called from listenKnockout() after every knockout update.
+ * Uses FEEDER_MAP to determine which match feeds into which.
+ */
+let _autoPropagating = false;
+
+async function autoPropagateWinners() {
+  if (!db || _autoPropagating) return;
+
+  try {
+    const snapshot = await db.collection('knockout').get();
+    if (snapshot.empty) return;
+
+    const allMatches = {};
+    snapshot.docs.forEach(doc => { allMatches[doc.id] = doc.data(); });
+
+    const batch = db.batch();
+    let propagated = 0;
+
+    Object.entries(FEEDER_MAP).forEach(([targetId, feeders]) => {
+      const target = allMatches[targetId];
+      if (!target) return;
+
+      const homeFeeder = allMatches[feeders.home];
+      const awayFeeder = allMatches[feeders.away];
+      if (!homeFeeder || !awayFeeder) return;
+
+      // Determine who advances from each feeder
+      const getAdvancing = (feeder, isLoserSlot) => {
+        if (feeder.status !== 'completed') return null;
+        if (feeder.homeScore === feeder.awayScore) return null; // Draw = not decided
+        if (isLoserSlot) {
+          return feeder.homeScore > feeder.awayScore ? feeder.away : feeder.home;
+        }
+        return feeder.homeScore > feeder.awayScore ? feeder.home : feeder.away;
+      };
+
+      const advancingHome = getAdvancing(homeFeeder, false);
+      const advancingAway = getAdvancing(awayFeeder, feeders.useLoser || false);
+
+      let needsUpdate = false;
+
+      if (advancingHome && target.home !== advancingHome) {
+        target.home = advancingHome;
+        needsUpdate = true;
+      }
+      if (advancingAway && target.away !== advancingAway) {
+        target.away = advancingAway;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        const homeName = target.home ? (TEAMS[target.home]?.name || target.home) : 'Por definir';
+        const awayName = target.away ? (TEAMS[target.away]?.name || target.away) : 'Por definir';
+        batch.set(db.collection('knockout').doc(targetId), {
+          home: target.home || null,
+          away: target.away || null,
+          label: `${homeName} vs ${awayName}`
+        }, { merge: true });
+        propagated++;
+        console.log(`[WC2026 AUTO] ${targetId}: ${homeName} vs ${awayName} (propagado)`);
+      }
+    });
+
+    if (propagated > 0) {
+      _autoPropagating = true; // Prevent re-entry from onSnapshot trigger
+      await batch.commit();
+      _autoPropagating = false;
+    }
+  } catch (e) {
+    _autoPropagating = false;
+    console.error('[WC2026 AUTO] Error en autoPropagateWinners:', e);
+  }
 }
 
 /* ===== UTILITY ===== */
