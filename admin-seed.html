@@ -216,7 +216,7 @@
           <span>⚽</span> Cargar 72 Partidos
         </button>
         <button class="btn btn-primary" id="seed-test-btn" onclick="seedTestData()">
-          <span>🧪</span> Cargar Datos de Prueba
+          <span>🧪</span> Cargar Predicción AI (72 partidos)
         </button>
       </div>
       <div id="status"></div>
@@ -380,29 +380,162 @@
       const btn = document.getElementById('seed-test-btn');
       btn.disabled = true;
       btn.innerHTML = '<span>⏳</span> Cargando...';
-      showStatus('Cargando datos de prueba (resultados + goleadores)...', 'info');
+      showStatus('Cargando predicción AI para los 72 partidos + goleadores + tarjetas...', 'info');
 
       try {
         const batch = db.batch();
 
-        // Simulate first 3 matches as completed (Group A)
+        // ═══════════════════════════════════════════════════════════════
+        //  🎯 PREDICCIÓN COMPLETA — FASE DE GRUPOS WC2026
+        //  Criterios: ranking FIFA, plantilla, rendimiento reciente,
+        //  factor local (México/USA/Canadá) y algo de intuición.
+        // ═══════════════════════════════════════════════════════════════
+
+        // ── GRUPO A: MEX 9pts | CZE 4pts | KOR 4pts | RSA 0pts ──
+        // México se lleva el grupo como local. Chequia y Corea pelean el 2do.
         const testResults = [
-          { id: 1, homeScore: 2, awayScore: 1, status: 'completed' },
-          { id: 2, homeScore: 1, awayScore: 1, status: 'completed' },
-          { id: 3, homeScore: 3, awayScore: 0, status: 'completed' },
+          // === MATCHDAY 1 ===
+          { id: 1,  homeScore: 2, awayScore: 0, status: 'completed' }, // MEX 2-0 RSA (inauguración en Azteca)
+          { id: 2,  homeScore: 1, awayScore: 1, status: 'completed' }, // KOR 1-1 CZE
+          { id: 3,  homeScore: 2, awayScore: 1, status: 'completed' }, // CAN 2-1 BIH (Canadá local)
+          { id: 4,  homeScore: 2, awayScore: 1, status: 'completed' }, // USA 2-1 PAR (USA local)
+          { id: 5,  homeScore: 0, awayScore: 2, status: 'completed' }, // QAT 0-2 SUI
+          { id: 6,  homeScore: 2, awayScore: 0, status: 'completed' }, // BRA 2-0 MAR (Brasil frena a Marruecos)
+          { id: 7,  homeScore: 0, awayScore: 3, status: 'completed' }, // HAI 0-3 SCO
+          { id: 8,  homeScore: 1, awayScore: 1, status: 'completed' }, // AUS 1-1 TUR
+
+          { id: 9,  homeScore: 3, awayScore: 0, status: 'completed' }, // GER 3-0 CUW
+          { id: 10, homeScore: 1, awayScore: 1, status: 'completed' }, // CIV 1-1 ECU
+          { id: 11, homeScore: 2, awayScore: 1, status: 'completed' }, // NED 2-1 JPN (clásico en Dallas)
+          { id: 12, homeScore: 1, awayScore: 0, status: 'completed' }, // SWE 1-0 TUN
+          { id: 13, homeScore: 1, awayScore: 0, status: 'completed' }, // BEL 1-0 EGY (ajustadísimo)
+          { id: 14, homeScore: 2, awayScore: 1, status: 'completed' }, // IRN 2-1 NZL
+          { id: 15, homeScore: 3, awayScore: 0, status: 'completed' }, // ESP 3-0 CPV (Spain goleadora)
+          { id: 16, homeScore: 0, awayScore: 2, status: 'completed' }, // KSA 0-2 URU
+
+          { id: 17, homeScore: 2, awayScore: 1, status: 'completed' }, // FRA 2-1 SEN
+          { id: 18, homeScore: 0, awayScore: 2, status: 'completed' }, // IRQ 0-2 NOR (doblete Haaland)
+          { id: 19, homeScore: 2, awayScore: 0, status: 'completed' }, // ARG 2-0 ALG (Argentina arranca fuerte)
+          { id: 20, homeScore: 2, awayScore: 0, status: 'completed' }, // AUT 2-0 JOR
+          { id: 21, homeScore: 2, awayScore: 0, status: 'completed' }, // POR 2-0 COD
+          { id: 22, homeScore: 0, awayScore: 2, status: 'completed' }, // UZB 0-2 COL
+          { id: 23, homeScore: 2, awayScore: 1, status: 'completed' }, // ENG 2-1 CRO (secome emocionante)
+          { id: 24, homeScore: 1, awayScore: 0, status: 'completed' }, // GHA 1-0 PAN
+
+          // === MATCHDAY 2 ===
+          { id: 25, homeScore: 2, awayScore: 1, status: 'completed' }, // CZE 2-1 RSA
+          { id: 26, homeScore: 2, awayScore: 1, status: 'completed' }, // MEX 2-1 KOR (México casi campeón de grupo)
+          { id: 27, homeScore: 1, awayScore: 0, status: 'completed' }, // SUI 1-0 BIH
+          { id: 28, homeScore: 3, awayScore: 0, status: 'completed' }, // CAN 3-0 QAT (Canadá local)
+          { id: 29, homeScore: 1, awayScore: 2, status: 'completed' }, // SCO 1-2 MAR (Marruecos remonta)
+          { id: 30, homeScore: 4, awayScore: 0, status: 'completed' }, // BRA 4-0 HAI (Brasil demoledor)
+          { id: 31, homeScore: 2, awayScore: 0, status: 'completed' }, // USA 2-0 AUS
+          { id: 32, homeScore: 2, awayScore: 0, status: 'completed' }, // TUR 2-0 PAR
+
+          { id: 33, homeScore: 2, awayScore: 1, status: 'completed' }, // GER 2-1 CIV
+          { id: 34, homeScore: 2, awayScore: 0, status: 'completed' }, // ECU 2-0 CUW
+          { id: 35, homeScore: 2, awayScore: 0, status: 'completed' }, // NED 2-0 SWE
+          { id: 36, homeScore: 0, awayScore: 2, status: 'completed' }, // TUN 0-2 JPN
+          { id: 37, homeScore: 2, awayScore: 0, status: 'completed' }, // BEL 2-0 IRN
+          { id: 38, homeScore: 0, awayScore: 3, status: 'completed' }, // NZL 0-3 EGY (Salah doblete)
+          { id: 39, homeScore: 2, awayScore: 0, status: 'completed' }, // ESP 2-0 KSA
+          { id: 40, homeScore: 3, awayScore: 0, status: 'completed' }, // URU 3-0 CPV
+
+          { id: 41, homeScore: 3, awayScore: 0, status: 'completed' }, // FRA 3-0 IRQ
+          { id: 42, homeScore: 2, awayScore: 1, status: 'completed' }, // NOR 2-1 SEN (Haaland otra vez)
+          { id: 43, homeScore: 1, awayScore: 1, status: 'completed' }, // ARG 1-1 AUT (Argentina no logra cerrar)
+          { id: 44, homeScore: 0, awayScore: 3, status: 'completed' }, // JOR 0-3 ALG
+          { id: 45, homeScore: 3, awayScore: 0, status: 'completed' }, // POR 3-0 UZB
+          { id: 46, homeScore: 1, awayScore: 1, status: 'completed' }, // COL 1-1 COD
+          { id: 47, homeScore: 3, awayScore: 1, status: 'completed' }, // ENG 3-1 GHA
+          { id: 48, homeScore: 0, awayScore: 2, status: 'completed' }, // PAN 0-2 CRO
+
+          // === MATCHDAY 3 ===
+          { id: 49, homeScore: 0, awayScore: 1, status: 'completed' }, // CZE 0-1 MEX (México 100%)
+          { id: 50, homeScore: 0, awayScore: 2, status: 'completed' }, // RSA 0-2 KOR
+          { id: 51, homeScore: 1, awayScore: 1, status: 'completed' }, // SUI 1-1 CAN (SUI 1ro por GD)
+          { id: 52, homeScore: 2, awayScore: 1, status: 'completed' }, // BIH 2-1 QAT (BIH se va con dignidad)
+          { id: 53, homeScore: 0, awayScore: 2, status: 'completed' }, // SCO 0-2 BRA (Brasil perfecto)
+          { id: 54, homeScore: 2, awayScore: 0, status: 'completed' }, // MAR 2-0 HAI
+          { id: 55, homeScore: 1, awayScore: 2, status: 'completed' }, // TUR 1-2 USA (USA invicto)
+          { id: 56, homeScore: 1, awayScore: 2, status: 'completed' }, // PAR 1-2 AUS
+          { id: 57, homeScore: 0, awayScore: 3, status: 'completed' }, // CUW 0-3 CIV
+          { id: 58, homeScore: 0, awayScore: 1, status: 'completed' }, // ECU 0-1 GER (Alemania perfecto)
+          { id: 59, homeScore: 1, awayScore: 1, status: 'completed' }, // JPN 1-1 SWE
+          { id: 60, homeScore: 0, awayScore: 1, status: 'completed' }, // TUN 0-1 NED (Países Bajos perfecto)
+          { id: 61, homeScore: 1, awayScore: 0, status: 'completed' }, // EGY 1-0 IRN
+          { id: 62, homeScore: 0, awayScore: 2, status: 'completed' }, // NZL 0-2 BEL (Bélgica perfecto)
+          { id: 63, homeScore: 0, awayScore: 2, status: 'completed' }, // CPV 0-2 KSA (Arabia gana y queda 3ro)
+          { id: 64, homeScore: 1, awayScore: 2, status: 'completed' }, // URU 1-2 ESP (clásico final)
+          { id: 65, homeScore: 0, awayScore: 1, status: 'completed' }, // NOR 0-1 FRA (Francia perfecto)
+          { id: 66, homeScore: 2, awayScore: 0, status: 'completed' }, // SEN 2-0 IRQ
+          { id: 67, homeScore: 0, awayScore: 2, status: 'completed' }, // JOR 0-2 ARG (Argentina perfecto)
+          { id: 68, homeScore: 1, awayScore: 2, status: 'completed' }, // ALG 1-2 AUT (Austria clasifica 2da)
+          { id: 69, homeScore: 0, awayScore: 2, status: 'completed' }, // COL 0-2 POR (Portugal perfecto)
+          { id: 70, homeScore: 2, awayScore: 0, status: 'completed' }, // COD 2-0 UZB
+          { id: 71, homeScore: 0, awayScore: 3, status: 'completed' }, // PAN 0-3 ENG (Inglaterra perfecto)
+          { id: 72, homeScore: 2, awayScore: 0, status: 'completed' }, // CRO 2-0 GHA
         ];
 
         testResults.forEach(r => {
           const ref = db.collection('matches').doc(String(r.id));
-          batch.update(ref, r);
+          batch.update(ref, {
+            homeScore: r.homeScore,
+            awayScore: r.awayScore,
+            status: r.status,
+            minute: 90
+          });
         });
 
-        // Add sample scorers
+        // ═══════════════════════════════════════════════════════════════
+        //  ⚽ GOLEADORES — Top 25 del torneo según predicción
+        // ═══════════════════════════════════════════════════════════════
         const scorers = [
-          { name: 'J. Hernández', teamCode: 'MEX', goals: 2, assists: 0 },
-          { name: 'Son Heung-min', teamCode: 'KOR', goals: 1, assists: 1 },
-          { name: 'A. Davies', teamCode: 'CAN', goals: 2, assists: 0 },
-          { name: 'E. Edžan', teamCode: 'BIH', goals: 0, assists: 1 },
+          // ── 4 goles ──
+          { name: 'K. Mbappé',        teamCode: 'FRA', goals: 4, assists: 1 },
+          { name: 'E. Haaland',       teamCode: 'NOR', goals: 4, assists: 0 },
+          { name: 'V. Jiménez',       teamCode: 'MEX', goals: 4, assists: 1 },
+          { name: 'C. Pulisic',       teamCode: 'USA', goals: 4, assists: 2 },
+          { name: 'Vinícius Jr',      teamCode: 'BRA', goals: 4, assists: 2 },
+
+          // ── 3 goles ──
+          { name: 'J. Álvarez',       teamCode: 'ARG', goals: 3, assists: 1 },
+          { name: 'L. Yamal',         teamCode: 'ESP', goals: 3, assists: 3 },
+          { name: 'M. Salah',         teamCode: 'EGY', goals: 3, assists: 1 },
+          { name: 'R. Leão',          teamCode: 'POR', goals: 3, assists: 1 },
+          { name: 'F. Wirtz',         teamCode: 'GER', goals: 3, assists: 2 },
+          { name: 'S. Mané',          teamCode: 'SEN', goals: 3, assists: 1 },
+          { name: 'Rodrygo',          teamCode: 'BRA', goals: 3, assists: 1 },
+          { name: 'J. Bellingham',    teamCode: 'ENG', goals: 3, assists: 2 },
+          { name: 'Son Heung-min',    teamCode: 'KOR', goals: 3, assists: 1 },
+          { name: 'F. Valverde',      teamCode: 'URU', goals: 3, assists: 1 },
+
+          // ── 2 goles ──
+          { name: 'A. Davies',        teamCode: 'CAN', goals: 2, assists: 2 },
+          { name: 'Y. En-Nesyri',     teamCode: 'MAR', goals: 2, assists: 0 },
+          { name: 'C. Gakpo',         teamCode: 'NED', goals: 2, assists: 2 },
+          { name: 'A. Isak',          teamCode: 'SWE', goals: 2, assists: 1 },
+          { name: 'A. Kramarić',      teamCode: 'CRO', goals: 2, assists: 1 },
+          { name: 'X. Simons',        teamCode: 'NED', goals: 2, assists: 3 },
+          { name: 'B. Saka',          teamCode: 'ENG', goals: 2, assists: 2 },
+          { name: 'L. de Bruyne',     teamCode: 'BEL', goals: 1, assists: 3 },
+          { name: 'L. Luis Díaz',     teamCode: 'COL', goals: 2, assists: 1 },
+          { name: 'R. Jiménez',       teamCode: 'MEX', goals: 2, assists: 0 },
+
+          // ── 1 gol (notables) ──
+          { name: 'L. Sane',          teamCode: 'GER', goals: 1, assists: 1 },
+          { name: 'C. Palmer',        teamCode: 'ENG', goals: 1, assists: 1 },
+          { name: 'D. Olmo',          teamCode: 'ESP', goals: 1, assists: 2 },
+          { name: 'N. Williams',      teamCode: 'ESP', goals: 1, assists: 1 },
+          { name: 'R. Hakimi',        teamCode: 'MAR', goals: 1, assists: 2 },
+          { name: 'A. Džeko',         teamCode: 'BIH', goals: 1, assists: 0 },
+          { name: 'R. Lukaku',        teamCode: 'BEL', goals: 1, assists: 1 },
+          { name: 'M. Acuña',         teamCode: 'ARG', goals: 1, assists: 3 },
+          { name: 'J. Rodríguez',     teamCode: 'COL', goals: 1, assists: 1 },
+          { name: 'B. Fernandes',     teamCode: 'POR', goals: 1, assists: 2 },
+          { name: 'P. Foden',         teamCode: 'ENG', goals: 1, assists: 2 },
+          { name: 'G. Griezmann',     teamCode: 'FRA', goals: 1, assists: 3 },
+          { name: 'M. Thuram',        teamCode: 'FRA', goals: 1, assists: 1 },
         ];
 
         scorers.forEach(s => {
@@ -410,10 +543,35 @@
           batch.set(ref, s);
         });
 
-        // Add sample cards
+        // ═══════════════════════════════════════════════════════════════
+        //  🟨🟥 TARJETAS — Amarillas y rojas destacadas
+        // ═══════════════════════════════════════════════════════════════
         const cards = [
-          { name: 'P. Bělík', teamCode: 'CZE', type: 'yellow', count: 1 },
-          { name: 'A. Davies', teamCode: 'CAN', type: 'yellow', count: 1 },
+          // Amarillas (jugadores defensivos / intensos)
+          { name: 'R. Araújo',         teamCode: 'URU', type: 'yellow', count: 3 },
+          { name: 'M. Acuña',          teamCode: 'ARG', type: 'yellow', count: 3 },
+          { name: 'J. Kimmich',        teamCode: 'GER', type: 'yellow', count: 2 },
+          { name: 'Casemiro',          teamCode: 'BRA', type: 'yellow', count: 2 },
+          { name: 'W. Saliba',         teamCode: 'FRA', type: 'yellow', count: 2 },
+          { name: 'R. Leather',        teamCode: 'COL', type: 'yellow', count: 2 },
+          { name: 'M. A. Torres',      teamCode: 'ESP', type: 'yellow', count: 2 },
+          { name: 'V. van Dijk',       teamCode: 'NED', type: 'yellow', count: 2 },
+          { name: 'D. Rúiz',           teamCode: 'URU', type: 'yellow', count: 2 },
+          { name: 'D. Rice',           teamCode: 'ENG', type: 'yellow', count: 2 },
+          { name: 'Rodri',             teamCode: 'ESP', type: 'yellow', count: 1 },
+          { name: 'J. Hernández',      teamCode: 'MEX', type: 'yellow', count: 1 },
+          { name: 'T. Partey',         teamCode: 'GHA', type: 'yellow', count: 1 },
+          { name: 'A. Rüdiger',        teamCode: 'GER', type: 'yellow', count: 1 },
+          { name: 'V. Coufal',         teamCode: 'CZE', type: 'yellow', count: 1 },
+          { name: 'N. Amrabat',        teamCode: 'MAR', type: 'yellow', count: 1 },
+          { name: 'S. Agüerd',         teamCode: 'MAR', type: 'yellow', count: 1 },
+          { name: 'J. Vertonghen',     teamCode: 'BEL', type: 'yellow', count: 1 },
+          { name: 'C. Romero',         teamCode: 'ARG', type: 'yellow', count: 1 },
+          { name: 'A. Trossard',       teamCode: 'BEL', type: 'yellow', count: 1 },
+
+          // Rojas (drama del torneo)
+          { name: 'G. Martínez',       teamCode: 'ARG', type: 'red',    count: 1 },
+          { name: 'M. Ugarte',         teamCode: 'URU', type: 'red',    count: 1 },
         ];
 
         cards.forEach(c => {
@@ -422,13 +580,13 @@
         });
 
         await batch.commit();
-        showStatus(`Datos de prueba cargados: 3 resultados, 4 goleadores, 2 tarjetas.`, 'success');
+        showStatus(`Predicción completa: 72 partidos, ${scorers.length} goleadores, ${cards.length} tarjetas cargadas.`, 'success');
       } catch (e) {
         showStatus('Error: ' + e.message, 'error');
       }
 
       btn.disabled = false;
-      btn.innerHTML = '<span>🧪</span> Cargar Datos de Prueba';
+      btn.innerHTML = '<span>🧪</span> Cargar Predicción AI';
     }
 
     async function simulateMatch() {
