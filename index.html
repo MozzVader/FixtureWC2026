@@ -83,10 +83,39 @@
       </div>
     </div>
 
+    <!-- Team Selector Chip -->
+    <button class="team-picker__chip" id="team-picker-chip" aria-label="Elegir selección">
+      <i class="fas fa-globe"></i>
+      <span id="team-picker-label">Partidos Inaugurales</span>
+      <i class="fas fa-chevron-down team-picker__arrow"></i>
+    </button>
+
     <!-- Upcoming Matches -->
     <div class="upcoming">
-      <div class="upcoming__title"><i class="fas fa-bolt"></i> Partidos Inaugurales</div>
       <div class="upcoming__grid" id="upcoming-matches"></div>
+    </div>
+
+    <!-- Team Picker Modal -->
+    <div class="team-picker" id="team-picker">
+      <div class="team-picker__overlay" id="team-picker-overlay"></div>
+      <div class="team-picker__modal">
+        <div class="team-picker__header">
+          <h3>Elegí tu selección</h3>
+          <button class="team-picker__close" id="team-picker-close" aria-label="Cerrar">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="team-picker__search">
+          <i class="fas fa-search"></i>
+          <input type="text" id="team-picker-input" placeholder="Buscar selección..." autocomplete="off">
+        </div>
+        <div class="team-picker__options">
+          <button class="team-picker__option team-picker__option--default" data-team="">
+            <i class="fas fa-bolt"></i>
+            <span>Partidos Inaugurales</span>
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 

@@ -2,8 +2,13 @@
  * FIFA World Cup 2026 — Main App
  */
 
+const LS_TEAM_KEY = 'wc2026_selected_team';
+
+let selectedTeam = localStorage.getItem(LS_TEAM_KEY) || '';
+
 document.addEventListener('DOMContentLoaded', () => {
   initNavbar();
+  initTeamPicker();
   initCountdown();
   initCalendar();
   initGroups();
@@ -100,18 +105,149 @@ function initCountdown() {
   update();
   setInterval(update, 1000);
 
-  // Populate upcoming matches in hero
+  // Populate upcoming matches in hero (respects selected team)
   renderUpcomingMatches();
 }
 
+/* ===== TEAM PICKER ===== */
+function initTeamPicker() {
+  const chip      = document.getElementById('team-picker-chip');
+  const picker    = document.getElementById('team-picker');
+  const overlay   = document.getElementById('team-picker-overlay');
+  const closeBtn  = document.getElementById('team-picker-close');
+  const input     = document.getElementById('team-picker-input');
+  const optionsEl = document.querySelector('.team-picker__options');
+  const label     = document.getElementById('team-picker-label');
+
+  if (!chip || !picker) return;
+
+  // Populate team options (sorted by name)
+  const sortedTeams = Object.values(TEAMS).sort((a, b) => a.name.localeCompare(b.name));
+  sortedTeams.forEach(team => {
+    const btn = document.createElement('button');
+    btn.className = 'team-picker__option';
+    btn.dataset.team = team.code;
+    if (team.code === selectedTeam) btn.classList.add('active');
+    btn.innerHTML = `${getFlagHtml(team.code)}<span>${team.name}</span>`;
+    optionsEl.appendChild(btn);
+  });
+
+  // Highlight default option if no team selected
+  const defaultOpt = optionsEl.querySelector('[data-team=""]');
+  if (!selectedTeam && defaultOpt) defaultOpt.classList.add('active');
+
+  // Update chip label
+  updateChipLabel(label, chip);
+
+  // Open/close
+  chip.addEventListener('click', () => {
+    picker.classList.add('active');
+    if (input) { input.value = ''; filterOptions(''); }
+    document.body.style.overflow = 'hidden';
+  });
+
+  function closeModal() {
+    picker.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (overlay) overlay.addEventListener('click', closeModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && picker.classList.contains('active')) closeModal();
+  });
+
+  // Search
+  if (input) {
+    input.addEventListener('input', (e) => filterOptions(e.target.value.trim().toLowerCase()));
+  }
+
+  function filterOptions(query) {
+    optionsEl.querySelectorAll('.team-picker__option').forEach(opt => {
+      const teamCode = opt.dataset.team;
+      if (!teamCode) { opt.classList.remove('hidden'); return; } // always show default
+      const team = TEAMS[teamCode];
+      if (!team) return;
+      const match = team.name.toLowerCase().includes(query) || teamCode.toLowerCase().includes(query);
+      opt.classList.toggle('hidden', !match);
+    });
+  }
+
+  // Select team
+  optionsEl.addEventListener('click', (e) => {
+    const opt = e.target.closest('.team-picker__option');
+    if (!opt) return;
+
+    const teamCode = opt.dataset.team;
+    selectedTeam = teamCode;
+
+    // Save to localStorage
+    if (teamCode) {
+      localStorage.setItem(LS_TEAM_KEY, teamCode);
+    } else {
+      localStorage.removeItem(LS_TEAM_KEY);
+    }
+
+    // Update active states
+    optionsEl.querySelectorAll('.team-picker__option').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+
+    // Update chip
+    updateChipLabel(label, chip);
+
+    // Re-render matches
+    renderUpcomingMatches();
+
+    closeModal();
+  });
+}
+
+function updateChipLabel(label, chip) {
+  if (!label) return;
+  if (selectedTeam && TEAMS[selectedTeam]) {
+    const team = TEAMS[selectedTeam];
+    label.innerHTML = `Partidos de ${team.name}`;
+    // Replace chip icon with flag
+    const flagSpan = chip.querySelector('.fi');
+    const icon = chip.querySelector('.fa-globe');
+    if (icon && !flagSpan) {
+      const flag = document.createElement('span');
+      flag.className = getFlagClass(team.code);
+      icon.replaceWith(flag);
+    } else if (flagSpan) {
+      flagSpan.className = getFlagClass(team.code);
+    }
+  } else {
+    label.textContent = 'Partidos Inaugurales';
+    const flagSpan = chip.querySelector('.fi');
+    if (flagSpan) {
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-globe';
+      flagSpan.replaceWith(icon);
+    }
+  }
+}
+
+/* ===== UPCOMING MATCHES ===== */
 function renderUpcomingMatches() {
   const container = document.getElementById('upcoming-matches');
   if (!container) return;
 
-  // Get first 3 group stage matches
-  const upcoming = MATCHES.slice(0, 3);
-  let html = '';
+  let upcoming;
+  if (selectedTeam && TEAMS[selectedTeam]) {
+    // Show all matches for the selected team (group stage)
+    upcoming = MATCHES.filter(m => m.home === selectedTeam || m.away === selectedTeam);
+  } else {
+    // Show first 3 group stage matches (inaugural)
+    upcoming = MATCHES.slice(0, 3);
+  }
 
+  if (upcoming.length === 0) {
+    container.innerHTML = '<div class="loading">No hay partidos para mostrar.</div>';
+    return;
+  }
+
+  let html = '';
   upcoming.forEach(match => {
     const home = TEAMS[match.home];
     const away = TEAMS[match.away];

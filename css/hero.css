@@ -117,6 +117,202 @@
   max-width: 900px;
 }
 
+/* ===== TEAM PICKER CHIP ===== */
+.team-picker__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  background: rgba(1, 87, 155, 0.45);
+  border: 1px solid var(--dorado-600);
+  border-radius: 50px;
+  color: var(--blanco);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+}
+
+.team-picker__chip:hover {
+  background: rgba(1, 87, 155, 0.65);
+  box-shadow: var(--sombra-dorada);
+  transform: translateY(-1px);
+}
+
+.team-picker__chip .fi {
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.team-picker__arrow {
+  font-size: 0.65rem;
+  color: var(--blanco-60);
+  transition: transform 0.2s;
+}
+
+.team-picker__chip:hover .team-picker__arrow {
+  transform: translateY(1px);
+}
+
+/* ===== TEAM PICKER MODAL ===== */
+.team-picker {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-picker.active {
+  display: flex;
+}
+
+.team-picker__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.team-picker__modal {
+  position: relative;
+  background: linear-gradient(165deg, var(--celeste-700), var(--celeste-900));
+  border: 1px solid var(--dorado-600);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 560px;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.team-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.team-picker__header h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dorado-500);
+}
+
+.team-picker__close {
+  background: none;
+  border: none;
+  color: var(--blanco-60);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.team-picker__close:hover {
+  color: var(--blanco);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.team-picker__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.team-picker__search i {
+  color: var(--blanco-60);
+  font-size: 0.85rem;
+}
+
+.team-picker__search input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--blanco);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.team-picker__search input::placeholder {
+  color: var(--blanco-30);
+}
+
+.team-picker__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  padding: 14px 20px;
+  overflow-y: auto;
+}
+
+.team-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(1, 87, 155, 0.3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--blanco-80);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.team-picker__option:hover {
+  background: rgba(1, 87, 155, 0.55);
+  border-color: var(--dorado-600);
+}
+
+.team-picker__option.active {
+  background: rgba(255, 215, 0, 0.15);
+  border-color: var(--dorado-500);
+  color: var(--dorado-500);
+}
+
+.team-picker__option .fi {
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.team-picker__option--default {
+  grid-column: 1 / -1;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.team-picker__option--default i {
+  color: var(--dorado-500);
+}
+
+.team-picker__option.hidden {
+  display: none;
+}
+
 .upcoming__title {
   font-family: var(--font-display);
   font-size: 1.2rem;
