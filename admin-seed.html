@@ -16,7 +16,7 @@
       min-height: 100vh;
       padding: 40px 20px;
     }
-    .container { max-width: 700px; margin: 0 auto; }
+    .container { max-width: 1200px; margin: 0 auto; }
     h1 {
       font-size: 1.8rem;
       margin-bottom: 8px;
@@ -316,11 +316,7 @@
       background: rgba(255,255,255,0.05);
       flex-shrink: 0;
     }
-    .espn-team-record {
-      font-size: 0.7rem;
-      color: #8892b0;
-      font-weight: 400;
-    }
+    /* W-D-L removed — not relevant for live testing */
 
     /* Score boxes (25x25 like index.html) */
     .espn-score-box {
@@ -1626,6 +1622,8 @@
             displayClock: ev.status.displayClock || '',
             date: ev.date,
             venue: comp.venue ? comp.venue.fullName : '',
+            scorers: [],
+            matchCards: [],
             updatedAt: new Date().toISOString()
           });
           saved++;
@@ -1692,10 +1690,9 @@
         goalsHtml += '</ul>';
       }
 
-      // Parse cards
+      // Parse cards — try boxscore first, then fallback to header statistics
       let cardsHtml = '';
       const cards = [];
-      const allDetails = data.roster || [];
       if (data.boxscore && data.boxscore.players) {
         for (const teamData of data.boxscore.players) {
           const isHome = teamData.team.type === 'home';
@@ -1717,6 +1714,26 @@
           }
         }
       }
+      // Fallback: check header competitions for card statistics
+      if (cards.length === 0 && data.header && data.header.competitions) {
+        for (const teamData of (data.header.competitions[0].leaders || [])) {
+          const teamName = teamData.team?.abbreviation || '';
+          const isHome = teamData.homeTeam === true;
+          if (teamName && teamData.leaders) {
+            for (const leader of teamData.leaders) {
+              if (leader.name === 'yellowCards' || leader.name === 'redCards') {
+                for (const athlete of (leader.athletes || [])) {
+                  const name = athlete.athlete?.displayName || '?';
+                  const val = athlete.displayValue ? parseInt(athlete.displayValue) : 0;
+                  if (val > 0) {
+                    cards.push({ name, teamName, color: leader.name === 'redCards' ? 'red' : 'yellow', count: val, isHome });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
 
       if (cards.length > 0) {
         cardsHtml = '<div class="espn-detail-title">Tarjetas</div><ul class="espn-card-list">';
@@ -1726,6 +1743,72 @@
           cardsHtml += `<li><span>${icon} ${c.name}</span><span class="${cls}">${c.count}x</span></li>`;
         });
         cardsHtml += '</ul>';
+      }
+
+      /* ═══ Save scorers & cards to Firestore ═══ */
+      try {
+        // Extract team abbreviations from summary header
+        let homeAbbr = '', awayAbbr = '';
+        if (data.header && data.header.competitions) {
+          const hComp = data.header.competitions[0].competitors;
+          if (hComp) {
+            const hTeam = hComp.find(c => c.homeAway === 'home');
+            const aTeam = hComp.find(c => c.homeAway === 'away');
+            homeAbbr = hTeam?.team?.abbreviation || '';
+            awayAbbr = aTeam?.team?.abbreviation || '';
+          }
+        }
+
+        // Save to espn-live doc (merge)
+        const docRef = db.collection('espn-live').doc(String(eventId));
+        const updateData = { scorers: goals, matchCards: cards };
+        await docRef.set(updateData, { merge: true });
+        console.log(`[ESPN→Firestore] ${eventId}: ${goals.length} goles, ${cards.length} tarjetas guardados`);
+
+        // Aggregate into scorers/cards collections with dedup
+        if (goals.length > 0 || cards.length > 0) {
+          // Delete old entries for this event first (avoid duplicates on re-poll)
+          const delBatch = db.batch();
+          const oldScorers = await db.collection('scorers').where('espnEventId', '==', String(eventId)).get();
+          oldScorers.forEach(doc => delBatch.delete(doc.ref));
+          const oldCards = await db.collection('cards').where('espnEventId', '==', String(eventId)).get();
+          oldCards.forEach(doc => delBatch.delete(doc.ref));
+          if (oldScorers.size > 0 || oldCards.size > 0) {
+            await delBatch.commit();
+          }
+
+          // Write fresh entries
+          const aggBatch = db.batch();
+          goals.forEach(g => {
+            const teamAbbr = g.isHome ? homeAbbr : awayAbbr;
+            if (!teamAbbr) return;
+            const scorerRef = db.collection('scorers').doc();
+            aggBatch.set(scorerRef, {
+              name: g.scorer,
+              teamCode: teamAbbr,
+              goals: 1,
+              assists: 0,
+              espnEventId: String(eventId),
+              espnMinute: g.minute,
+              espnType: g.type
+            });
+          });
+          cards.forEach(c => {
+            if (!c.teamName) return;
+            const cardRef = db.collection('cards').doc();
+            aggBatch.set(cardRef, {
+              name: c.name,
+              teamCode: c.teamName,
+              type: c.color,
+              count: parseInt(c.count) || 1,
+              espnEventId: String(eventId)
+            });
+          });
+          await aggBatch.commit();
+          console.log(`[ESPN→Firestore] ${eventId}: ${goals.length} goles, ${cards.length} tarjetas en scorers/cards (dedup)`);
+        }
+      } catch (fsErr) {
+        console.error('[ESPN→Firestore] Error guardando scorers/cards:', fsErr);
       }
 
       // Match info
@@ -1844,7 +1927,7 @@
         const away = comp.competitors.find(c => c.homeAway === 'away');
         const statusType = ev.status.type;
         const si = espnStatusInfo(statusType);
-        const matchTime = new Date(ev.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        const matchTime = new Date(ev.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
         // Time column: show time for scheduled, status badge otherwise
         const timeDisplay = si.isScheduled ? matchTime : si.statusHtml;
@@ -1867,8 +1950,6 @@
 
         const homeLogo = home.team.logo || '';
         const awayLogo = away.team.logo || '';
-        const homeRecord = home.records && home.records[0] ? home.records[0].summary : '';
-        const awayRecord = away.records && away.records[0] ? away.records[0].summary : '';
         const leagueName = (ev.leagues && ev.leagues[0]) ? ev.leagues[0].name : '';
         const venue = comp.venue ? comp.venue.fullName : '';
 
@@ -1876,7 +1957,6 @@
           '<div class="espn-match-time">' + timeDisplay + '</div>' +
           '<div class="espn-teams">' +
             '<div class="espn-team home">' +
-              (homeRecord ? '<span class="espn-team-record">' + homeRecord + '</span>' : '') +
               '<span>' + home.team.displayName + '</span>' +
               (homeLogo ? '<img class="espn-team-logo" src="' + homeLogo + '" alt="" onerror="this.style.display=\'none\'">' : '') +
             '</div>' +
@@ -1884,7 +1964,6 @@
             '<div class="espn-team away">' +
               (awayLogo ? '<img class="espn-team-logo" src="' + awayLogo + '" alt="" onerror="this.style.display=\'none\'">' : '') +
               '<span>' + away.team.displayName + '</span>' +
-              (awayRecord ? '<span class="espn-team-record">' + awayRecord + '</span>' : '') +
             '</div>' +
           '</div>' +
           '<div class="espn-match-info">' +
