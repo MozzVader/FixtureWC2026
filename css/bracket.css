@@ -286,3 +286,13 @@
     max-width: 175px;
   }
 }
+
+/* ===== DARK MODE ===== */
+[data-theme="dark"] .bracket__match {
+  background: rgba(15, 25, 55, 0.55);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+[data-theme="dark"] .bracket__match-info {
+  background: rgba(0, 0, 0, 0.25);
+}

@@ -243,10 +243,15 @@
           <span>Cafecito</span>
         </a>
       </div>
-      <!-- Mute button (right) -->
-      <button class="toast-mute-btn" id="toast-mute-btn" aria-label="Silenciar notificaciones" title="Silenciar notificaciones">
-        <i class="fas fa-volume-high"></i>
-      </button>
+      <!-- Right controls: mute + theme toggle -->
+      <div class="footer__controls">
+        <button class="toast-mute-btn" id="toast-mute-btn" aria-label="Silenciar notificaciones" title="Silenciar notificaciones">
+          <i class="fas fa-volume-high"></i>
+        </button>
+        <button class="theme-toggle-btn" id="theme-toggle-btn" aria-label="Cambiar tema" title="Cambiar tema">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
     </div>
   </footer>
 
@@ -259,6 +264,51 @@
   <script>
     // Initialize toast system (notification permission requested on first user click)
     initToast();
+  </script>
+  <script>
+    /* ═══ DARK MODE TOGGLE ═══ */
+    (function () {
+      const KEY = 'wc2026-theme';
+      const root = document.documentElement;
+      const btn = document.getElementById('theme-toggle-btn');
+      const icon = btn ? btn.querySelector('i') : null;
+
+      function applyTheme(dark) {
+        root.setAttribute('data-theme', dark ? 'dark' : 'light');
+        if (icon) icon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+        // Update meta theme-color
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', dark ? '#0b152b' : '#0288D1');
+      }
+
+      // Detect saved preference or system preference
+      const saved = localStorage.getItem(KEY);
+      let isDark = false;
+      if (saved) {
+        isDark = saved === 'dark';
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        isDark = true;
+      }
+      applyTheme(isDark);
+
+      if (btn) {
+        btn.addEventListener('click', function () {
+          isDark = root.getAttribute('data-theme') === 'dark';
+          isDark = !isDark;
+          applyTheme(isDark);
+          localStorage.setItem(KEY, isDark ? 'dark' : 'light');
+        });
+      }
+
+      // Listen for system theme changes
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+          if (!localStorage.getItem(KEY)) {
+            applyTheme(e.matches);
+          }
+        });
+      }
+    })();
   </script>
   <script>
     /* ═══ HOTFIX: normalizar objetos en home/away de knockout ═══

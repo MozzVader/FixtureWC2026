@@ -137,3 +137,18 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== DARK MODE ===== */
+[data-theme="dark"] .stat-card {
+  background: rgba(15, 25, 55, 0.5);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+[data-theme="dark"] .stat-card__header {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom-color: rgba(212, 175, 55, 0.15);
+}
+
+[data-theme="dark"] .stat-card__table thead th {
+  background: rgba(0, 0, 0, 0.25);
+}

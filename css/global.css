@@ -400,3 +400,74 @@ tbody tr:last-child td {
     gap: 10px;
   }
 }
+
+/* ===== DARK MODE ===== */
+[data-theme="dark"] body {
+  background: linear-gradient(165deg, #0b152b 0%, #101420 50%, #141218 100%);
+}
+
+/* Cards & panels — shift blue → deep navy */
+[data-theme="dark"] .card {
+  background: rgba(15, 25, 55, 0.5);
+  border-color: rgba(212, 175, 55, 0.35);
+}
+
+[data-theme="dark"] .upcoming__match {
+  background: rgba(15, 25, 55, 0.5);
+  border-color: rgba(212, 175, 55, 0.35);
+}
+
+/* Section alternating stripes */
+[data-theme="dark"] .section[style] {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Navbar — slightly darker glass */
+[data-theme="dark"] .navbar {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Footer — slightly darker glass */
+[data-theme="dark"] .footer {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Smooth theme transition */
+body,
+.navbar,
+.footer,
+.card,
+.upcoming__match,
+.section {
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+
+/* ===== DARK MODE TOGGLE BUTTON ===== */
+.footer__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--blanco-70, rgba(255, 255, 255, 0.7));
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  padding: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: rotate(15deg);
+}

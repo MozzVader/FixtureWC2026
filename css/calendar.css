@@ -377,3 +377,23 @@
     font-size: 0.85rem;
   }
 }
+
+/* ===== DARK MODE ===== */
+[data-theme="dark"] .calendar__match {
+  background: rgba(15, 25, 55, 0.4);
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+[data-theme="dark"] .calendar__match:hover {
+  background: rgba(15, 25, 55, 0.6);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+[data-theme="dark"] .calendar__match--live {
+  background: rgba(76, 175, 80, 0.08);
+}
+
+[data-theme="dark"] .calendar__match-score {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.12);
+}
