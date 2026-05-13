@@ -282,6 +282,11 @@
       background: rgba(229,57,53,0.15);
       animation: pulse-dot 1.5s infinite;
     }
+    .espn-match-status.halftime {
+      color: #FF9800;
+      background: rgba(255,152,0,0.15);
+      font-weight: 700;
+    }
     .espn-match-status.scheduled {
       color: #2196F3;
       background: rgba(33,150,243,0.1);
@@ -289,6 +294,36 @@
     .espn-match-status.completed {
       color: #4CAF50;
       background: rgba(76,175,80,0.1);
+    }
+    .espn-match-status.aet {
+      color: #FF9800;
+      background: rgba(255,152,0,0.12);
+    }
+    .espn-match-status.penalties {
+      color: #D4AF37;
+      background: rgba(212,175,55,0.15);
+    }
+    /* Gold pulsing live dot */
+    .espn-live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #D4AF37;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse-gold 1.2s ease-in-out infinite;
+      vertical-align: middle;
+    }
+    @keyframes pulse-gold {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0.6); opacity: 1; }
+      50% { box-shadow: 0 0 0 6px rgba(212,175,55,0); opacity: 0.7; }
+    }
+    .espn-match-card.is-live {
+      border-color: rgba(212,175,55,0.5);
+      background: rgba(212,175,55,0.03);
+    }
+    .espn-match-card.is-halftime {
+      border-color: rgba(255,152,0,0.3);
+      background: rgba(255,152,0,0.03);
     }
     .espn-teams {
       display: flex;
@@ -1442,11 +1477,16 @@
         return;
       }
 
-      // Sort: live first, then scheduled by time, then completed
+      // Sort: live/HT first, then scheduled by time, then completed
       allEvents.sort((a, b) => {
-        const order = { STATUS_IN_PROGRESS: 0, STATUS_SCHEDULED: 1, STATUS_FULL_TIME: 2, STATUS_FINAL: 2, STATUS_POSTPONED: 3, STATUS_SUSPENDED: 3 };
-        const oa = order[a.status.type.name] ?? 4;
-        const ob = order[b.status.type.name] ?? 4;
+        const order = {
+          STATUS_IN_PROGRESS: 0, STATUS_HALFTIME: 0,
+          STATUS_SCHEDULED: 1, STATUS_POSTPONED: 3, STATUS_SUSPENDED: 3, STATUS_DELAYED: 3,
+          STATUS_FULL_TIME: 2, STATUS_FINAL: 2, STATUS_FINAL_AET: 2, STATUS_FINAL_PEN: 2,
+          STATUS_ABANDONED: 4, STATUS_CANCELED: 4
+        };
+        const oa = order[a.status.type.name] ?? 5;
+        const ob = order[b.status.type.name] ?? 5;
         if (oa !== ob) return oa - ob;
         return new Date(a.date) - new Date(b.date);
       });
@@ -1455,8 +1495,9 @@
       renderEspnMatches(allEvents);
 
       // Fetch details for live/completed matches
+      const liveStatuses = ['STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_FULL_TIME', 'STATUS_FINAL', 'STATUS_FINAL_AET', 'STATUS_FINAL_PEN'];
       for (const ev of allEvents) {
-        if (ev.status.type.name === 'STATUS_IN_PROGRESS' || ev.status.type.name === 'STATUS_FULL_TIME' || ev.status.type.name === 'STATUS_FINAL') {
+        if (liveStatuses.includes(ev.status.type.name)) {
           await espnFetchDetails(ev.id);
         }
       }
@@ -1626,20 +1667,86 @@
             scoreEl.innerHTML = `${homeTeam.score} <span class="dash">-</span> ${awayTeam.score}`;
           }
         }
-        // Update minute
+        // Update minute with full status support
         const statusEl = card.querySelector('.espn-match-status');
         if (statusEl) {
           const st = comp.status.type;
-          if (st.name === 'STATUS_IN_PROGRESS') {
-            const min = st.displayClock || '';
-            statusEl.className = 'espn-match-status live';
-            statusEl.textContent = min || 'EN VIVO';
-          } else if (st.name === 'STATUS_FULL_TIME' || st.name === 'STATUS_FINAL') {
-            statusEl.className = 'espn-match-status completed';
-            statusEl.textContent = 'FT';
+          const si = espnStatusInfo(st);
+          const dotHtml = si.dot ? '<span class="espn-live-dot"></span>' : '';
+          statusEl.className = 'espn-match-status ' + si.cssClass;
+          statusEl.innerHTML = dotHtml + si.text;
+
+          // Update card class too
+          const cardEl = document.getElementById(`espn-match-${eventId}`);
+          if (cardEl) {
+            cardEl.classList.remove('is-live', 'is-halftime', 'is-completed');
+            if (si.cardClass) cardEl.classList.add(si.cardClass);
           }
         }
       }
+    }
+
+    /* ═══ ESPN Status Helper ═══ */
+    function espnStatusInfo(statusType) {
+      /*
+       * ESPN status.type.name values:
+       *   STATUS_SCHEDULED          → upcoming (show time)
+       *   STATUS_IN_PROGRESS        → live (show match clock)
+       *   STATUS_HALFTIME           → half-time
+       *   STATUS_FULL_TIME          → FT (regular time)
+       *   STATUS_FINAL              → FT (generic final)
+       *   STATUS_FINAL_AET          → FT (after extra time) — detail: "AET"
+       *   STATUS_FINAL_PEN          → FT (penalty shootout) — detail: "PEN" or "Pen"
+       *   STATUS_POSTPONED          → postponed
+       *   STATUS_SUSPENDED          → suspended
+       *   STATUS_DELAYED            → delayed
+       *   STATUS_ABANDONED          → abandoned
+       *   STATUS_CANCELED           → canceled
+       */
+      const name = statusType.name;
+      const detail = (statusType.detail || '').trim();
+      const clock = (statusType.displayClock || '').trim();
+
+      if (name === 'STATUS_IN_PROGRESS') {
+        return { cssClass: 'live', text: clock ? clock + "'" : 'EN VIVO', cardClass: 'is-live', dot: true };
+      }
+      if (name === 'STATUS_HALFTIME') {
+        return { cssClass: 'halftime', text: 'HT', cardClass: 'is-halftime', dot: true };
+      }
+      if (name === 'STATUS_FULL_TIME') {
+        return { cssClass: 'completed', text: 'FT', cardClass: 'is-completed', dot: false };
+      }
+      if (name === 'STATUS_FINAL') {
+        if (detail.toUpperCase().includes('AET') || detail.toUpperCase().includes('EXTRA')) {
+          return { cssClass: 'aet', text: 'FT (AET)', cardClass: 'is-completed', dot: false };
+        }
+        return { cssClass: 'completed', text: 'FT', cardClass: 'is-completed', dot: false };
+      }
+      if (name === 'STATUS_FINAL_AET') {
+        return { cssClass: 'aet', text: 'FT (AET)', cardClass: 'is-completed', dot: false };
+      }
+      if (name === 'STATUS_FINAL_PEN') {
+        const penDetail = detail.match(/(\d+)-(\d+)/);
+        const penText = penDetail ? 'PEN ' + penDetail[1] + '-' + penDetail[2] : 'PEN';
+        return { cssClass: 'penalties', text: penText, cardClass: 'is-completed', dot: false };
+      }
+      if (name === 'STATUS_POSTPONED') {
+        return { cssClass: 'scheduled', text: 'POST.', cardClass: '', dot: false };
+      }
+      if (name === 'STATUS_SUSPENDED') {
+        return { cssClass: 'scheduled', text: 'SUSP.', cardClass: '', dot: false };
+      }
+      if (name === 'STATUS_DELAYED') {
+        return { cssClass: 'scheduled', text: 'DELAYED', cardClass: '', dot: false };
+      }
+      if (name === 'STATUS_ABANDONED') {
+        return { cssClass: 'completed', text: 'ABAND.', cardClass: 'is-completed', dot: false };
+      }
+      if (name === 'STATUS_CANCELED') {
+        return { cssClass: 'scheduled', text: 'CANC.', cardClass: '', dot: false };
+      }
+      // Default: scheduled — show time
+      return { cssClass: 'scheduled', text: '', cardClass: '', dot: false, useMatchTime: true };
     }
 
     /* Render match cards */
@@ -1656,26 +1763,17 @@
         const comp = ev.competitions[0];
         const home = comp.competitors.find(c => c.homeAway === 'home');
         const away = comp.competitors.find(c => c.homeAway === 'away');
-        const status = ev.status.type;
-        const isLive = status.name === 'STATUS_IN_PROGRESS';
-        const isCompleted = status.name === 'STATUS_FULL_TIME' || status.name === 'STATUS_FINAL';
-        const isScheduled = status.name === 'STATUS_SCHEDULED' || status.name === 'STATUS_POSTPONED';
+        const statusType = ev.status.type;
+        const si = espnStatusInfo(statusType);
+        const isScheduled = statusType.name === 'STATUS_SCHEDULED';
         const matchTime = new Date(ev.date).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
-        let statusClass = 'scheduled';
-        let statusText = matchTime;
-        if (isLive) {
-          statusClass = 'live';
-          statusText = status.displayClock || 'EN VIVO';
-        } else if (isCompleted) {
-          statusClass = 'completed';
-          statusText = 'FT';
-        }
+        const displayText = si.useMatchTime ? matchTime : si.text;
+        const dotHtml = si.dot ? '<span class="espn-live-dot"></span>' : '';
 
         const cardClass = [
           'espn-match-card',
-          isLive ? 'is-live' : '',
-          isCompleted ? 'is-completed' : ''
+          si.cardClass
         ].filter(Boolean).join(' ');
 
         const homeLogo = home.team.logo || '';
@@ -1683,35 +1781,34 @@
         const homeRecord = home.records && home.records[0] ? home.records[0].summary : '';
         const awayRecord = away.records && away.records[0] ? away.records[0].summary : '';
 
-        html += `
-          <div class="${cardClass}" id="espn-match-${ev.id}" onclick="espnToggleDetail('${ev.id}')">
-            <div class="espn-match-top">
-              <span class="espn-match-league">${(ev.leagues && ev.leagues[0]) ? ev.leagues[0].name : ''} ${isScheduled ? '· ' + matchTime : ''}</span>
-              <span class="espn-match-status ${statusClass}">${statusText}</span>
-            </div>
-            <div class="espn-teams">
-              <div class="espn-team home">
-                ${homeLogo ? `<img class="espn-team-logo" src="${homeLogo}" alt="${home.team.abbreviation}" onerror="this.style.display='none'">` : ''}
-                <div>
-                  <div class="espn-team-name">${home.team.displayName}</div>
-                  ${homeRecord ? `<div class="espn-team-record">${homeRecord}</div>` : ''}
-                </div>
-              </div>
-              <div class="espn-score">
-                ${isScheduled ? `<span class="dash">vs</span>` : `${home.score} <span class="dash">-</span> ${away.score}`}
-              </div>
-              <div class="espn-team away">
-                ${awayLogo ? `<img class="espn-team-logo" src="${awayLogo}" alt="${away.team.abbreviation}" onerror="this.style.display='none'">` : ''}
-                <div>
-                  <div class="espn-team-name">${away.team.displayName}</div>
-                  ${awayRecord ? `<div class="espn-team-record">${awayRecord}</div>` : ''}
-                </div>
-              </div>
-            </div>
-            <div class="espn-match-detail">
-              <div class="espn-empty" style="padding:8px;">Cargando detalles...</div>
-            </div>
-          </div>`;
+        html += '<div class="' + cardClass + '" id="espn-match-' + ev.id + '" onclick="espnToggleDetail(\'' + ev.id + '\')">' +
+          '<div class="espn-match-top">' +
+            '<span class="espn-match-league">' + ((ev.leagues && ev.leagues[0]) ? ev.leagues[0].name : '') + (isScheduled ? ' &middot; ' + matchTime : '') + '</span>' +
+            '<span class="espn-match-status ' + si.cssClass + '">' + dotHtml + displayText + '</span>' +
+          '</div>' +
+          '<div class="espn-teams">' +
+            '<div class="espn-team home">' +
+              (homeLogo ? '<img class="espn-team-logo" src="' + homeLogo + '" alt="' + home.team.abbreviation + '" onerror="this.style.display=\'none\'">' : '') +
+              '<div>' +
+                '<div class="espn-team-name">' + home.team.displayName + '</div>' +
+                (homeRecord ? '<div class="espn-team-record">' + homeRecord + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="espn-score">' +
+              (isScheduled ? '<span class="dash">vs</span>' : home.score + ' <span class="dash">-</span> ' + away.score) +
+            '</div>' +
+            '<div class="espn-team away">' +
+              (awayLogo ? '<img class="espn-team-logo" src="' + awayLogo + '" alt="' + away.team.abbreviation + '" onerror="this.style.display=\'none\'">' : '') +
+              '<div>' +
+                '<div class="espn-team-name">' + away.team.displayName + '</div>' +
+                (awayRecord ? '<div class="espn-team-record">' + awayRecord + '</div>' : '') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="espn-match-detail">' +
+            '<div class="espn-empty" style="padding:8px;">Cargando detalles...</div>' +
+          '</div>' +
+        '</div>';
       });
       html += '</div>';
       resultsEl.innerHTML = html;
