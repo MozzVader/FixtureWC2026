@@ -114,11 +114,17 @@ img {
 }
 
 .section__title {
-  text-align: center;
+  text-align: left;
   margin-bottom: 40px;
   color: var(--blanco);
   text-shadow: var(--sombra-dorada);
   position: relative;
+  font-size: 1.8rem;
+}
+
+.section__title i {
+  margin-right: 10px;
+  color: var(--dorado-500);
 }
 
 .section__title::after {
@@ -126,8 +132,8 @@ img {
   display: block;
   width: 80px;
   height: 3px;
-  background: linear-gradient(90deg, transparent, var(--dorado-500), transparent);
-  margin: 12px auto 0;
+  background: linear-gradient(90deg, var(--dorado-500), transparent);
+  margin: 12px 0 0;
 }
 
 /* ===== CARDS ===== */
@@ -261,35 +267,36 @@ tbody tr:last-child td {
 .footer__inner {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-.footer-links {
+.footer__social {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  letter-spacing: 1.5px;
+  gap: 14px;
 }
 
-.footer-links a {
-  color: var(--blanco-80);
+.footer__social a {
+  color: var(--blanco-60);
   text-decoration: none;
-  transition: color 0.2s;
+  font-size: 1.05rem;
+  transition: color 0.2s, transform 0.2s;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
 }
 
-.footer-links a:hover {
+.footer__social a:hover {
   color: var(--dorado-500);
+  transform: scale(1.15);
 }
 
 .footer-sep {
-  color: var(--dorado-600);
-  font-size: 0.8rem;
+  color: var(--dorado-700);
+  font-size: 0.7rem;
 }
 
 /* ===== LOADING ===== */

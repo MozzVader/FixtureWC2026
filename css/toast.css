@@ -235,21 +235,23 @@
   to { width: 0%; }
 }
 
-/* ===== MUTE BUTTON (Navbar) ===== */
+/* ===== MUTE BUTTON (Footer) ===== */
 .toast-mute-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
   padding: 0;
+  position: relative;
+  flex-shrink: 0;
 }
 
 .toast-mute-btn:hover {
@@ -271,10 +273,6 @@
   background: #E53935;
   transform: rotate(-45deg);
   border-radius: 1px;
-}
-
-.toast-mute-btn {
-  position: relative;
 }
 
 /* ===== RESPONSIVE ===== */
