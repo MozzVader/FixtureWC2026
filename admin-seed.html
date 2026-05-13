@@ -933,7 +933,7 @@
       showStatus('Eliminando datos...', 'info');
 
       try {
-        const collections = ['matches', 'knockout', 'scorers', 'cards'];
+        const collections = ['matches', 'knockout', 'scorers', 'cards', 'espn-live'];
         let total = 0;
 
         for (const colName of collections) {
@@ -1464,6 +1464,54 @@
       const now = new Date();
       document.getElementById('espn-last-update').textContent =
         `Última consulta: ${now.toLocaleTimeString('es-AR')} — ${allEvents.length} partido(s) encontrado(s)`;
+
+      // Guardar en Firestore para confirmar pipeline de escritura
+      await saveEspnToFirestore(allEvents, league);
+    }
+
+    /* ═══ Guardar datos ESPN en Firestore (colección espn-live) ═══ */
+    async function saveEspnToFirestore(events, league) {
+      try {
+        const batch = db.batch();
+        let saved = 0;
+
+        events.forEach(ev => {
+          const comp = ev.competitions[0];
+          const home = comp.competitors.find(c => c.homeAway === 'home');
+          const away = comp.competitors.find(c => c.homeAway === 'away');
+
+          const docRef = db.collection('espn-live').doc(String(ev.id));
+          batch.set(docRef, {
+            id: String(ev.id),
+            league: league,
+            leagueName: (ev.leagues && ev.leagues[0]) ? ev.leagues[0].name : league,
+            homeTeam: home.team.displayName,
+            homeAbbr: home.team.abbreviation,
+            homeLogo: home.team.logo || '',
+            homeScore: parseInt(home.score) || 0,
+            awayTeam: away.team.displayName,
+            awayAbbr: away.team.abbreviation,
+            awayLogo: away.team.logo || '',
+            awayScore: parseInt(away.score) || 0,
+            status: ev.status.type.name,
+            statusDetail: ev.status.type.detail || '',
+            displayClock: ev.status.displayClock || '',
+            date: ev.date,
+            venue: comp.venue ? comp.venue.fullName : '',
+            updatedAt: new Date().toISOString()
+          });
+          saved++;
+        });
+
+        await batch.commit();
+
+        // Mostrar confirmación breve
+        const lastEl = document.getElementById('espn-last-update');
+        lastEl.textContent += ` — ${saved} docs → Firestore (espn-live)`;
+      } catch (e) {
+        console.error('[ESPN→Firestore]', e);
+        // No mostramos error al usuario, es solo un bonus
+      }
     }
 
     /* Fetch detailed summary for a specific match */
