@@ -243,8 +243,25 @@
           <span>Cafecito</span>
         </a>
       </div>
-      <!-- Right controls: mute + theme toggle -->
+      <!-- Right controls: TZ + mute + theme toggle -->
       <div class="footer__controls">
+        <div class="tz-select-wrapper">
+          <i class="fas fa-clock tz-select-icon"></i>
+          <select id="tz-select" class="tz-select" aria-label="Zona horaria" title="Zona horaria">
+            <option value="local">Local</option>
+            <option value="America/Argentina/Buenos_Aires">GMT-3</option>
+            <option value="America/Santiago">Chile</option>
+            <option value="America/Bogota">Colombia</option>
+            <option value="America/Mexico_City">México</option>
+            <option value="America/New_York">USA Este</option>
+            <option value="America/Chicago">USA Central</option>
+            <option value="America/Los_Angeles">USA Oeste</option>
+            <option value="America/Sao_Paulo">Brasil</option>
+            <option value="Europe/Madrid">España</option>
+            <option value="Europe/London">UK</option>
+            <option value="Asia/Tokyo">Japón</option>
+          </select>
+        </div>
         <button class="toast-mute-btn" id="toast-mute-btn" aria-label="Silenciar notificaciones" title="Silenciar notificaciones">
           <i class="fas fa-volume-high"></i>
         </button>

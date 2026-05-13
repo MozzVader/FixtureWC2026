@@ -442,12 +442,61 @@ body,
   transition: background 0.4s ease, border-color 0.4s ease;
 }
 
-/* ===== DARK MODE TOGGLE BUTTON ===== */
+/* ===== FOOTER CONTROLS ===== */
 .footer__controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
+/* Timezone selector */
+.tz-select-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 0 10px 0 8px;
+  height: 30px;
+  transition: all 0.3s;
+}
+
+.tz-select-wrapper:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tz-select-icon {
+  font-size: 0.7rem;
+  color: var(--blanco-60);
+  flex-shrink: 0;
+}
+
+.tz-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--blanco-80, rgba(255, 255, 255, 0.8));
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  outline: none;
+  letter-spacing: 0.3px;
+}
+
+.tz-select option {
+  background: #1a2744;
+  color: #fff;
+  padding: 4px 8px;
+}
+
+/* ===== DARK MODE TOGGLE BUTTON ===== */
 
 .theme-toggle-btn {
   display: inline-flex;

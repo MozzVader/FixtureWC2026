@@ -3,8 +3,57 @@
  */
 
 const LS_TEAM_KEY = 'wc2026_selected_team';
+const LS_TZ_KEY = 'wc2026_timezone';
+const DEFAULT_TZ = 'America/Argentina/Buenos_Aires';
 
 let selectedTeam = localStorage.getItem(LS_TEAM_KEY) || '';
+
+/* ===== TIMEZONE UTILITIES =====
+ * All match times in data.js are stored as "HH:mm" strings in UTC-3 (Argentina).
+ * We parse them as UTC-3 and convert to the user's selected timezone.
+ */
+function getUserTimezone() {
+  const saved = localStorage.getItem(LS_TZ_KEY);
+  if (saved === 'local' || !saved) {
+    // Auto-detect system timezone
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch(e) { return DEFAULT_TZ; }
+  }
+  return saved;
+}
+
+/** Convert a UTC-3 time string + date string to the user's timezone.
+ *  @param {string} timeStr - "16:00"
+ *  @param {string} dateStr - "2026-06-11"
+ *  @returns {string} - "16:00" in the user's TZ (24h format)
+ */
+function convertTime(timeStr, dateStr) {
+  if (!timeStr || !dateStr) return timeStr || '';
+  const fullStr = `${dateStr}T${timeStr}:00-03:00`;
+  const d = new Date(fullStr);
+  if (isNaN(d.getTime())) return timeStr;
+  const tz = getUserTimezone();
+  return d.toLocaleTimeString('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: tz
+  });
+}
+
+/** Re-render all time-dependent UI sections when TZ changes */
+function refreshTimes() {
+  renderUpcomingMatches();
+  const calContainer = document.getElementById('calendar-content');
+  if (calContainer) {
+    const activeFilter = document.querySelector('.calendar__filter-btn.active');
+    if (activeFilter && activeFilter.dataset.filter === 'knockout') {
+      renderKnockoutCalendar(calContainer);
+    } else {
+      const filter = activeFilter ? activeFilter.dataset.filter : 'all';
+      renderCalendar(calContainer, MATCHES.filter(m => m.stage === 'group'), filter);
+    }
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   initFirebase();   // Firebase real-time listeners (non-blocking)
@@ -15,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initGroups();
   initBracket();
   initStats();
+  initTimezoneSelector();
 });
 
 /* ===== NAVBAR ===== */
@@ -289,7 +339,7 @@ function renderUpcomingMatches() {
           </div>
         </div>
         <div class="upcoming__info">
-          <span class="upcoming__date">${formatDate(match.date)} — ${match.time} hs</span>
+          <span class="upcoming__date">${formatDate(match.date)} — ${convertTime(match.time, match.date)} hs</span>
           <span>${match.city} · <span class="calendar__match-group">Grupo ${match.group}</span></span>
         </div>
       </div>
@@ -379,7 +429,7 @@ function renderCalendar(container, matches, filter) {
       if (isCompleted) matchClasses.push('calendar__match--completed');
 
       // Time/status column
-      let timeDisplay = match.time;
+      let timeDisplay = convertTime(match.time, match.date);
       if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
       else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
 
@@ -915,14 +965,54 @@ function renderKnockoutCalendar(container) {
   container.innerHTML = html || '<div class="loading">No hay datos de eliminatorias.</div>';
 }
 
+/* ===== TIMEZONE SELECTOR ===== */
+function initTimezoneSelector() {
+  const select = document.getElementById('tz-select');
+  if (!select) return;
+
+  // Restore saved preference
+  const saved = localStorage.getItem(LS_TZ_KEY);
+  if (saved) {
+    select.value = saved;
+  } else {
+    // Default: Argentina if system TZ matches, otherwise "Local"
+    try {
+      const sysTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      select.value = sysTz === DEFAULT_TZ ? 'America/Argentina/Buenos_Aires' : 'local';
+    } catch(e) {
+      select.value = 'America/Argentina/Buenos_Aires';
+    }
+  }
+
+  select.addEventListener('change', () => {
+    const val = select.value;
+    if (val === 'local') {
+      localStorage.removeItem(LS_TZ_KEY);
+    } else {
+      localStorage.setItem(LS_TZ_KEY, val);
+    }
+    refreshTimes();
+  });
+}
+
 /* ===== UTILITIES ===== */
 function formatDate(dateStr) {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+  const tz = getUserTimezone();
+  const date = new Date(dateStr + 'T12:00:00'); // noon to avoid DST edge cases
+  return date.toLocaleDateString('es-AR', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: tz
+  });
 }
 
 function formatDateFull(dateStr) {
-  const date = new Date(dateStr + 'T00:00:00');
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  return `${days[date.getDay()]} ${date.getDate()} de ${date.toLocaleDateString('es-AR', { month: 'long' })}`;
+  const tz = getUserTimezone();
+  const date = new Date(dateStr + 'T12:00:00');
+  const dayName = date.toLocaleDateString('es-AR', { weekday: 'long', timeZone: tz });
+  const day = date.toLocaleDateString('es-AR', { day: 'numeric', timeZone: tz });
+  const month = date.toLocaleDateString('es-AR', { month: 'long', timeZone: tz });
+  // Capitalize first letter of day name
+  const capitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+  return `${capitalized} ${day} de ${month}`;
 }
