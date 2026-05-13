@@ -35,7 +35,7 @@
 ### 🏆 Fase Eliminatoria
 - Bracket visual completo: R32 → R16 → QF → SF → 3er puesto + Final
 - 60 partidos en total
-- Auto-propagación de ganadores al siguiente round
+- Auto-propagación de ganadores a la siguiente ronda
 - Soporte para tiempos extras y penales
 - Cruces correctos entre fases con `FEEDER_MAP`
 
@@ -68,7 +68,7 @@
 
 ### 🤖 Predicción AI
 - Predicción completa de los 132 partidos del torneo
-- Campeón predicho: **Argentina** 🇦🇷 (2-1 vs Brasil en tiempo extra)
+- Campeón predicho: **Argentina** 🇦🇷 (2-1 vs Brasil en tiempo extra) - *Anulo Mufa*
 - Documento detallado: [`PREDICCION_AI.md`](PREDICCION_AI.md)
 
 ---
@@ -183,17 +183,17 @@ Se mapearon las 72 competiciones de ESPN a los 72 partidos de fase de grupos:
 - ⚡ La API de ESPN es pública y no requiere API key.
 - ⏱️ El workflow de GitHub Actions tiene un timeout de 6 minutos (3 iteraciones × 120s sleep + polling).
 - 🤖 Las predicciones AI se generaron con criterios futbolísticos (ranking FIFA, calidad de plantilla, rendimiento reciente).
-- 🇦🇷 **Argentina campeón** (4ta estrella: 1978, 1986, 2022, 2026). Datos + deseo. **AÑOLO MUFA** 🤞
+- 🇦🇷 **Argentina campeón** (4ta estrella: 1978, 1986, 2022, 2026). Datos + deseo. **ANULO MUFA** 🤞
 
 ---
 
 ## 📜 Licencia
 
-Uso personal / educativo. Los datos del fixture pertenecen a FIFA. Las predicciones son ficción.
+Uso personal / educativo. Los datos del fixture pertenecen a FIFA. Las predicciones son ficción *(o no... elijo creer)*.
 
 <div align="center">
 
-**Hecho con ❤️ y 🇦🇷 por [MozzVader](https://github.com/mozzvader)**
+**Hecho con ❤️ y 🇦🇷 por [MozzVader](https://github.com/mozzvader) y Super Z**
 
 [☕ Invitame un cafecito](https://cafecito.app/mozz_vader)
 
