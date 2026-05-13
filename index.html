@@ -3,9 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Fixture completo del Mundial FIFA 2026 — Estados Unidos, México y Canadá. Todos los grupos, calendario, sedes y estadísticas.">
+
+  <!-- ===== SEO ===== -->
+  <title>Fixture Mundial FIFA 2026 — World Cup 2026 Completo ⚽</title>
+  <meta name="description" content="Fixture completo del Mundial FIFA 2026. 48 selecciones, 104 partidos, 16 sedes en Estados Unidos, México y Canadá. Grupos, eliminatorias, calendario, goleadores y estadísticas en vivo.">
+  <meta name="keywords" content="Mundial 2026, FIFA World Cup 2026, fixture, calendario, grupos, eliminatorias, estadísticas, goleadores, sedes, USA, México, Canadá, fútbol, soccer, WC2026">
+  <meta name="author" content="MozzVader">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" href="https://mozzvader.github.io/FixtureWC2026/">
   <meta name="theme-color" content="#0288D1">
-  <title>FIFA World Cup 2026 — Fixture Completo</title>
+
+  <!-- ===== Open Graph ===== -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mozzvader.github.io/FixtureWC2026/">
+  <meta property="og:title" content="Fixture Mundial FIFA 2026 — World Cup 2026 Completo ⚽">
+  <meta property="og:description" content="48 selecciones, 104 partidos, 16 sedes. Grupos, eliminatorias, goleadores y estadísticas en vivo del Mundial FIFA 2026 en EE.UU., México y Canadá.">
+  <meta property="og:image" content="https://mozzvader.github.io/FixtureWC2026/img/og-image.png">
+  <meta property="og:image:width" content="1344">
+  <meta property="og:image:height" content="768">
+  <meta property="og:image:alt" content="FIFA World Cup 2026 — Fixture Completo">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:site_name" content="WC2026 Fixture">
+
+  <!-- ===== Twitter Card ===== -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@mozz_vader">
+  <meta name="twitter:title" content="Fixture Mundial FIFA 2026 — World Cup 2026 Completo ⚽">
+  <meta name="twitter:description" content="48 selecciones, 104 partidos, 16 sedes. Grupos, eliminatorias, goleadores y estadísticas en vivo del Mundial FIFA 2026.">
+  <meta name="twitter:image" content="https://mozzvader.github.io/FixtureWC2026/img/og-image.png">
+  <meta name="twitter:image:alt" content="FIFA World Cup 2026 — Fixture Completo">
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,8 +58,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  <!-- Favicon -->
+  <!-- Favicon + Apple Touch -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://mozzvader.github.io/FixtureWC2026/img/og-image.png">
 </head>
 <body>
 
@@ -251,6 +278,36 @@
         initBracket();
       }
     }
+  </script>
+  <!-- ===== JSON-LD Structured Data ===== -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    "name": "FIFA World Cup 2026",
+    "alternateName": "Mundial FIFA 2026",
+    "url": "https://mozzvader.github.io/FixtureWC2026/",
+    "image": "https://mozzvader.github.io/FixtureWC2026/img/og-image.png",
+    "description": "La 23.ª edición de la Copa Mundial de Fútbol, organizada por Estados Unidos, México y Canadá. 48 selecciones, 104 partidos, 16 sedes.",
+    "sport": "Soccer",
+    "startDate": "2026-06-11",
+    "endDate": "2026-07-19",
+    "location": [
+      { "@type": "Place", "name": "Estados Unidos", "address": { "@type": "PostalAddress", "addressCountry": "US" } },
+      { "@type": "Place", "name": "México", "address": { "@type": "PostalAddress", "addressCountry": "MX" } },
+      { "@type": "Place", "name": "Canadá", "address": { "@type": "PostalAddress", "addressCountry": "CA" } }
+    ],
+    "organizer": {
+      "@type": "Organization",
+      "name": "FIFA",
+      "url": "https://www.fifa.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "availability": "https://schema.org/LimitedAvailability",
+      "priceCurrency": "USD"
+    }
+  }
   </script>
 </body>
 </html>
