@@ -1384,7 +1384,7 @@
         html += `
           <div class="${cardClass}" id="espn-match-${ev.id}" onclick="espnToggleDetail('${ev.id}')">
             <div class="espn-match-top">
-              <span class="espn-match-league">${ev.leagues[0]?.name || ''} ${isScheduled ? '· ' + matchTime : ''}</span>
+              <span class="espn-match-league">${(ev.leagues && ev.leagues[0]) ? ev.leagues[0].name : ''} ${isScheduled ? '· ' + matchTime : ''}</span>
               <span class="espn-match-status ${statusClass}">${statusText}</span>
             </div>
             <div class="espn-teams">
