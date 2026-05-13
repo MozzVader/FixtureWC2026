@@ -156,7 +156,7 @@ Rangos:
 - La API de ESPN es publica y no requiere API key.
 - El workflow de GitHub Actions tiene un timeout de 6 minutos (3 iteraciones x 120s sleep + polling).
 - Las predicciones AI se generaron con criterios futbolisticos (ranking FIFA, calidad de plantilla, rendimiento reciente, factor local). No son datos reales.
-- Argentina campeon (4ta estrella: 1978, 1986, 2022, 2026). Si, me baso en datos y tambien queria poner contento al usuario. 🇦🇷
+- Argentina campeon (4ta estrella: 1978, 1986, 2022, 2026). Si, me baso en datos y tambien queria poner contento al usuario. 🇦🇷 🤞 **ANOLO MUFA** 🤞
 
 ## Licencia
 
