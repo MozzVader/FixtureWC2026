@@ -19,6 +19,15 @@ let firebaseReady = false;
 // Live knockout data from Firestore (organized by round)
 let KNOCKOUT_LIVE = null;
 
+/* ===== TOAST TRACKING ===== */
+// Suppress toasts during initial Firestore load (first snapshot)
+let _toastsReady = false;
+// Track known scorers/cards to detect new entries
+const _knownScorers = new Set();
+const _knownCards = new Set();
+// Track previous match scores for goal detection
+const _prevScores = {};  // matchId → { homeScore, awayScore, status }
+
 /**
  * Feeder map: which completed match feeds into the next round.
  * home/away = which feeder's winner goes to home/away slot.
@@ -114,20 +123,78 @@ function listenMatches() {
         const localMatch = MATCHES.find(m => m.id === data.id);
         if (localMatch) {
           const prevStatus = localMatch.status;
+          const prevHomeScore = localMatch.homeScore;
+          const prevAwayScore = localMatch.awayScore;
           localMatch.homeScore = data.homeScore;
           localMatch.awayScore = data.awayScore;
           localMatch.status = data.status || 'upcoming';
           localMatch.minute = data.minute || null;
 
-          // Track live → completed transitions
-          if (prevStatus === 'live' && localMatch.status === 'completed') {
-            console.log(`[WC2026] Finalizado: ${localMatch.home} ${localMatch.homeScore}-${localMatch.awayScore} ${localMatch.away}`);
+          // ─── Toast detection (only after initial load) ───
+          if (_toastsReady && typeof showToast === 'function') {
+            const homeTeam = TEAMS[localMatch.home];
+            const awayTeam = TEAMS[localMatch.away];
+
+            // Match started: upcoming → live
+            if (prevStatus === 'upcoming' && localMatch.status === 'live') {
+              showToast('match-start', {
+                homeName: homeTeam ? homeTeam.name : localMatch.home,
+                awayName: awayTeam ? awayTeam.name : localMatch.away,
+                homeFlag: homeTeam ? getFlagHtml(homeTeam.code) : '',
+                awayFlag: awayTeam ? getFlagHtml(awayTeam.code) : '',
+                venue: localMatch.city ? localMatch.city + ' · ' + localMatch.venue : ''
+              });
+            }
+
+            // Goal detected: score changed while live
+            if (localMatch.status === 'live' &&
+                prevHomeScore != null && data.homeScore != null &&
+                prevAwayScore != null && data.awayScore != null) {
+              const homeDiff = data.homeScore - prevHomeScore;
+              const awayDiff = data.awayScore - prevAwayScore;
+              // Home team scored
+              if (homeDiff > 0 && homeTeam) {
+                showToast('goal', {
+                  playerName: '',
+                  teamName: homeTeam.name,
+                  flag: getFlagHtml(homeTeam.code),
+                  matchLabel: homeTeam.name + ' ' + data.homeScore + ' - ' + data.awayScore + ' ' + (awayTeam ? awayTeam.name : ''),
+                  minute: data.minute ? data.minute + "'" : ''
+                });
+              }
+              // Away team scored
+              if (awayDiff > 0 && awayTeam) {
+                showToast('goal', {
+                  playerName: '',
+                  teamName: awayTeam.name,
+                  flag: getFlagHtml(awayTeam.code),
+                  matchLabel: (homeTeam ? homeTeam.name : '') + ' ' + data.homeScore + ' - ' + data.awayScore + ' ' + awayTeam.name,
+                  minute: data.minute ? data.minute + "'" : ''
+                });
+              }
+            }
+
+            // Match ended: live → completed
+            if (prevStatus === 'live' && localMatch.status === 'completed') {
+              console.log(`[WC2026] Finalizado: ${localMatch.home} ${localMatch.homeScore}-${localMatch.awayScore} ${localMatch.away}`);
+              showToast('match-end', {
+                homeName: homeTeam ? homeTeam.name : localMatch.home,
+                awayName: awayTeam ? awayTeam.name : localMatch.away,
+                homeScore: localMatch.homeScore,
+                awayScore: localMatch.awayScore,
+                homeFlag: homeTeam ? getFlagHtml(homeTeam.code) : '',
+                awayFlag: awayTeam ? getFlagHtml(awayTeam.code) : ''
+              });
+            }
           }
 
           hasChanges = true;
         }
       }
     });
+
+    // Mark toasts as ready after first snapshot
+    if (!_toastsReady) _toastsReady = true;
 
     if (hasChanges) {
       console.log('[WC2026] Datos actualizados. Refrescando UI...');
@@ -218,7 +285,7 @@ function listenScorers() {
     .orderBy('goals', 'desc')
     .limit(20)
     .onSnapshot(snapshot => {
-      if (snapshot.empty) return;
+      if (snapshot.empty && _knownScorers.size === 0) return;
       // Deduplicate by player name + team (in case of double-seed)
       const seen = {};
       const unique = [];
@@ -234,6 +301,46 @@ function listenScorers() {
       STATS.scorers = unique;
       renderScorers();
       console.log('[WC2026] Goleadores actualizados:', STATS.scorers.length);
+
+      // ─── Goal Toast: detect new scorer entries ───
+      if (_toastsReady && typeof showToast === 'function') {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const d = change.doc.data();
+            const key = (d.name || '') + '_' + (d.teamCode || '');
+            if (_knownScorers.has(key)) return;
+            _knownScorers.add(key);
+
+            const team = TEAMS[d.teamCode];
+            // Find the match for context
+            const matchId = d.matchId;
+            let matchLabel = '';
+            if (matchId != null) {
+              const match = MATCHES.find(m => String(m.id) === String(matchId));
+              if (match) {
+                const ht = TEAMS[match.home];
+                const at = TEAMS[match.away];
+                matchLabel = (ht ? ht.name : match.home) + ' ' + (match.homeScore != null ? match.homeScore : '?') +
+                  ' - ' + (match.awayScore != null ? match.awayScore : '?') + ' ' + (at ? at.name : match.away);
+              }
+            }
+            showToast('goal', {
+              playerName: d.name || 'Gol',
+              teamName: team ? team.name : (d.teamCode || ''),
+              flag: team ? getFlagHtml(team.code) : '',
+              matchLabel: matchLabel,
+              minute: d.minute || ''
+            });
+          }
+        });
+      }
+      // Populate known set on first load (suppress toasts)
+      if (!_toastsReady) {
+        snapshot.docs.forEach(doc => {
+          const d = doc.data();
+          _knownScorers.add((d.name || '') + '_' + (d.teamCode || ''));
+        });
+      }
     }, error => {
       console.error('[WC2026] Error en listener de goleadores:', error);
     });
@@ -247,12 +354,52 @@ function listenCards() {
     .orderBy('count', 'desc')
     .limit(30)
     .onSnapshot(snapshot => {
-      if (snapshot.empty) return;
+      if (snapshot.empty && _knownCards.size === 0) return;
       const all = snapshot.docs.map(doc => doc.data());
       STATS.yellowCards = all.filter(c => c.type === 'yellow');
       STATS.redCards = all.filter(c => c.type === 'red');
       renderCards();
       console.log('[WC2026] Tarjetas actualizadas.');
+
+      // ─── Card Toast: detect new card entries ───
+      if (_toastsReady && typeof showToast === 'function') {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const d = change.doc.data();
+            const key = (d.name || '') + '_' + (d.teamCode || '') + '_' + (d.type || '');
+            if (_knownCards.has(key)) return;
+            _knownCards.add(key);
+
+            const team = TEAMS[d.teamCode];
+            const cardType = d.type === 'red' ? 'card--red' : 'card--yellow';
+            // Find the match for context
+            const matchId = d.matchId;
+            let matchLabel = '';
+            if (matchId != null) {
+              const match = MATCHES.find(m => String(m.id) === String(matchId));
+              if (match) {
+                const ht = TEAMS[match.home];
+                const at = TEAMS[match.away];
+                matchLabel = (ht ? ht.name : match.home) + ' vs ' + (at ? at.name : match.away);
+              }
+            }
+            showToast(cardType, {
+              playerName: d.name || '',
+              teamName: team ? team.name : (d.teamCode || ''),
+              flag: team ? getFlagHtml(team.code) : '',
+              matchLabel: matchLabel,
+              minute: d.minute || ''
+            });
+          }
+        });
+      }
+      // Populate known set on first load (suppress toasts)
+      if (!_toastsReady) {
+        snapshot.docs.forEach(doc => {
+          const d = doc.data();
+          _knownCards.add((d.name || '') + '_' + (d.teamCode || '') + '_' + (d.type || ''));
+        });
+      }
     }, error => {
       console.error('[WC2026] Error en listener de tarjetas:', error);
     });
@@ -267,13 +414,17 @@ function refreshUI() {
   // Upcoming matches in hero section
   renderUpcomingMatches();
 
-  // Calendar (preserve active filter)
+  // Calendar (preserve active filter/tab)
   const container = document.getElementById('calendar-content');
   if (container) {
     const activeBtn = document.querySelector('.calendar__filter-btn.active');
     const filter = activeBtn ? activeBtn.dataset.filter : 'all';
-    const groupMatches = MATCHES.filter(m => m.stage === 'group');
-    renderCalendar(container, groupMatches, filter);
+    if (filter === 'knockout') {
+      renderKnockoutCalendar(container);
+    } else {
+      const groupMatches = MATCHES.filter(m => m.stage === 'group');
+      renderCalendar(container, groupMatches, filter);
+    }
   }
 
   // Group standings
@@ -308,6 +459,75 @@ function listenKnockout() {
       return raw;
     });
 
+    // ─── Knockout Toast detection (only after initial load) ───
+    if (_toastsReady && typeof showToast === 'function') {
+      snapshot.docChanges().forEach(change => {
+        if (change.type === 'modified') {
+          const d = { id: change.doc.id, ...change.doc.data() };
+          if (d.home && typeof d.home === 'object') d.home = d.home.code || null;
+          if (d.away && typeof d.away === 'object') d.away = d.away.code || null;
+
+          const prev = KNOCKOUT_LIVE ? flattenKnockout(KNOCKOUT_LIVE).find(m => m.id === d.id) : null;
+          if (!prev) return;
+
+          const prevStatus = prev.status || 'upcoming';
+          const newStatus = d.status || 'upcoming';
+          const homeTeam = d.home ? TEAMS[d.home] : null;
+          const awayTeam = d.away ? TEAMS[d.away] : null;
+
+          // Knockout match started
+          if (prevStatus === 'upcoming' && newStatus === 'live' && homeTeam && awayTeam) {
+            // Determine round label
+            const roundLabel = getKnockoutRoundLabel(d.id);
+            showToast('match-start', {
+              homeName: homeTeam.name,
+              awayName: awayTeam.name,
+              homeFlag: getFlagHtml(homeTeam.code),
+              awayFlag: getFlagHtml(awayTeam.code),
+              venue: roundLabel + (d.date ? ' · ' + formatDate(d.date) : '')
+            });
+          }
+
+          // Goal in knockout
+          if (newStatus === 'live' && prev.homeScore != null && d.homeScore != null &&
+              prev.awayScore != null && d.awayScore != null) {
+            const homeDiff = (d.homeScore || 0) - (prev.homeScore || 0);
+            const awayDiff = (d.awayScore || 0) - (prev.awayScore || 0);
+            if (homeDiff > 0 && homeTeam) {
+              showToast('goal', {
+                playerName: '',
+                teamName: homeTeam.name,
+                flag: getFlagHtml(homeTeam.code),
+                matchLabel: getKnockoutRoundLabel(d.id) + ': ' + homeTeam.name + ' ' + d.homeScore + ' - ' + d.awayScore + ' ' + (awayTeam ? awayTeam.name : ''),
+                minute: d.minute ? d.minute + "'" : ''
+              });
+            }
+            if (awayDiff > 0 && awayTeam) {
+              showToast('goal', {
+                playerName: '',
+                teamName: awayTeam.name,
+                flag: getFlagHtml(awayTeam.code),
+                matchLabel: getKnockoutRoundLabel(d.id) + ': ' + (homeTeam ? homeTeam.name : '') + ' ' + d.homeScore + ' - ' + d.awayScore + ' ' + awayTeam.name,
+                minute: d.minute ? d.minute + "'" : ''
+              });
+            }
+          }
+
+          // Knockout match ended
+          if (prevStatus === 'live' && newStatus === 'completed' && homeTeam && awayTeam) {
+            showToast('match-end', {
+              homeName: homeTeam.name,
+              awayName: awayTeam.name,
+              homeScore: d.homeScore,
+              awayScore: d.awayScore,
+              homeFlag: getFlagHtml(homeTeam.code),
+              awayFlag: getFlagHtml(awayTeam.code)
+            });
+          }
+        }
+      });
+    }
+
     KNOCKOUT_LIVE = {
       roundOf32: docs.filter(d => d.id.startsWith('R32'))
         .sort((a, b) => parseInt(a.id.split('-')[1]) - parseInt(b.id.split('-')[1])),
@@ -323,6 +543,7 @@ function listenKnockout() {
 
     console.log('[WC2026] Eliminatorias actualizadas. Re-renderizando bracket...');
     initBracket();
+    refreshKnockoutCalendar();
     // Auto-propagate winners when knockout matches are completed
     autoPropagateWinners();
   }, error => {
@@ -865,4 +1086,48 @@ async function autoPropagateWinners() {
 /* ===== UTILITY ===== */
 function isFirebaseReady() {
   return firebaseReady;
+}
+
+/* ===== KNOCKOUT HELPERS (for toast system + calendar tab) ===== */
+
+/**
+ * Flatten knockout data into a single array of match objects.
+ */
+function flattenKnockout(ko) {
+  if (!ko) return [];
+  const arr = [];
+  (ko.roundOf32 || []).forEach(m => arr.push(m));
+  (ko.roundOf16 || []).forEach(m => arr.push(m));
+  (ko.quarterfinals || []).forEach(m => arr.push(m));
+  (ko.semifinals || []).forEach(m => arr.push(m));
+  if (ko.thirdPlace) arr.push(ko.thirdPlace);
+  if (ko.final) arr.push(ko.final);
+  return arr;
+}
+
+/**
+ * Get a human-readable round label from a knockout match ID.
+ */
+function getKnockoutRoundLabel(id) {
+  if (!id) return '';
+  if (id === 'FINAL') return 'Final';
+  if (id === 'TP-1') return 'Tercer Puesto';
+  if (id.startsWith('R32')) return 'Dieciseisavos';
+  if (id.startsWith('R16')) return 'Octavos';
+  if (id.startsWith('QF')) return 'Cuartos';
+  if (id.startsWith('SF')) return 'Semifinal';
+  return id;
+}
+
+/**
+ * Refresh the knockout calendar tab if it's currently active.
+ */
+function refreshKnockoutCalendar() {
+  const activeBtn = document.querySelector('.calendar__filter-btn.active');
+  if (activeBtn && activeBtn.dataset.filter === 'knockout') {
+    const container = document.getElementById('calendar-content');
+    if (container && typeof renderKnockoutCalendar === 'function') {
+      renderKnockoutCalendar(container);
+    }
+  }
 }

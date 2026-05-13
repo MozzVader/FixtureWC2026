@@ -307,13 +307,15 @@ function initCalendar() {
 
   const groupMatches = MATCHES.filter(m => m.stage === 'group');
 
-  // Render filter buttons
+  // Render filter buttons + Eliminatorias tab
   if (filterContainer) {
     let filterHtml = '<button class="calendar__filter-btn active" data-filter="all">Todos</button>';
-    filterHtml += '<button class="calendar__filter-btn" data-filter="arg">Argentina</button>';
     'ABCDEFGHIJKL'.split('').forEach(g => {
       filterHtml += `<button class="calendar__filter-btn" data-filter="${g}">Grupo ${g}</button>`;
     });
+    // Separator + Eliminatorias tab
+    filterHtml += '<span class="calendar__filter-sep"></span>';
+    filterHtml += '<button class="calendar__filter-btn calendar__filter-btn--ko" data-filter="knockout"><i class="fas fa-sitemap" style="margin-right:6px"></i>Eliminatorias</button>';
     filterContainer.innerHTML = filterHtml;
 
     filterContainer.addEventListener('click', (e) => {
@@ -324,7 +326,11 @@ function initCalendar() {
       btn.classList.add('active');
 
       const filter = btn.dataset.filter;
-      renderCalendar(container, groupMatches, filter);
+      if (filter === 'knockout') {
+        renderKnockoutCalendar(container);
+      } else {
+        renderCalendar(container, groupMatches, filter);
+      }
     });
   }
 
@@ -777,6 +783,136 @@ function renderCards() {
 
   html += '</tbody></table></div>';
   container.innerHTML = html;
+}
+
+/* ===== KNOCKOUT CALENDAR (Tab View) ===== */
+function renderKnockoutCalendar(container) {
+  if (!container) return;
+
+  // Use live data if available, fallback to static
+  const src = (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) ? KNOCKOUT_LIVE : null;
+  const fallback = (typeof KNOCKOUT !== 'undefined') ? KNOCKOUT : null;
+  if (!src && !fallback) {
+    container.innerHTML = '<div class="loading">No hay datos de eliminatorias.</div>';
+    return;
+  }
+
+  // Flatten all knockout matches into a single array
+  const all = [];
+  const roundOrder = [
+    { key: 'roundOf32', label: 'Dieciseisavos de Final' },
+    { key: 'roundOf16', label: 'Octavos de Final' },
+    { key: 'quarterfinals', label: 'Cuartos de Final' },
+    { key: 'semifinals', label: 'Semifinales' },
+    { key: 'thirdPlace', label: 'Tercer Puesto' },
+    { key: 'final', label: 'Final' }
+  ];
+
+  roundOrder.forEach(round => {
+    let matches;
+    if (src) {
+      matches = src[round.key];
+    } else {
+      matches = fallback[round.key];
+    }
+
+    if (!matches) return;
+
+    // Handle array rounds vs single-match rounds (final, thirdPlace)
+    if (Array.isArray(matches)) {
+      matches.forEach(m => all.push({ ...m, _round: round.label }));
+    } else {
+      all.push({ ...matches, _round: round.label });
+    }
+  });
+
+  // Group by date
+  const byDate = {};
+  all.forEach(match => {
+    const date = match.date || 'TBD';
+    if (!byDate[date]) byDate[date] = [];
+    byDate[date].push(match);
+  });
+
+  let html = '';
+
+  Object.keys(byDate).sort().forEach(date => {
+    const dayMatches = byDate[date];
+    const dateTitle = date === 'TBD' ? 'Por definir' : formatDateFull(date);
+    html += `
+      <div class="calendar__date-group">
+        <div class="calendar__date-title">${dateTitle}</div>
+        <div class="calendar__match-list">
+    `;
+
+    dayMatches.forEach(match => {
+      // Normalize home/away
+      const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
+      const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
+      const homeTeam = homeCode ? TEAMS[homeCode] : null;
+      const awayTeam = awayCode ? TEAMS[awayCode] : null;
+
+      // Parse label for TBD teams
+      const labelParts = (match.label || '').split(' vs ');
+      const homeName = homeTeam ? homeTeam.name : (labelParts[0] || 'Por definir');
+      const awayName = awayTeam ? awayTeam.name : (labelParts[1] || 'Por definir');
+
+      const status = match.status || 'upcoming';
+      const isLive = status === 'live';
+      const isCompleted = status === 'completed';
+      const hasScore = match.homeScore != null && match.awayScore != null;
+
+      const matchClasses = ['calendar__match'];
+      if (isLive) matchClasses.push('calendar__match--live');
+      if (isCompleted) matchClasses.push('calendar__match--completed');
+
+      // Time/status
+      let timeDisplay = match._round || '';
+      if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
+      else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
+
+      // Score or VS
+      let scoreHtml;
+      if (hasScore) {
+        scoreHtml = `
+          <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
+          <span class="calendar__match-vs--dash">-</span>
+          <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
+        `;
+      } else {
+        scoreHtml = `
+          <div class="calendar__match-score"></div>
+          <span class="calendar__match-vs">VS</span>
+          <div class="calendar__match-score"></div>
+        `;
+      }
+
+      html += `
+        <div class="${matchClasses.join(' ')}">
+          <div class="calendar__match-time">${timeDisplay}</div>
+          <div class="calendar__match-teams">
+            <div class="calendar__match-team">
+              ${homeTeam ? getFlagHtml(homeTeam.code) : '<i class="fas fa-question" style="opacity:0.3"></i>'}
+              <span>${homeName}</span>
+            </div>
+            ${scoreHtml}
+            <div class="calendar__match-team">
+              ${awayTeam ? getFlagHtml(awayTeam.code) : '<i class="fas fa-question" style="opacity:0.3"></i>'}
+              <span>${awayName}</span>
+            </div>
+          </div>
+          <div class="calendar__match-venue">
+            <span class="calendar__match-venue--city">${date === 'TBD' ? '' : formatDate(date)}</span>
+            <span class="calendar__match-group">${match._round || ''}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html || '<div class="loading">No hay datos de eliminatorias.</div>';
 }
 
 /* ===== UTILITIES ===== */
