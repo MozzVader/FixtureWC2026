@@ -1516,7 +1516,13 @@
      *  ESPN LIVE TEST — Poll ESPN API from browser
      * ══════════════════════════════════════════════════════════════ */
     const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer';
-    const CORS_PROXY = 'https://corsproxy.io/?url=';
+    /* CORS proxy chain — corsproxy.io started returning 403 in May 2026.
+       We try multiple proxies in order; if all fail, try direct fetch. */
+    const CORS_PROXIES = [
+      { name: 'allorigins-raw', build: u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+      { name: 'corsproxy.org', build: u => 'https://corsproxy.org/?' + encodeURIComponent(u) },
+      { name: 'corsproxy.io',  build: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+    ];
     let espnPollInterval = null;
     let espnTimerInterval = null;
     let espnPollSecondsLeft = 0;
@@ -1534,25 +1540,32 @@
       return dates;
     }
 
-    /* Fetch with CORS proxy fallback */
+    /* Fetch with CORS proxy chain — tries each proxy, then direct */
     async function espnFetch(url) {
-      // Try CORS proxy first (more reliable from browser)
-      try {
-        const proxyRes = await fetch(CORS_PROXY + encodeURIComponent(url));
-        if (proxyRes.ok) {
-          const data = await proxyRes.json();
-          console.log(`[ESPN] Proxy OK: ${url.split('?')[0]}...`);
-          return data;
+      // Try each proxy in order
+      for (const proxy of CORS_PROXIES) {
+        try {
+          const proxyRes = await fetch(proxy.build(url));
+          if (proxyRes.ok) {
+            const data = await proxyRes.json();
+            console.log(`[ESPN] ✓ ${proxy.name} OK: ${url.split('?')[0]}...`);
+            return data;
+          } else {
+            console.warn(`[ESPN] ✗ ${proxy.name} returned ${proxyRes.status}`);
+          }
+        } catch (err) {
+          console.warn(`[ESPN] ✗ ${proxy.name} error: ${err.message}`);
         }
-      } catch (proxyErr) {
-        console.warn(`[ESPN] Proxy failed:`, proxyErr.message);
       }
-      // Fallback: try direct (works if no CORS)
+      // Last resort: try direct fetch (works if ESPN adds CORS headers)
       try {
         const res = await fetch(url);
-        if (res.ok) return await res.json();
+        if (res.ok) {
+          console.log(`[ESPN] ✓ Direct fetch OK`);
+          return await res.json();
+        }
       } catch (e) {
-        console.error(`[ESPN] Direct also failed:`, e.message);
+        console.error(`[ESPN] ✗ All proxies and direct fetch failed for ${url.split('?')[0]}...`);
       }
       return null;
     }
@@ -1632,6 +1645,8 @@
           const away = comp.competitors.find(c => c.homeAway === 'away');
 
           const docRef = db.collection('espn-live').doc(String(ev.id));
+          // Use merge:true to avoid overwriting scorers/matchCards that
+          // espnFetchDetails() may have already written for this event.
           batch.set(docRef, {
             id: String(ev.id),
             league: league,
@@ -1649,10 +1664,11 @@
             displayClock: ev.status.displayClock || '',
             date: ev.date,
             venue: comp.venue ? comp.venue.fullName : '',
-            scorers: [],
-            matchCards: [],
+            // NOTE: scorers and matchCards are NOT set here.
+            // They are managed exclusively by espnFetchDetails() which
+            // fetches the /summary endpoint and merges them in.
             updatedAt: new Date().toISOString()
-          });
+          }, { merge: true });
           saved++;
         });
 
