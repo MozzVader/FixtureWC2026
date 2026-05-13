@@ -337,6 +337,27 @@ async function poll(dateStr) {
         updated++;
 
         // Write goals and cards if match completed or has live action
+        // Always delete old entries first to avoid duplicates on re-poll
+        if (result.goals.length > 0 || result.cards.length > 0) {
+          // Delete old scorers for this match
+          const oldScorers = await db.collection('scorers')
+            .where('matchId', '==', String(localId))
+            .get();
+          if (oldScorers.size > 0) {
+            const delBatch = db.batch();
+            oldScorers.forEach(doc => delBatch.delete(doc.ref));
+            await delBatch.commit();
+          }
+          // Delete old cards for this match
+          const oldCards = await db.collection('cards')
+            .where('matchId', '==', String(localId))
+            .get();
+          if (oldCards.size > 0) {
+            const delBatch2 = db.batch();
+            oldCards.forEach(doc => delBatch2.delete(doc.ref));
+            await delBatch2.commit();
+          }
+        }
         if (result.goals.length > 0) {
           await writeScorers(result.goals, localId);
         }

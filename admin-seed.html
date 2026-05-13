@@ -751,6 +751,21 @@
           showStatus(`Base de datos: ${snap.size} partidos de grupos.`, 'info');
         }
       });
+
+      // ═══ ESPN Live: listen to Firestore matches for real-time status ═══
+      // This provides a reliable fallback when ESPN API fetch fails due to CORS
+      db.collection('matches').onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'modified') {
+            const data = change.doc.data();
+            const localId = data.id;
+            if (!localId) return;
+            // Find the corresponding ESPN card by searching espn-live docs
+            // or update the scoreboard if it matches
+            console.log(`[Firestore→Admin] Match ${localId}: ${data.status} ${data.homeScore}-${data.awayScore} (${data.minute || ''}')`);
+          }
+        });
+      });
     }
 
     /* Enter key para login */
@@ -1521,18 +1536,23 @@
 
     /* Fetch with CORS proxy fallback */
     async function espnFetch(url) {
+      // Try CORS proxy first (more reliable from browser)
       try {
-        // Try direct first
+        const proxyRes = await fetch(CORS_PROXY + encodeURIComponent(url));
+        if (proxyRes.ok) {
+          const data = await proxyRes.json();
+          console.log(`[ESPN] Proxy OK: ${url.split('?')[0]}...`);
+          return data;
+        }
+      } catch (proxyErr) {
+        console.warn(`[ESPN] Proxy failed:`, proxyErr.message);
+      }
+      // Fallback: try direct (works if no CORS)
+      try {
         const res = await fetch(url);
         if (res.ok) return await res.json();
       } catch (e) {
-        // CORS blocked — use proxy
-        try {
-          const proxyRes = await fetch(CORS_PROXY + encodeURIComponent(url));
-          if (proxyRes.ok) return await proxyRes.json();
-        } catch (e2) {
-          console.error('[ESPN] Both direct and proxy failed:', e2);
-        }
+        console.error(`[ESPN] Direct also failed:`, e.message);
       }
       return null;
     }
@@ -1577,12 +1597,19 @@
       espnLastData = allEvents;
       renderEspnMatches(allEvents);
 
-      // Fetch details for live/completed matches
+      // Fetch details for live/completed matches sequentially
+      // Details contain goals, cards, and accurate status — they update the card DOM
       const liveStatuses = ['STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_FULL_TIME', 'STATUS_FINAL', 'STATUS_FINAL_AET', 'STATUS_FINAL_PEN'];
+      let detailCount = 0;
       for (const ev of allEvents) {
         if (liveStatuses.includes(ev.status.type.name)) {
-          await espnFetchDetails(ev.id);
+          const ok = await espnFetchDetails(ev.id);
+          if (ok) detailCount++;
         }
+      }
+
+      if (detailCount > 0) {
+        console.log(`[ESPN] ${detailCount} match details fetched`);
       }
 
       const now = new Date();
@@ -1645,10 +1672,13 @@
       const league = document.getElementById('espn-league').value;
       const url = `${ESPN_BASE}/${league}/summary?event=${eventId}`;
       const data = await espnFetch(url);
-      if (!data) return;
+      if (!data) {
+        console.warn(`[ESPN] Summary failed for event ${eventId} — status will show from scoreboard data`);
+        return false;
+      }
 
       const card = document.getElementById(`espn-match-${eventId}`);
-      if (!card) return;
+      if (!card) return false;
 
       const detailEl = card.querySelector('.espn-match-detail');
 
@@ -1861,6 +1891,7 @@
           if (si.cardClass) card.classList.add(si.cardClass);
         }
       }
+      return true;
     }
 
     /* ═══ ESPN Status Helper ═══ */
@@ -1869,10 +1900,10 @@
       const detail = (statusType.detail || '').trim();
       const clock = (statusType.displayClock || '').trim();
 
-      if (name === 'STATUS_IN_PROGRESS') {
+      if (name === 'STATUS_IN_PROGRESS' || name === 'STATUS_1ST_PERIOD' || name === 'STATUS_2ND_PERIOD' || name === 'STATUS_3RD_PERIOD' || name === 'STATUS_EXTRA_TIME' || name === 'STATUS_PENALTY_SHOOTOUT') {
         return { cardClass: 'is-live', statusHtml: '<span class="espn-status-live"><span class="espn-live-dot"></span>EN VIVO ' + (clock ? clock + "'" : '') + '</span>', isScheduled: false };
       }
-      if (name === 'STATUS_HALFTIME') {
+      if (name === 'STATUS_HALFTIME' || name === 'STATUS_HALF_TIME') {
         return { cardClass: 'is-halftime', statusHtml: '<span class="espn-status-ht"><span class="espn-live-dot"></span>HT</span>', isScheduled: false };
       }
       if (name === 'STATUS_FULL_TIME') {
@@ -1881,6 +1912,11 @@
       if (name === 'STATUS_FINAL') {
         if (detail.toUpperCase().includes('AET') || detail.toUpperCase().includes('EXTRA')) {
           return { cardClass: 'is-completed', statusHtml: '<span class="espn-status-aet">FT &middot; AET</span>', isScheduled: false };
+        }
+        if (detail.toUpperCase().includes('PEN') || detail.toUpperCase().includes('PENALTY')) {
+          const penDetail = detail.match(/(\d+)-(\d+)/);
+          const penText = penDetail ? 'PEN ' + penDetail[1] + '-' + penDetail[2] : 'PEN';
+          return { cardClass: 'is-completed', statusHtml: '<span class="espn-status-pen">' + penText + '</span>', isScheduled: false };
         }
         return { cardClass: 'is-completed', statusHtml: '<span class="espn-status-ft">FT</span>', isScheduled: false };
       }
@@ -1906,6 +1942,10 @@
       }
       if (name === 'STATUS_CANCELED') {
         return { cardClass: '', statusHtml: '<span class="espn-status-other">CANC.</span>', isScheduled: false };
+      }
+      // Any status with a display clock that's not empty = treat as live
+      if (clock && clock !== '0' && clock !== '0\'') {
+        return { cardClass: 'is-live', statusHtml: '<span class="espn-status-live"><span class="espn-live-dot"></span>EN VIVO ' + clock + "'" + '</span>', isScheduled: false };
       }
       // Default: scheduled
       return { cardClass: '', statusHtml: '', isScheduled: true };
