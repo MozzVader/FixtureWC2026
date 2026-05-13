@@ -1540,9 +1540,20 @@
       return dates;
     }
 
-    /* Fetch with CORS proxy chain — tries each proxy, then direct */
+    /* Fetch ESPN API — direct first, proxy chain as fallback */
     async function espnFetch(url) {
-      // Try each proxy in order
+      // 1) Try direct fetch first — ESPN public API allows CORS from browsers
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          console.log(`[ESPN] ✓ Direct OK: ${url.split('?')[0]}...`);
+          return data;
+        }
+      } catch (e) {
+        // CORS blocked — fall through to proxy chain
+      }
+      // 2) Proxy chain fallback (in case direct is blocked by some origins)
       for (const proxy of CORS_PROXIES) {
         try {
           const proxyRes = await fetch(proxy.build(url));
@@ -1550,23 +1561,12 @@
             const data = await proxyRes.json();
             console.log(`[ESPN] ✓ ${proxy.name} OK: ${url.split('?')[0]}...`);
             return data;
-          } else {
-            console.warn(`[ESPN] ✗ ${proxy.name} returned ${proxyRes.status}`);
           }
         } catch (err) {
-          console.warn(`[ESPN] ✗ ${proxy.name} error: ${err.message}`);
+          // proxy failed, try next
         }
       }
-      // Last resort: try direct fetch (works if ESPN adds CORS headers)
-      try {
-        const res = await fetch(url);
-        if (res.ok) {
-          console.log(`[ESPN] ✓ Direct fetch OK`);
-          return await res.json();
-        }
-      } catch (e) {
-        console.error(`[ESPN] ✗ All proxies and direct fetch failed for ${url.split('?')[0]}...`);
-      }
+      console.error(`[ESPN] ✗ All methods failed for ${url.split('?')[0]}...`);
       return null;
     }
 
