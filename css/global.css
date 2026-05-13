@@ -274,13 +274,13 @@ tbody tr:last-child td {
   padding: 0 20px;
 }
 
-.footer__social {
+.footer__share {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-.footer__social a {
+.footer__share a {
   color: var(--blanco-60);
   text-decoration: none;
   font-size: 1.05rem;
@@ -289,9 +289,33 @@ tbody tr:last-child td {
   align-items: center;
 }
 
-.footer__social a:hover {
+.footer__share a:hover {
   color: var(--dorado-500);
   transform: scale(1.15);
+}
+
+.footer__center {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.footer__center a {
+  color: var(--blanco-60);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: color 0.2s, transform 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer__center a:hover {
+  color: var(--dorado-500);
+  transform: scale(1.05);
 }
 
 .footer-sep {
@@ -355,4 +379,24 @@ tbody tr:last-child td {
 .stat-card__table .team-cell .fi {
   width: 20px;
   height: 15px;
+}
+
+/* ===== FOOTER RESPONSIVE ===== */
+@media (max-width: 540px) {
+  .footer__inner {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .footer__share {
+    gap: 10px;
+  }
+
+  .footer__center a span {
+    display: none;
+  }
+
+  .footer__center {
+    gap: 10px;
+  }
 }
