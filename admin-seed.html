@@ -1597,6 +1597,9 @@
       allEvents.sort((a, b) => {
         const order = {
           STATUS_IN_PROGRESS: 0, STATUS_HALFTIME: 0,
+          STATUS_1ST_PERIOD: 0, STATUS_2ND_PERIOD: 0, STATUS_3RD_PERIOD: 0,
+          STATUS_FIRST_HALF: 0, STATUS_SECOND_HALF: 0,
+          STATUS_EXTRA_TIME: 0, STATUS_PENALTY_SHOOTOUT: 0,
           STATUS_SCHEDULED: 1, STATUS_POSTPONED: 3, STATUS_SUSPENDED: 3, STATUS_DELAYED: 3,
           STATUS_FULL_TIME: 2, STATUS_FINAL: 2, STATUS_FINAL_AET: 2, STATUS_FINAL_PEN: 2,
           STATUS_ABANDONED: 4, STATUS_CANCELED: 4
@@ -1612,7 +1615,13 @@
 
       // Fetch details for live/completed matches sequentially
       // Details contain goals, cards, and accurate status — they update the card DOM
-      const liveStatuses = ['STATUS_IN_PROGRESS', 'STATUS_HALFTIME', 'STATUS_FULL_TIME', 'STATUS_FINAL', 'STATUS_FINAL_AET', 'STATUS_FINAL_PEN'];
+      const liveStatuses = [
+        'STATUS_IN_PROGRESS', 'STATUS_HALFTIME',
+        'STATUS_1ST_PERIOD', 'STATUS_2ND_PERIOD', 'STATUS_3RD_PERIOD',
+        'STATUS_FIRST_HALF', 'STATUS_SECOND_HALF',
+        'STATUS_EXTRA_TIME', 'STATUS_PENALTY_SHOOTOUT',
+        'STATUS_FULL_TIME', 'STATUS_FINAL', 'STATUS_FINAL_AET', 'STATUS_FINAL_PEN'
+      ];
       let detailCount = 0;
       for (const ev of allEvents) {
         if (liveStatuses.includes(ev.status.type.name)) {
@@ -1916,8 +1925,15 @@
       const detail = (statusType.detail || '').trim();
       const clock = (statusType.displayClock || '').trim();
 
-      if (name === 'STATUS_IN_PROGRESS' || name === 'STATUS_1ST_PERIOD' || name === 'STATUS_2ND_PERIOD' || name === 'STATUS_3RD_PERIOD' || name === 'STATUS_EXTRA_TIME' || name === 'STATUS_PENALTY_SHOOTOUT') {
-        return { cardClass: 'is-live', statusHtml: '<span class="espn-status-live"><span class="espn-live-dot"></span>EN VIVO ' + (clock ? clock + "'" : '') + '</span>', isScheduled: false };
+      // All "in-play" statuses — ESPN uses different names per league
+      const liveNames = [
+        'STATUS_IN_PROGRESS', 'STATUS_1ST_PERIOD', 'STATUS_2ND_PERIOD', 'STATUS_3RD_PERIOD',
+        'STATUS_FIRST_HALF', 'STATUS_SECOND_HALF',
+        'STATUS_EXTRA_TIME', 'STATUS_PENALTY_SHOOTOUT'
+      ];
+      if (liveNames.includes(name)) {
+        const displayMinute = clock || detail || '';
+        return { cardClass: 'is-live', statusHtml: '<span class="espn-status-live"><span class="espn-live-dot"></span>EN VIVO ' + (displayMinute ? displayMinute + "'" : '') + '</span>', isScheduled: false };
       }
       if (name === 'STATUS_HALFTIME' || name === 'STATUS_HALF_TIME') {
         return { cardClass: 'is-halftime', statusHtml: '<span class="espn-status-ht"><span class="espn-live-dot"></span>HT</span>', isScheduled: false };

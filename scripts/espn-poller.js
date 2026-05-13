@@ -62,21 +62,34 @@ async function fetchJSON(url) {
 function parseESPNStatus(statusName) {
   switch (statusName) {
     case 'STATUS_SCHEDULED':    return 'upcoming';
-    case 'STATUS_IN_PROGRESS':  return 'live';
-    case 'STATUS_HALFTIME':     return 'live';
+    case 'STATUS_IN_PROGRESS':
+    case 'STATUS_1ST_PERIOD':
+    case 'STATUS_2ND_PERIOD':
+    case 'STATUS_3RD_PERIOD':
+    case 'STATUS_FIRST_HALF':
+    case 'STATUS_SECOND_HALF':
+    case 'STATUS_EXTRA_TIME':
+    case 'STATUS_PENALTY_SHOOTOUT':
+                               return 'live';
+    case 'STATUS_HALFTIME':
+    case 'STATUS_HALF_TIME':   return 'live';
     case 'STATUS_FULL_TIME':
-    case 'STATUS_FINAL':        return 'completed';
-    case 'STATUS_POSTPONED':    return 'postponed';
-    case 'STATUS_SUSPENDED':    return 'suspended';
-    default:                    return 'upcoming';
+    case 'STATUS_FINAL':
+    case 'STATUS_FINAL_AET':
+    case 'STATUS_FINAL_PEN':   return 'completed';
+    case 'STATUS_POSTPONED':   return 'postponed';
+    case 'STATUS_SUSPENDED':   return 'suspended';
+    default:                   return 'upcoming';
   }
 }
 
 function parseMinute(comp) {
   const display = comp.status?.displayClock;
-  if (!display || display === '0' || display === "0'") return null;
+  const detail = comp.status?.type?.detail || '';
+  const minute = display || detail;
+  if (!minute || minute === '0' || minute === "0'") return null;
   // Remove the ' suffix if present
-  return display.replace("'", '');
+  return String(minute).replace("'", '');
 }
 
 function parseMatchDetails(comp) {
