@@ -439,7 +439,10 @@
             <span>⚽</span> Cargar 72 Partidos
           </button>
           <button class="btn btn-primary" id="seed-test-btn" onclick="seedTestData()">
-            <span>🧪</span> Cargar Predicción AI (72 partidos)
+            <span>🧪</span> Predicción AI Grupos
+          </button>
+          <button class="btn btn-primary" id="seed-full-btn" onclick="seedFullPrediction()" style="background:linear-gradient(135deg,#9C27B0,#6A1B9A)">
+            <span>🏆</span> Predicción AI Completa
           </button>
         </div>
         <div id="status"></div>
@@ -1123,6 +1126,257 @@
       el.className = 'status status-' + type;
       el.textContent = msg;
       el.classList.remove('hidden');
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+     *  PREDICCIÓN AI COMPLETA — Grupos + Eliminatorias
+     * ══════════════════════════════════════════════════════════════ */
+    async function seedFullPrediction() {
+      if (!db || !requireAuth()) return;
+      const btn = document.getElementById('seed-full-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Procesando...';
+
+      try {
+        showStatus('Paso 1/5: Cargando 72 partidos de grupos...', 'info');
+        await seedMatchesRaw();
+
+        showStatus('Paso 2/5: Aplicando predicción AI de grupos...', 'info');
+        await seedTestDataRaw();
+
+        showStatus('Paso 3/5: Cargando 60 templates de eliminatoria...', 'info');
+        await seedKnockoutRaw();
+
+        showStatus('Paso 4/5: Calculando clasificados (R32)...', 'info');
+        // Recalculate from Firestore
+        const groupSnap = await db.collection('matches').get();
+        groupSnap.docs.forEach(doc => {
+          const data = doc.data();
+          const localMatch = MATCHES.find(m => m.id === data.id);
+          if (localMatch && data.status === 'completed') {
+            localMatch.homeScore = data.homeScore;
+            localMatch.awayScore = data.awayScore;
+            localMatch.status = 'completed';
+          }
+        });
+        await calculateAndAssignQualifiers();
+        // Hotfix for object→string in third-place matches
+        await fixThirdPlaceTeams();
+
+        showStatus('Paso 5/5: Aplicando predicción de eliminatorias...', 'info');
+        await seedKnockoutPrediction();
+
+        showStatus('Predicción AI Completa: 72 grupos + 60 eliminatorias + goleadores + tarjetas. Campeón: Argentina.', 'success');
+      } catch (e) {
+        showStatus('Error: ' + e.message, 'error');
+        console.error('[FullPrediction]', e);
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>🏆</span> Predicción AI Completa';
+    }
+
+    async function fixThirdPlaceTeams() {
+      const fixBatch = db.batch();
+      for (const matchId of ['R32-13','R32-14','R32-15','R32-16']) {
+        const doc = await db.collection('knockout').doc(matchId).get();
+        if (!doc.exists) continue;
+        const data = doc.data();
+        let needsFix = false;
+        let homeCode = data.home, awayCode = data.away;
+        if (data.home && typeof data.home === 'object') { homeCode = data.home.code || null; needsFix = true; }
+        if (data.away && typeof data.away === 'object') { awayCode = data.away.code || null; needsFix = true; }
+        if (needsFix && homeCode && awayCode) {
+          const homeName = TEAMS[homeCode]?.name || homeCode;
+          const awayName = TEAMS[awayCode]?.name || awayCode;
+          fixBatch.set(doc.ref, { home: homeCode, away: awayCode, label: `${homeName} (3°) vs ${awayName} (3°)` }, { merge: true });
+        }
+      }
+      await fixBatch.commit();
+    }
+
+    async function seedMatchesRaw() {
+      const batch = db.batch();
+      MATCHES.forEach(m => {
+        const ref = db.collection('matches').doc(String(m.id));
+        batch.set(ref, {
+          id: m.id, home: m.home, away: m.away, date: m.date, time: m.time,
+          venue: m.venue, city: m.city, group: m.group, stage: m.stage, matchday: m.matchday,
+          homeScore: null, awayScore: null, status: 'upcoming', minute: null
+        });
+      });
+      await batch.commit();
+    }
+
+    async function seedTestDataRaw() {
+      const batch = db.batch();
+      const testResults = [
+        { id:1,homeScore:2,awayScore:0,status:'completed'},{ id:2,homeScore:1,awayScore:1,status:'completed' },
+        { id:3,homeScore:2,awayScore:1,status:'completed'},{ id:4,homeScore:2,awayScore:1,status:'completed' },
+        { id:5,homeScore:0,awayScore:2,status:'completed'},{ id:6,homeScore:2,awayScore:0,status:'completed' },
+        { id:7,homeScore:0,awayScore:3,status:'completed'},{ id:8,homeScore:1,awayScore:1,status:'completed' },
+        { id:9,homeScore:3,awayScore:0,status:'completed'},{ id:10,homeScore:1,awayScore:1,status:'completed' },
+        { id:11,homeScore:2,awayScore:1,status:'completed'},{ id:12,homeScore:1,awayScore:0,status:'completed' },
+        { id:13,homeScore:1,awayScore:0,status:'completed'},{ id:14,homeScore:2,awayScore:1,status:'completed' },
+        { id:15,homeScore:3,awayScore:0,status:'completed'},{ id:16,homeScore:0,awayScore:2,status:'completed' },
+        { id:17,homeScore:2,awayScore:1,status:'completed'},{ id:18,homeScore:0,awayScore:2,status:'completed' },
+        { id:19,homeScore:2,awayScore:0,status:'completed'},{ id:20,homeScore:2,awayScore:0,status:'completed' },
+        { id:21,homeScore:2,awayScore:0,status:'completed'},{ id:22,homeScore:0,awayScore:2,status:'completed' },
+        { id:23,homeScore:2,awayScore:1,status:'completed'},{ id:24,homeScore:1,awayScore:0,status:'completed' },
+        { id:25,homeScore:2,awayScore:1,status:'completed'},{ id:26,homeScore:2,awayScore:1,status:'completed' },
+        { id:27,homeScore:1,awayScore:0,status:'completed'},{ id:28,homeScore:3,awayScore:0,status:'completed' },
+        { id:29,homeScore:1,awayScore:2,status:'completed'},{ id:30,homeScore:4,awayScore:0,status:'completed' },
+        { id:31,homeScore:2,awayScore:0,status:'completed'},{ id:32,homeScore:2,awayScore:0,status:'completed' },
+        { id:33,homeScore:2,awayScore:1,status:'completed'},{ id:34,homeScore:2,awayScore:0,status:'completed' },
+        { id:35,homeScore:2,awayScore:0,status:'completed'},{ id:36,homeScore:0,awayScore:2,status:'completed' },
+        { id:37,homeScore:2,awayScore:0,status:'completed'},{ id:38,homeScore:0,awayScore:3,status:'completed' },
+        { id:39,homeScore:2,awayScore:0,status:'completed'},{ id:40,homeScore:3,awayScore:0,status:'completed' },
+        { id:41,homeScore:3,awayScore:0,status:'completed'},{ id:42,homeScore:2,awayScore:1,status:'completed' },
+        { id:43,homeScore:1,awayScore:1,status:'completed'},{ id:44,homeScore:0,awayScore:3,status:'completed' },
+        { id:45,homeScore:3,awayScore:0,status:'completed'},{ id:46,homeScore:1,awayScore:1,status:'completed' },
+        { id:47,homeScore:3,awayScore:1,status:'completed'},{ id:48,homeScore:0,awayScore:2,status:'completed' },
+        { id:49,homeScore:0,awayScore:1,status:'completed'},{ id:50,homeScore:0,awayScore:2,status:'completed' },
+        { id:51,homeScore:1,awayScore:1,status:'completed'},{ id:52,homeScore:2,awayScore:1,status:'completed' },
+        { id:53,homeScore:0,awayScore:2,status:'completed'},{ id:54,homeScore:2,awayScore:0,status:'completed' },
+        { id:55,homeScore:1,awayScore:2,status:'completed'},{ id:56,homeScore:1,awayScore:2,status:'completed' },
+        { id:57,homeScore:0,awayScore:3,status:'completed'},{ id:58,homeScore:0,awayScore:1,status:'completed' },
+        { id:59,homeScore:1,awayScore:1,status:'completed'},{ id:60,homeScore:0,awayScore:1,status:'completed' },
+        { id:61,homeScore:1,awayScore:0,status:'completed'},{ id:62,homeScore:0,awayScore:2,status:'completed' },
+        { id:63,homeScore:0,awayScore:2,status:'completed'},{ id:64,homeScore:1,awayScore:2,status:'completed' },
+        { id:65,homeScore:0,awayScore:1,status:'completed'},{ id:66,homeScore:2,awayScore:0,status:'completed' },
+        { id:67,homeScore:0,awayScore:2,status:'completed'},{ id:68,homeScore:1,awayScore:2,status:'completed' },
+        { id:69,homeScore:0,awayScore:2,status:'completed'},{ id:70,homeScore:2,awayScore:0,status:'completed' },
+        { id:71,homeScore:0,awayScore:3,status:'completed'},{ id:72,homeScore:2,awayScore:0,status:'completed' }
+      ];
+      testResults.forEach(r => {
+        batch.update(db.collection('matches').doc(String(r.id)), { homeScore: r.homeScore, awayScore: r.awayScore, status: r.status, minute: 90 });
+      });
+      await batch.commit();
+    }
+
+    async function seedKnockoutRaw() {
+      const batch = db.batch();
+      const allKnockout = [ ...KNOCKOUT.roundOf32, ...KNOCKOUT.roundOf16, ...KNOCKOUT.quarterfinals, ...KNOCKOUT.semifinals, KNOCKOUT.thirdPlace, KNOCKOUT.final ];
+      allKnockout.forEach(m => {
+        batch.set(db.collection('knockout').doc(m.id), {
+          id: m.id, label: m.label, date: m.date,
+          home: null, away: null, homeScore: null, awayScore: null, status: 'upcoming', minute: null
+        });
+      });
+      await batch.commit();
+    }
+
+    async function seedKnockoutPrediction() {
+      if (!db || !requireAuth()) return;
+
+      // ═══════════════════════════════════════════════════════════════
+      //  PREDICCIÓN COMPLETA — FASE ELIMINATORIA WC2026
+      //  Basada en los resultados de fase de grupos de la predicción AI.
+      //
+      //  Clasificados:
+      //    1° (12): MEX CAN BRA USA GER NED BEL ESP FRA ARG POR ENG
+      //    2° (12): KOR SUI MAR TUR CIV JPN EGY URU NOR AUT COL CRO
+      //    3° (8):  ECU CZE COD AUS SWE ALG SCO SEN
+      //
+      //  Campeón: ARGENTINA 🏆
+      //  Goleador del torneo: Mbappé (8 goles)
+      // ═══════════════════════════════════════════════════════════════
+
+      const ko = {};
+
+      // ═══ ROUND OF 32 ═══
+      ko['R32-1']  = { home:'MEX', away:'SUI', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['R32-2']  = { home:'BRA', away:'TUR', homeScore:3, awayScore:0, status:'completed', minute:90 };
+      ko['R32-3']  = { home:'GER', away:'JPN', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['R32-4']  = { home:'BEL', away:'URU', homeScore:1, awayScore:0, status:'completed', minute:90 };
+      ko['R32-5']  = { home:'FRA', away:'AUT', homeScore:2, awayScore:0, status:'completed', minute:90 };
+      ko['R32-6']  = { home:'POR', away:'CRO', homeScore:2, awayScore:0, status:'completed', minute:90 };
+      ko['R32-7']  = { home:'CAN', away:'KOR', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['R32-8']  = { home:'USA', away:'MAR', homeScore:1, awayScore:1, status:'completed', minute:90 };
+      ko['R32-9']  = { home:'NED', away:'CIV', homeScore:2, awayScore:0, status:'completed', minute:90 };
+      ko['R32-10'] = { home:'ESP', away:'EGY', homeScore:3, awayScore:1, status:'completed', minute:90 };
+      ko['R32-11'] = { home:'ARG', away:'NOR', homeScore:3, awayScore:1, status:'completed', minute:90 };
+      ko['R32-12'] = { home:'ENG', away:'COL', homeScore:2, awayScore:0, status:'completed', minute:90 };
+      // 3rd place teams
+      ko['R32-13'] = { home:'CZE', away:'ECU', homeScore:1, awayScore:2, status:'completed', minute:90 };
+      ko['R32-14'] = { home:'SCO', away:'AUS', homeScore:1, awayScore:1, status:'completed', minute:90 };
+      ko['R32-15'] = { home:'SEN', away:'COD', homeScore:0, awayScore:1, status:'completed', minute:90 };
+      ko['R32-16'] = { home:'SWE', away:'ALG', homeScore:1, awayScore:0, status:'completed', minute:90 };
+
+      // ═══ ROUND OF 16 ═══
+      ko['R16-1'] = { home:'MEX', away:'BRA', homeScore:0, awayScore:2, status:'completed', minute:90 };
+      ko['R16-2'] = { home:'GER', away:'BEL', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['R16-3'] = { home:'FRA', away:'POR', homeScore:1, awayScore:2, status:'completed', minute:90 };
+      ko['R16-4'] = { home:'CAN', away:'USA', homeScore:1, awayScore:3, status:'completed', minute:90 };
+      ko['R16-5'] = { home:'NED', away:'ESP', homeScore:1, awayScore:2, status:'completed', minute:90 };
+      ko['R16-6'] = { home:'ARG', away:'ENG', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['R16-7'] = { home:'ECU', away:'AUS', homeScore:2, awayScore:0, status:'completed', minute:90 };
+      ko['R16-8'] = { home:'COD', away:'SWE', homeScore:1, awayScore:2, status:'completed', minute:90 };
+
+      // ═══ QUARTERFINALS ═══
+      ko['QF-1'] = { home:'BRA', away:'GER', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['QF-2'] = { home:'POR', away:'USA', homeScore:2, awayScore:0, status:'completed', minute:90 };
+      ko['QF-3'] = { home:'ESP', away:'ARG', homeScore:1, awayScore:2, status:'completed', minute:90 };
+      ko['QF-4'] = { home:'ECU', away:'SWE', homeScore:1, awayScore:0, status:'completed', minute:90 };
+
+      // ═══ SEMIFINALS ═══
+      ko['SF-1'] = { home:'BRA', away:'POR', homeScore:2, awayScore:1, status:'completed', minute:90 };
+      ko['SF-2'] = { home:'ARG', away:'ECU', homeScore:3, awayScore:0, status:'completed', minute:90 };
+
+      // ═══ THIRD PLACE ═══
+      ko['TP-1'] = { home:'POR', away:'ECU', homeScore:2, awayScore:1, status:'completed', minute:90 };
+
+      // ═══ FINAL ═══
+      ko['FINAL'] = { home:'BRA', away:'ARG', homeScore:1, awayScore:2, status:'completed', minute:120 };
+
+      // Write all knockout results
+      const batch = db.batch();
+      Object.entries(ko).forEach(([id, data]) => {
+        batch.update(db.collection('knockout').doc(id), data);
+      });
+
+      // Add knockout stage scorers
+      const koScorers = [
+        { name:'K. Mbappé',         teamCode:'FRA', goals:4, assists:1 },
+        { name:'L. Messi',           teamCode:'ARG', goals:4, assists:3 },
+        { name:'Vinícius Jr',        teamCode:'BRA', goals:4, assists:1 },
+        { name:'J. Álvarez',         teamCode:'ARG', goals:3, assists:2 },
+        { name:'R. Leão',            teamCode:'POR', goals:3, assists:1 },
+        { name:'L. Yamal',           teamCode:'ESP', goals:2, assists:2 },
+        { name:'F. Wirtz',           teamCode:'GER', goals:2, assists:1 },
+        { name:'J. Bellingham',      teamCode:'ENG', goals:2, assists:1 },
+        { name:'C. Pulisic',         teamCode:'USA', goals:2, assists:2 },
+        { name:'C. Gakpo',           teamCode:'NED', goals:1, assists:1 },
+        { name:'B. Saka',            teamCode:'ENG', goals:1, assists:1 },
+        { name:'K. Havertz',         teamCode:'GER', goals:1, assists:0 },
+        { name:'A. Davies',          teamCode:'CAN', goals:1, assists:1 },
+        { name:'M. Salah',           teamCode:'EGY', goals:1, assists:0 },
+        { name:'M. Acuña',           teamCode:'ARG', goals:1, assists:2 },
+        { name:'E. Haaland',         teamCode:'NOR', goals:1, assists:0 },
+        { name:'Caicedo',            teamCode:'ECU', goals:2, assists:1 },
+        { name:'B. Fernandes',       teamCode:'POR', goals:1, assists:2 },
+        { name:'L. de Bruyne',       teamCode:'BEL', goals:1, assists:1 },
+        { name:'J. Kimmich',         teamCode:'GER', goals:1, assists:2 },
+      ];
+      koScorers.forEach(s => { batch.set(db.collection('scorers').doc(), s); });
+
+      // Add knockout stage cards
+      const koCards = [
+        { name:'R. Araújo',    teamCode:'URU', type:'yellow', count:2 },
+        { name:'J. Kimmich',   teamCode:'GER', type:'yellow', count:2 },
+        { name:'Rodri',        teamCode:'ESP', type:'yellow', count:2 },
+        { name:'D. Rice',      teamCode:'ENG', type:'yellow', count:1 },
+        { name:'Casemiro',     teamCode:'BRA', type:'yellow', count:1 },
+        { name:'M. Thuram',    teamCode:'FRA', type:'yellow', count:1 },
+        { name:'W. Saliba',    teamCode:'FRA', type:'yellow', count:1 },
+        { name:'N. Otamendi',  teamCode:'ARG', type:'yellow', count:1 },
+        { name:'C. Romero',    teamCode:'ARG', type:'yellow', count:1 },
+        { name:'P. Porro',     teamCode:'ESP', type:'red',    count:1 },
+        { name:'J. Vertonghen',teamCode:'BEL', type:'yellow', count:1 },
+      ];
+      koCards.forEach(c => { batch.set(db.collection('cards').doc(), c); });
+
+      await batch.commit();
     }
 
     /* ══════════════════════════════════════════════════════════════

@@ -375,4 +375,105 @@ Criterios utilizados: ranking FIFA actual, calidad de plantilla, rendimiento rec
 
 ---
 
-> *Generado el 13/05/2026 por Super Z. Vení a reclamar en julio.*
+> *Generado el 13/05/2026 (actualizado 13/05/2026 con eliminatorias) por Super Z. Vení a reclamar en julio.*
+
+---
+
+## ⚔️ Fase Eliminatoria — Predicción Completa
+
+### Dieciseisavos de Final (R32)
+
+| # | Partido | Resultado | Ganador |
+|---|---------|-----------|---------|
+| R32-1 | 🇲🇽 México (1A) vs Suiza (2B) | **2-1** | 🇲🇽 México |
+| R32-2 | 🇧🇷 Brasil (1C) vs Turquía (2D) | **3-0** | 🇧🇷 Brasil |
+| R32-3 | 🇩🇪 Alemania (1E) vs Japón (2F) | **2-1** | 🇩🇪 Alemania |
+| R32-4 | 🇧🇪 Bélgica (1G) vs Uruguay (2H) | **1-0** | 🇧🇪 Bélgica |
+| R32-5 | 🇫🇷 Francia (1I) vs Austria (2J) | **2-0** | 🇫🇷 Francia |
+| R32-6 | 🇵🇹 Portugal (1K) vs Croacia (2L) | **2-0** | 🇵🇹 Portugal |
+| R32-7 | 🇨🇦 Canadá (1B) vs Corea del Sur (2A) | **2-1** | 🇨🇦 Canadá |
+| R32-8 | 🇺🇸 USA (1D) vs Marruecos (2C) | **1-1 (pen 3-2)** | 🇺🇸 USA |
+| R32-9 | 🇳🇱 Países Bajos (1F) vs Costa de Marfil (2E) | **2-0** | 🇳🇱 Países Bajos |
+| R32-10 | 🇪🇸 España (1H) vs Egipto (2G) | **3-1** | 🇪🇸 España |
+| R32-11 | 🇦🇷 Argentina (1J) vs Noruega (2I) | **3-1** | 🇦🇷 Argentina |
+| R32-12 | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra (1L) vs Colombia (2K) | **2-0** | 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra |
+| R32-13 | Chequia (3A) vs Ecuador (3E) | **1-2** | Ecuador |
+| R32-14 | Escocia (3C) vs Australia (3D) | **1-1 (pen 4-5)** | Australia |
+| R32-15 | Senegal (3I) vs RD Congo (3K) | **0-1** | RD Congo |
+| R32-16 | Suecia (3F) vs Argelia (3J) | **1-0** | Suecia |
+
+> 💬 México sorprende con gol de V. Jiménez al minuto 67'. USA define por penales contra un Marruecos sólido. Argentina golea a Noruega con Haaland abriendo el marcador pero Álvarez y Messi dándole la vuelta. Ecuador y Suecia son los mejores terceros que avanzan.
+
+---
+
+### Octavos de Final (R16)
+
+| # | Partido | Resultado | Ganador |
+|---|---------|-----------|---------|
+| R16-1 | 🇲🇽 México vs 🇧🇷 Brasil | **0-2** | 🇧🇷 Brasil |
+| R16-2 | 🇩🇪 Alemania vs 🇧🇪 Bélgica | **2-1** | 🇩🇪 Alemania |
+| R16-3 | 🇫🇷 Francia vs 🇵🇹 Portugal | **1-2** | 🇵🇹 Portugal |
+| R16-4 | 🇨🇦 Canadá vs 🇺🇸 USA | **1-3** | 🇺🇸 USA |
+| R16-5 | 🇳🇱 Países Bajos vs 🇪🇸 España | **1-2** | 🇪🇸 España |
+| R16-6 | 🇦🇷 Argentina vs 🏴󠁧󠁢󠁥󠁮󠁧󠁿 Inglaterra | **2-1** | 🇦🇷 Argentina |
+| R16-7 | Ecuador vs Australia | **2-0** | Ecuador |
+| R16-8 | RD Congo vs Suecia | **1-2** | Suecia |
+
+> 💬 Brasil supera a México con goles de Vinícius Jr. Portugal elimina a Francia con golazo de Leão en el minuto 85'. El clásico Argentina-Inglaterra es electrizante: Messi asiste a Álvarez para el 1-0, Saka empata, y Mac Allister mete el 2-1. USA gana el clásico norteamericano. Ecuador es la revelación del torneo eliminando a Australia. Suecia avanza con gol de Isak en tiempo extra.
+
+---
+
+### Cuartos de Final (QF)
+
+| # | Partido | Resultado | Ganador |
+|---|---------|-----------|---------|
+| QF-1 | 🇧🇷 Brasil vs 🇩🇪 Alemania | **2-1** | 🇧🇷 Brasil |
+| QF-2 | 🇵🇹 Portugal vs 🇺🇸 USA | **2-0** | 🇵🇹 Portugal |
+| QF-3 | 🇪🇸 España vs 🇦🇷 Argentina | **1-2** | 🇦🇷 Argentina |
+| QF-4 | Ecuador vs Suecia | **1-0** | Ecuador |
+
+> 💬 Un clásico intenso Brasil-Alemania se define con gol de Rodrygo al 78'. Portugal domina a USA sin problemas. Argentina vs España es el partido del torneo: Yamal pone el 1-0 para España, Álvarez empata y Messi define en el 88'. Ecuador, la Cenicienta del torneo, elimina a Suecia con gol de Caicedo.
+
+---
+
+### Semifinales (SF)
+
+| # | Partido | Resultado | Ganador |
+|---|---------|-----------|---------|
+| SF-1 | 🇧🇷 Brasil vs 🇵🇹 Portugal | **2-1** | 🇧🇷 Brasil |
+| SF-2 | 🇦🇷 Argentina vs Ecuador | **3-0** | 🇦🇷 Argentina |
+
+> 💬 Un superclásico sudamericano en semifinal. Brasil vs Portugal es parejo hasta que Vinícius Jr marca un golazo y Sellas empata, pero Endrick define para Brasil al 88'. Argentina destruye a Ecuador con una actuación magistral de Messi (1 gol, 2 asistencias) y Álvarez (2 goles).
+
+---
+
+### Tercer Puesto
+
+| Partido | Resultado | Ganador |
+|---------|-----------|---------|
+| 🇵🇹 Portugal vs Ecuador | **2-1** | 🇵🇹 Portugal (3°) |
+
+> 💬 Portugal se lleva el bronce con goles de Leão y Fernandes. Ecuador cierra un torneo histórico en 4to lugar.
+
+---
+
+## 🏆 GRAN FINAL
+
+| Partido | Resultado | Campeón |
+|---------|-----------|---------|
+| 🇧🇷 Brasil vs 🇦🇷 Argentina | **1-2 (Tiempo Extra)** | 🇦🇷 **ARGENTINA** |
+
+> La final que todo el mundo quería. Un MetLife Stadium lleno en Nueva York. Brasil abre el marcador con Vinícius Jr al 55'. Argentina empata con golazo de Messi al 72'. En el tiempo extra, con el estadio temblando, Julián Álvarez marca el gol del campeonato al 108'. Messi levanta la copa en tierra norteamericana, completando su legado definitivo. Argentina campeón del mundo por primera vez fuera de Sudamérica.
+
+---
+
+## 🏅 Premios Individuales del Torneo
+
+| Premio | Ganador | Detalle |
+|--------|---------|---------|
+| ⚽ Bota de Oro | **L. Messi** 🇦🇷 Argentina | Goleador del torneo |
+| 👟 Bota de Plata (Goleador) | **K. Mbappé** 🇫🇷 Francia | **8 goles** (4 fase de grupos + 4 eliminatorias) |
+| 🌟 Mejor Jugador Joven | **L. Yamal** 🇪🇸 España | 17 años, revelación mundial |
+| 🧤 Mejor Portero | **E. Martínez** 🇦🇷 Argentina | "El Dibu", wall en cuartos y final |
+
+> 💬 Messi gana la Bota de Oro como capítulo final de su leyenda. Mbappé termina con 8 goles pero no alcanza para llevarse Francia al título. Yamal, con solo 17 años, deja a todos con la boca abierta. "El Dibu" Martínez repite su nivel de Qatar 2022 y es clave en la obtención del campeonato.
