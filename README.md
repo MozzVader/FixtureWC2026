@@ -10,7 +10,7 @@
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![ESPN API](https://img.shields.io/badge/Data-ESPN_API-E50414?style=flat-square&logo=espn&logoColor=white)](https://site.api.espn.com)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](.github/workflows/espn-sync.yml)
-[![License](https://img.shields.io/badge/License-Personal%20%2F%20Educativo-lightgrey?style=flat-square)](#licencia)
+[![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-lightgrey?style=flat-square)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
 <br>
 
@@ -189,7 +189,14 @@ Se mapearon las 72 competiciones de ESPN a los 72 partidos de fase de grupos:
 
 ## 📜 Licencia
 
-Uso personal / educativo. Los datos del fixture pertenecen a FIFA. Las predicciones son ficción *(o no... elijo creer)*.
+Este proyecto está licenciado bajo [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)](https://creativecommons.org/licenses/by-nc-nd/4.0/).
+
+- ✅ **Compartir** — copiar y redistribuir el material en cualquier medio o formato
+- ✅ **Atribución** — se debe dar crédito adecuado, proporcionar un enlace a la licencia e indicar si se realizaron cambios
+- ❌ **No Comercial** — no se puede utilizar el material para fines comerciales
+- ❌ **No Derivadas** — no se pueden remezclar, transformar ni construir sobre el material
+
+Los datos del fixture pertenecen a FIFA. Las predicciones son ficción *(o no... elijo creer)*.
 
 <div align="center">
 
