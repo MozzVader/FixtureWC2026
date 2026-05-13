@@ -1,110 +1,134 @@
-# FIFA World Cup 2026 — Fixture Completo
+<div align="center">
 
-Sitio web interactivo con el fixture completo del Mundial FIFA 2026 (48 selecciones, 12 grupos, 104 partidos). Datos en tiempo real via Firebase Firestore + ESPN API. Incluye predicciones AI completas para todas las fases del torneo.
+<img src="img/og-image.png" alt="FIFA World Cup 2026 Fixture" width="600">
 
-## Capturas
+# ⚽ FIFA World Cup 2026 — Fixture Completo
 
-> La web muestra fase de grupos con todos los resultados en vivo, bracket interactivo de eliminatorias, estadísticas de goleadores y tarjetas.
+**48 selecciones · 12 grupos · 104 partidos · 16 sedes**
 
-## Funcionalidades
+[![Live Site](https://img.shields.io/badge/Site-Live-0288D1?style=for-the-badge&logo=github&logoColor=white)](https://mozzvader.github.io/FixtureWC2026/)
+[![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com)
+[![ESPN API](https://img.shields.io/badge/Data-ESPN_API-E50414?style=flat-square&logo=espn&logoColor=white)](https://site.api.espn.com)
+[![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](.github/workflows/espn-sync.yml)
+[![License](https://img.shields.io/badge/License-Personal%20%2F%20Educativo-lightgrey?style=flat-square)](#licencia)
 
-### Fase de Grupos
-- 12 grupos x 4 selecciones (48 equipos en total)
+<br>
+
+[🌐 Ver en vivo](https://mozzvader.github.io/FixtureWC2026/) ·
+[🏆 Predicción AI](PREDICCION_AI.md) ·
+[☕ Cafecito](https://cafecito.app/mozz_vader) ·
+[🐦 Contacto](https://twitter.com/mozz_vader)
+
+</div>
+
+---
+
+## ✨ Características
+
+### 🏟️ Fase de Grupos
+- 12 grupos × 4 selecciones (48 equipos en total)
 - 72 partidos con fecha, hora, sede y ciudad
-- Tabla de posiciones calculada automaticamente (PTS, PJ, G, E, P, GF, GC, DG)
-- Actualizacion en tiempo real via Firebase `onSnapshot` listeners
-- Clasificacion automatica a Dieciseisavos (1ros, 2dos y 8 mejores 3ros)
+- Tabla de posiciones calculada automáticamente (PTS, PJ, G, E, P, GF, GC, DG)
+- Actualización en tiempo real via Firebase `onSnapshot` listeners
+- Clasificación automática a Dieciseisavos (1ros, 2dos y 8 mejores 3ros)
 
-### Fase Eliminatoria
-- Bracket visual completo: R32 (16) → R16 (8) → QF (4) → SF (2) → 3er puesto + Final
+### 🏆 Fase Eliminatoria
+- Bracket visual completo: R32 → R16 → QF → SF → 3er puesto + Final
 - 60 partidos en total
-- Auto-propagacion de ganadores: al marcar resultado de un partido, el ganador avanza automaticamente al siguiente
+- Auto-propagación de ganadores al siguiente round
 - Soporte para tiempos extras y penales
-- Cruces correctos entre fases (1A vs 2B, etc.) con FEEDER_MAP
+- Cruces correctos entre fases con `FEEDER_MAP`
 
-### Datos en Tiempo Real
-- Firebase Firestore como backend (sin servidor propio)
-- ESPN Public API como fuente de datos en vivo (scoreboard + summary endpoints)
-- GitHub Actions workflow que pollea ESPN cada 2 minutos durante los dias de partido (Jun-Jul 2026)
-- Hack: GitHub cron minimo es 5 min, pero el workflow loopea 3x con `sleep 120` internamente
-- CORS proxy fallback (`corsproxy.io`) para consultas desde el browser
-- Pestaña ESPN Live Test en el admin para probar con ligas activas (MLS, Liga Profesional, Libertadores)
+### 📡 Datos en Tiempo Real
+- Firebase Firestore como backend serverless
+- ESPN Public API como fuente de datos en vivo (sin API key)
+- GitHub Actions polling cada **2 minutos** durante días de partido
+- CORS proxy fallback para consultas desde el browser
+- Toast notifications con sonido para goles, inicio y fin de partidos
 
-### Estadisticas
+### 🔔 Notificaciones en Vivo
+- Toasts visuales con distintos colores por evento (gol, tarjeta, inicio, fin)
+- Sonido de silbato con Web Audio API (silenciable)
+- Notificaciones de escritorio (Desktop Notifications)
+- Detección inteligente de cambios: solo dispara en `modified`, ignora snapshot inicial
+
+### 📊 Estadísticas
 - Tabla de goleadores con goles y asistencias
 - Tabla de tarjetas (amarillas y rojas)
-- Bandera de equipo via `flag-icons` CDN
+- 16 sedes con estadio, ciudad y país
 - Datos actualizados en tiempo real
 
-### Panel de Administracion
+### 🔐 Panel de Administración
 - Login con Firebase Auth (email/password)
-- Cargar 72 partidos de grupos (estructura vacia)
-- Cargar 60 partidos de eliminatoria (estructura vacia)
-- Calcular clasificados automaticamente desde resultados de grupos
+- Cargar partidos de grupos y eliminatorias
+- Calcular clasificados automáticamente
 - Propagar ganadores por el bracket
-- Prediccion AI Grupos (72 partidos + goleadores + tarjetas)
-- **Prediccion AI Completa** (72 grupos + 60 eliminatorias + goleadores + tarjetas)
-- ESPN Live Test (consultar partidos en vivo de cualquier liga)
-- Simular partido individual (testing)
-- Limpiar toda la base de datos
+- Predicción AI completa (132 partidos + goleadores + tarjetas)
+- ESPN Live Test con ligas activas
 
-### Prediccion AI
-- Prediccion completa de los 132 partidos del torneo
-- Goleadores, asistencias y tarjetas para cada fase
-- Campeón predicho: **Argentina** (2-1 vs Brasil en tiempo extra, gol de Julian Alvarez al 108')
+### 🤖 Predicción AI
+- Predicción completa de los 132 partidos del torneo
+- Campeón predicho: **Argentina** 🇦🇷 (2-1 vs Brasil en tiempo extra)
 - Documento detallado: [`PREDICCION_AI.md`](PREDICCION_AI.md)
 
-## Stack Tecnico
+---
 
-| Componente | Tecnologia |
-|------------|-----------|
-| Frontend | HTML5, CSS3, JavaScript vanilla |
-| Estilos | CSS Grid, Flexbox, custom properties |
-| Iconos | Font Awesome 6, flag-icons 7 |
-| Fuentes | Bebas Neue + Archivo |
-| Backend | Firebase Firestore (serverless) |
-| Auth | Firebase Authentication |
-| Datos en vivo | ESPN Public API (sin API key) |
-| CI/CD | GitHub Actions (espn-sync.yml) |
-| Hosting | GitHub Pages / cualquier host estatico |
+## 🛠️ Stack Técnico
 
-## Estructura del Proyecto
+| Componente | Tecnología |
+|---|---|
+| ![HTML5](https://img.shields.io/badge/-HTML5-E34F26?style=flat&logo=html5&logoColor=white) Frontend | HTML5, CSS3, JavaScript vanilla |
+| ![CSS3](https://img.shields.io/badge/-CSS3-1572B6?style=flat&logo=css3&logoColor=white) Estilos | CSS Grid, Flexbox, Custom Properties |
+| ![Font Awesome](https://img.shields.io/badge/-Font_Awesome-528DD7?style=flat&logo=fontawesome&logoColor=white) Iconos | Font Awesome 6, flag-icons 7 |
+| ![Firebase](https://img.shields.io/badge/-Firebase-FFCA28?style=flat&logo=firebase&logoColor=black) Backend | Firestore (serverless) + Auth |
+| ![ESPN](https://img.shields.io/badge/-ESPN-E50414?style=flat&logo=espn&logoColor=white) Datos en vivo | ESPN Public API |
+| ![GitHub Actions](https://img.shields.io/badge/-GitHub_Actions-2088FF?style=flat&logo=github-actions&logoColor=white) CI/CD | Polling cada 2 min |
+| ![GitHub Pages](https://img.shields.io/badge/-GitHub_Pages-222?style=flat&logo=github&logoColor=white) Hosting | Static site |
+
+---
+
+## 📁 Estructura del Proyecto
 
 ```
 FixtureWC2026/
 ├── index.html              # Sitio principal
-├── admin-seed.html         # Panel de administracion
-├── PREDICCION_AI.md        # Documento de prediccion AI completa
-├── README.md               # Este archivo
-├── firestore.rules         # Reglas de seguridad Firestore
+├── admin-seed.html         # Panel de administración
+├── PREDICCION_AI.md        # Predicción AI completa
+├── robots.txt              # SEO crawlers
+├── sitemap.xml             # SEO sitemap
+├── img/
+│   └── og-image.png        # Open Graph image
 │
 ├── css/
-│   ├── global.css          # Reset, variables, layout
-│   ├── navbar.css          # Barra de navegacion
-│   ├── hero.css            # Hero section con countdown
+│   ├── global.css          # Reset, variables, layout, footer
+│   ├── navbar.css          # Barra de navegación
+│   ├── hero.css            # Hero section + countdown
 │   ├── calendar.css        # Calendario de partidos
+│   ├── toast.css           # Toast notifications
 │   ├── groups.css          # Tablas de grupos
 │   ├── bracket.css         # Bracket de eliminatorias
-│   └── stats.css           # Estadisticas (goleadores, tarjetas)
+│   └── stats.css           # Estadísticas
 │
 ├── js/
-│   ├── data.js             # MATCHES (72 grupo), KNOCKOUT (60), TEAMS, FEEDER_MAP
-│   ├── firebase-config.js  # Configuracion Firebase (API keys, project ID)
-│   ├── firebase.js         # Firestore queries, listeners, auto-qualify, propagate
-│   └── app.js              # Logica de la UI principal
+│   ├── data.js             # MATCHES (72), KNOCKOUT (60), TEAMS, FEEDER_MAP
+│   ├── firebase-config.js  # Config Firebase
+│   ├── firebase.js         # Firestore listeners, ESPN polling, auto-qualify
+│   ├── toast.js            # Toast notification system + Web Audio API
+│   └── app.js              # UI logic principal
 │
 ├── scripts/
-│   ├── espn-poller.js      # Node.js script para GitHub Actions (ESPN → Firestore)
-│   └── test-espn-api.js    # Script de testing para la API de ESPN
+│   ├── espn-poller.js      # ESPN → Firestore (GitHub Actions)
+│   └── test-espn-api.js    # ESPN API testing
 │
-└── .github/
-    └── workflows/
-        └── espn-sync.yml   # GitHub Actions workflow (poll cada 2 min)
+└── .github/workflows/
+    └── espn-sync.yml       # Poll ESPN cada 2 min
 ```
 
-## Setup
+---
 
-### 1. Firebase
+## 🚀 Setup
+
+### 1️⃣ Firebase
 1. Crear proyecto en [Firebase Console](https://console.firebase.google.com/)
 2. Agregar app web y copiar la config
 3. Crear `js/firebase-config.js`:
@@ -119,45 +143,58 @@ FixtureWC2026/
    };
    const FIREBASE_ENABLED = true;
    ```
-4. Crear un usuario en Firebase Auth (Authentication → Sign-in method → Email/Password)
-5. Configurar `firestore.rules` para restringir escritura
+4. Crear usuario en Firebase Auth (Email/Password)
+5. Configurar `firestore.rules`
 
-### 2. Datos Iniciales
+### 2️⃣ Datos Iniciales
 1. Abrir `admin-seed.html` en el browser
 2. Loguearse con el usuario creado
-3. Click en **"Prediccion AI Completa"** para cargar todos los datos (grupos + eliminatorias + goleadores + tarjetas)
-4. O cargar por separado: primero "Cargar 72 Partidos", luego "Prediccion AI Grupos", etc.
+3. Click en **"Predicción AI Completa"** para cargar todo
 
-### 3. ESPN Live Sync (GitHub Actions)
+### 3️⃣ ESPN Live Sync (GitHub Actions)
 1. Crear Service Account en Firebase Console → Project Settings → Service Accounts
-2. Descargar clave privada JSON
-3. Agregar 3 secrets en GitHub repo settings:
-   - `FIREBASE_PROJECT_ID` → el project ID de Firebase
-   - `FIREBASE_PRIVATE_KEY` → el campo `private_key` del JSON
-   - `FIREBASE_CLIENT_EMAIL` → el campo `client_email` del JSON
-4. El workflow se activa automaticamente en Jun-Jul 2026 (cron `*/5 * * 6-7 *`)
-5. Se puede testear manualmente con "Run workflow" en la pestaña Actions
+2. Agregar 3 secrets en el repo:
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_PRIVATE_KEY`
+   - `FIREBASE_CLIENT_EMAIL`
+3. El workflow se activa automáticamente en Jun-Jul 2026
 
-### 4. Hosting
-Cualquier host estatico funciona (GitHub Pages, Netlify, Vercel, etc). No necesita servidor.
+### 4️⃣ Hosting
+Cualquier host estático funciona (GitHub Pages, Netlify, Vercel, etc). No necesita servidor.
 
-## ESPN API Mapeo
+---
 
-Se mapearon las 72 competiciones de ESPN a los 72 partidos de fase de grupos. El script `espn-poller.js` usa un `ESPN_COMP_MAP` que traduce IDs de competicion ESPN a IDs de partidos internos (1-72).
+## 📡 ESPN API Mapeo
 
-Rangos:
-- Grupos A-L: competiciones 1001-1012 (1ra fecha), 2001-2012 (2da), 3001-3012 (3ra)
-- Total: 72 partidos mapeados
+Se mapearon las 72 competiciones de ESPN a los 72 partidos de fase de grupos:
 
-## Notas
+| Fase | Rango ESPN | Partidos |
+|---|---|---|
+| Fecha 1 | 1001 – 1012 | 12 partidos |
+| Fecha 2 | 2001 – 2012 | 12 partidos |
+| Fecha 3 | 3001 – 3012 | 12 partidos |
 
-- El sitio es 100% client-side. No hay servidor de backend propio.
-- Firebase Firestore se usa solo como base de datos en tiempo real.
-- La API de ESPN es publica y no requiere API key.
-- El workflow de GitHub Actions tiene un timeout de 6 minutos (3 iteraciones x 120s sleep + polling).
-- Las predicciones AI se generaron con criterios futbolisticos (ranking FIFA, calidad de plantilla, rendimiento reciente, factor local). No son datos reales.
-- Argentina campeon (4ta estrella: 1978, 1986, 2022, 2026). Si, me baso en datos y tambien queria poner contento al usuario. 🇦🇷 🤞 **ANOLO MUFA** 🤞
+---
 
-## Licencia
+## 📌 Notas
 
-Uso personal / educativo. Los datos del fixture pertenecen a FIFA. Las predicciones son ficcion.
+- 💡 El sitio es **100% client-side**. No hay backend propio.
+- 🔥 Firebase Firestore se usa solo como base de datos en tiempo real.
+- ⚡ La API de ESPN es pública y no requiere API key.
+- ⏱️ El workflow de GitHub Actions tiene un timeout de 6 minutos (3 iteraciones × 120s sleep + polling).
+- 🤖 Las predicciones AI se generaron con criterios futbolísticos (ranking FIFA, calidad de plantilla, rendimiento reciente).
+- 🇦🇷 **Argentina campeón** (4ta estrella: 1978, 1986, 2022, 2026). Datos + deseo. **AÑOLO MUFA** 🤞
+
+---
+
+## 📜 Licencia
+
+Uso personal / educativo. Los datos del fixture pertenecen a FIFA. Las predicciones son ficción.
+
+<div align="center">
+
+**Hecho con ❤️ y 🇦🇷 por [MozzVader](https://github.com/mozzvader)**
+
+[☕ Invitame un cafecito](https://cafecito.app/mozz_vader)
+
+</div>
