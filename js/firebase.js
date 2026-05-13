@@ -22,6 +22,11 @@ let KNOCKOUT_LIVE = null;
 /* ===== TOAST TRACKING ===== */
 // Suppress toasts during initial Firestore load (first snapshot)
 let _toastsReady = false;
+// Per-listener first-load flags (each listener has its own initial snapshot)
+let _matchesFirstDone = false;
+let _knockoutFirstDone = false;
+let _scorersFirstDone = false;
+let _cardsFirstDone = false;
 // Track known scorers/cards to detect new entries
 const _knownScorers = new Set();
 const _knownCards = new Set();
@@ -100,6 +105,12 @@ function initFirebase() {
     listenScorers();
     listenCards();
 
+    // Enable toasts after a delay (all 4 listeners got their first snapshot)
+    setTimeout(() => {
+      _toastsReady = true;
+      console.log('[WC2026] Toast notifications activadas.');
+    }, 3000);
+
   } catch (e) {
     console.error('[WC2026] Error al inicializar Firebase:', e);
   }
@@ -130,8 +141,8 @@ function listenMatches() {
           localMatch.status = data.status || 'upcoming';
           localMatch.minute = data.minute || null;
 
-          // ─── Toast detection (only after initial load) ───
-          if (_toastsReady && typeof showToast === 'function') {
+          // ─── Toast detection (only after initial load AND real-time changes) ───
+          if (_toastsReady && _matchesFirstDone && change.type === 'modified' && typeof showToast === 'function') {
             const homeTeam = TEAMS[localMatch.home];
             const awayTeam = TEAMS[localMatch.away];
 
@@ -146,9 +157,8 @@ function listenMatches() {
               });
             }
 
-            // Goal detected: score changed while live
-            if (localMatch.status === 'live' &&
-                prevHomeScore != null && data.homeScore != null &&
+            // Goal detected: score changed (works for ANY status change, not just live)
+            if (prevHomeScore != null && data.homeScore != null &&
                 prevAwayScore != null && data.awayScore != null) {
               const homeDiff = data.homeScore - prevHomeScore;
               const awayDiff = data.awayScore - prevAwayScore;
@@ -174,8 +184,8 @@ function listenMatches() {
               }
             }
 
-            // Match ended: live → completed
-            if (prevStatus === 'live' && localMatch.status === 'completed') {
+            // Match ended: live → completed (or any → completed with score)
+            if ((prevStatus === 'live' || prevStatus === 'upcoming') && localMatch.status === 'completed') {
               console.log(`[WC2026] Finalizado: ${localMatch.home} ${localMatch.homeScore}-${localMatch.awayScore} ${localMatch.away}`);
               showToast('match-end', {
                 homeName: homeTeam ? homeTeam.name : localMatch.home,
@@ -193,14 +203,17 @@ function listenMatches() {
       }
     });
 
-    // Mark toasts as ready after first snapshot
-    if (!_toastsReady) _toastsReady = true;
+    // Mark matches listener first load complete
+    if (!_matchesFirstDone) {
+      _matchesFirstDone = true;
+      console.log('[WC2026] Matches listener: primer snapshot completo.');
+    }
 
     if (hasChanges) {
       console.log('[WC2026] Datos actualizados. Refrescando UI...');
       recalculateStandings();
       refreshUI();
-      // Auto-update knockout qualifiers as groups complete
+      // Auto-update knockout qualifiers as groups complete (admin-only)
       autoUpdateQualifiers();
     }
   }, error => {
@@ -302,8 +315,8 @@ function listenScorers() {
       renderScorers();
       console.log('[WC2026] Goleadores actualizados:', STATS.scorers.length);
 
-      // ─── Goal Toast: detect new scorer entries ───
-      if (_toastsReady && typeof showToast === 'function') {
+      // ─── Goal Toast: detect new scorer entries (only after first load) ───
+      if (_scorersFirstDone && typeof showToast === 'function') {
         snapshot.docChanges().forEach(change => {
           if (change.type === 'added') {
             const d = change.doc.data();
@@ -312,7 +325,6 @@ function listenScorers() {
             _knownScorers.add(key);
 
             const team = TEAMS[d.teamCode];
-            // Find the match for context
             const matchId = d.matchId;
             let matchLabel = '';
             if (matchId != null) {
@@ -335,11 +347,12 @@ function listenScorers() {
         });
       }
       // Populate known set on first load (suppress toasts)
-      if (!_toastsReady) {
+      if (!_scorersFirstDone) {
         snapshot.docs.forEach(doc => {
           const d = doc.data();
           _knownScorers.add((d.name || '') + '_' + (d.teamCode || ''));
         });
+        _scorersFirstDone = true;
       }
     }, error => {
       console.error('[WC2026] Error en listener de goleadores:', error);
@@ -361,8 +374,8 @@ function listenCards() {
       renderCards();
       console.log('[WC2026] Tarjetas actualizadas.');
 
-      // ─── Card Toast: detect new card entries ───
-      if (_toastsReady && typeof showToast === 'function') {
+      // ─── Card Toast: detect new card entries (only after first load) ───
+      if (_cardsFirstDone && typeof showToast === 'function') {
         snapshot.docChanges().forEach(change => {
           if (change.type === 'added') {
             const d = change.doc.data();
@@ -372,7 +385,6 @@ function listenCards() {
 
             const team = TEAMS[d.teamCode];
             const cardType = d.type === 'red' ? 'card--red' : 'card--yellow';
-            // Find the match for context
             const matchId = d.matchId;
             let matchLabel = '';
             if (matchId != null) {
@@ -394,11 +406,12 @@ function listenCards() {
         });
       }
       // Populate known set on first load (suppress toasts)
-      if (!_toastsReady) {
+      if (!_cardsFirstDone) {
         snapshot.docs.forEach(doc => {
           const d = doc.data();
           _knownCards.add((d.name || '') + '_' + (d.teamCode || '') + '_' + (d.type || ''));
         });
+        _cardsFirstDone = true;
       }
     }, error => {
       console.error('[WC2026] Error en listener de tarjetas:', error);
@@ -459,8 +472,8 @@ function listenKnockout() {
       return raw;
     });
 
-    // ─── Knockout Toast detection (only after initial load) ───
-    if (_toastsReady && typeof showToast === 'function') {
+    // ─── Knockout Toast detection (only after first load + modified docs) ───
+    if (_toastsReady && _knockoutFirstDone && typeof showToast === 'function') {
       snapshot.docChanges().forEach(change => {
         if (change.type === 'modified') {
           const d = { id: change.doc.id, ...change.doc.data() };
@@ -541,10 +554,16 @@ function listenKnockout() {
       final: docs.find(d => d.id === 'FINAL') || null
     };
 
+    // Mark knockout first load done
+    if (!_knockoutFirstDone) {
+      _knockoutFirstDone = true;
+      console.log('[WC2026] Knockout listener: primer snapshot completo.');
+    }
+
     console.log('[WC2026] Eliminatorias actualizadas. Re-renderizando bracket...');
     initBracket();
     refreshKnockoutCalendar();
-    // Auto-propagate winners when knockout matches are completed
+    // Auto-propagate winners when knockout matches are completed (admin-only)
     autoPropagateWinners();
   }, error => {
     console.error('[WC2026] Error en listener de eliminatorias:', error);
@@ -873,9 +892,13 @@ const _writtenGroups = new Set();
 async function autoUpdateQualifiers() {
   if (!db) return;
 
+  // Skip auto-write from public site (no auth) — only works from admin-seed.html
+  // This prevents "Missing or insufficient permissions" errors
+  console.log('[WC2026 AUTO] autoUpdateQualifiers: skip (solo desde admin).');
+  return;
+
   recalculateStandings();
 
-  // Check which groups are fully complete (all 6 matches played)
   const newlyCompleted = [];
   let totalComplete = 0;
 
@@ -1016,6 +1039,10 @@ let _autoPropagating = false;
 
 async function autoPropagateWinners() {
   if (!db || _autoPropagating) return;
+
+  // Skip auto-write from public site (no auth) — only works from admin-seed.html
+  console.log('[WC2026 AUTO] autoPropagateWinners: skip (solo desde admin).');
+  return;
 
   try {
     const snapshot = await db.collection('knockout').get();
