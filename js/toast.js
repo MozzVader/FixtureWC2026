@@ -30,6 +30,8 @@ function toggleMute() {
   localStorage.setItem(TOAST_MUTE_KEY, toastMuted);
   updateMuteButton();
   showToastMessage(toastMuted ? 'Sonido desactivado' : 'Sonido activado', 'info');
+  // Request browser notification permission on user gesture (click)
+  requestNotificationPermission();
 }
 
 function updateMuteButton() {
@@ -44,7 +46,22 @@ function updateMuteButton() {
 }
 
 /* ===== WEB AUDIO — SOUND EFFECTS ===== */
+let _audioUnlocked = false;
+
+// Unlock audio on first user interaction (browser requirement)
+function unlockAudio() {
+  if (_audioUnlocked) return;
+  _audioUnlocked = true;
+  document.removeEventListener('click', unlockAudio);
+  document.removeEventListener('keydown', unlockAudio);
+  document.removeEventListener('touchstart', unlockAudio);
+}
+document.addEventListener('click', unlockAudio, { once: false });
+document.addEventListener('keydown', unlockAudio, { once: false });
+document.addEventListener('touchstart', unlockAudio, { once: false });
+
 function getAudioContext() {
+  if (!_audioUnlocked) return null; // Don't create until user interacts
   if (!audioCtx || audioCtx.state === 'closed') {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
@@ -58,8 +75,9 @@ function getAudioContext() {
  */
 function playWhistle() {
   if (toastMuted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
 
     [0, 0.18, 0.36].forEach(delay => {
       const osc = ctx.createOscillator();
@@ -85,8 +103,9 @@ function playWhistle() {
  */
 function playGoalSound() {
   if (toastMuted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
   try {
-    const ctx = getAudioContext();
 
     [0, 0.10, 0.20, 0.36, 0.46].forEach(delay => {
       const osc = ctx.createOscillator();
