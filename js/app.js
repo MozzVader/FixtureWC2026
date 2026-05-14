@@ -305,13 +305,15 @@ function renderUpcomingMatches() {
     if (!home || !away) return;
 
     const status = match.status || 'upcoming';
-    const isLive = status === 'live';
+    const isLive = status === 'live' || status === 'halftime';
     const isCompleted = status === 'completed';
+    const isHalftime = match.minute === 'HT';
     const hasScore = match.homeScore != null && match.awayScore != null;
 
-    // Status badge (LIVE or FT)
+    // Status badge (LIVE, HT or FT)
     let statusBadge = '';
-    if (isLive) statusBadge = `<div class="upcoming__match-badge"><span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span></div>`;
+    if (isHalftime) statusBadge = `<div class="upcoming__match-badge"><span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span></div>`;
+    else if (isLive) statusBadge = `<div class="upcoming__match-badge"><span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span></div>`;
     else if (isCompleted) statusBadge = `<div class="upcoming__match-badge"><span class="ft-badge">Final</span></div>`;
 
     // Score or VS
@@ -419,8 +421,9 @@ function renderCalendar(container, matches, filter) {
       if (!home || !away) return;
 
       const status = match.status || 'upcoming';
-      const isLive = status === 'live';
+      const isLive = status === 'live' || status === 'halftime';
       const isCompleted = status === 'completed';
+      const isHalftime = match.minute === 'HT';
       const hasScore = match.homeScore != null && match.awayScore != null;
 
       // Match wrapper class
@@ -430,7 +433,8 @@ function renderCalendar(container, matches, filter) {
 
       // Time/status column
       let timeDisplay = convertTime(match.time, match.date);
-      if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
+      if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
+      else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
       else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
 
       // Score or VS display
@@ -678,12 +682,14 @@ function renderBracketMatch(match, isFinal = false) {
   // Scores (from Firebase knockout or group matches)
   const hasScore = match.homeScore != null && match.awayScore != null;
   const status = match.status || 'upcoming';
-  const isLive = status === 'live';
+  const isLive = status === 'live' || status === 'halftime';
   const isCompleted = status === 'completed';
+  const isHalftime = match.minute === 'HT';
 
   // Status badge
   let statusHtml = '';
-  if (isLive) statusHtml = `<span class="live-badge"><span class="live-dot"></span>${match.minute ? match.minute + "'" : 'EN VIVO'}</span>`;
+  if (isHalftime) statusHtml = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
+  else if (isLive) statusHtml = `<span class="live-badge"><span class="live-dot"></span>${match.minute ? match.minute + "'" : 'EN VIVO'}</span>`;
   else if (isCompleted) statusHtml = '<span class="ft-badge">FT</span>';
 
   return `
@@ -908,8 +914,9 @@ function renderKnockoutCalendar(container) {
       const awayName = awayTeam ? awayTeam.name : (labelParts[1] || 'Por definir');
 
       const status = match.status || 'upcoming';
-      const isLive = status === 'live';
+      const isLive = status === 'live' || status === 'halftime';
       const isCompleted = status === 'completed';
+      const isHalftime = match.minute === 'HT';
       const hasScore = match.homeScore != null && match.awayScore != null;
 
       const matchClasses = ['calendar__match'];
@@ -918,7 +925,8 @@ function renderKnockoutCalendar(container) {
 
       // Time/status
       let timeDisplay = match._round || '';
-      if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
+      if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
+      else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
       else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
 
       // Score or VS

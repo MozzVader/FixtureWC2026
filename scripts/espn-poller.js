@@ -72,7 +72,7 @@ function parseESPNStatus(statusName) {
     case 'STATUS_PENALTY_SHOOTOUT':
                                return 'live';
     case 'STATUS_HALFTIME':
-    case 'STATUS_HALF_TIME':   return 'live';
+    case 'STATUS_HALF_TIME':   return 'halftime';
     case 'STATUS_FULL_TIME':
     case 'STATUS_FINAL':
     case 'STATUS_FINAL_AET':
@@ -184,7 +184,7 @@ async function writeGroupMatch(localId, comp) {
     homeScore: status !== 'upcoming' ? homeScore : null,
     awayScore: status !== 'upcoming' ? awayScore : null,
     status,
-    minute: status === 'live' ? minute : null,
+    minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
   };
 
@@ -264,7 +264,7 @@ async function findAndWriteKnockout(comp) {
     homeScore: status !== 'upcoming' ? homeScore : null,
     awayScore: status !== 'upcoming' ? awayScore : null,
     status,
-    minute: status === 'live' ? minute : null,
+    minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
   };
 

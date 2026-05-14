@@ -146,8 +146,8 @@ function listenMatches() {
             const homeTeam = TEAMS[localMatch.home];
             const awayTeam = TEAMS[localMatch.away];
 
-            // Match started: upcoming → live
-            if (prevStatus === 'upcoming' && localMatch.status === 'live') {
+            // Match started: upcoming → live (or halftime)
+            if (prevStatus === 'upcoming' && (localMatch.status === 'live' || localMatch.status === 'halftime')) {
               showToast('match-start', {
                 homeName: homeTeam ? homeTeam.name : localMatch.home,
                 awayName: awayTeam ? awayTeam.name : localMatch.away,
@@ -184,8 +184,8 @@ function listenMatches() {
               }
             }
 
-            // Match ended: live → completed (or any → completed with score)
-            if ((prevStatus === 'live' || prevStatus === 'upcoming') && localMatch.status === 'completed') {
+            // Match ended: live/halftime → completed (or any → completed with score)
+            if ((prevStatus === 'live' || prevStatus === 'halftime' || prevStatus === 'upcoming') && localMatch.status === 'completed') {
               console.log(`[WC2026] Finalizado: ${localMatch.home} ${localMatch.homeScore}-${localMatch.awayScore} ${localMatch.away}`);
               showToast('match-end', {
                 homeName: homeTeam ? homeTeam.name : localMatch.home,
@@ -489,7 +489,7 @@ function listenKnockout() {
           const awayTeam = d.away ? TEAMS[d.away] : null;
 
           // Knockout match started
-          if (prevStatus === 'upcoming' && newStatus === 'live' && homeTeam && awayTeam) {
+          if (prevStatus === 'upcoming' && (newStatus === 'live' || newStatus === 'halftime') && homeTeam && awayTeam) {
             // Determine round label
             const roundLabel = getKnockoutRoundLabel(d.id);
             showToast('match-start', {
@@ -527,7 +527,7 @@ function listenKnockout() {
           }
 
           // Knockout match ended
-          if (prevStatus === 'live' && newStatus === 'completed' && homeTeam && awayTeam) {
+          if ((prevStatus === 'live' || prevStatus === 'halftime') && newStatus === 'completed' && homeTeam && awayTeam) {
             showToast('match-end', {
               homeName: homeTeam.name,
               awayName: awayTeam.name,
