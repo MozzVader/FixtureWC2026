@@ -17,7 +17,7 @@
 [🌐 Ver en vivo](https://fixturewc2026.pages.dev/) ·
 [🏆 Predicción AI](PREDICCION_AI.md) ·
 [☕ Cafecito](https://cafecito.app/mozz_vader) ·
-[📩 Contacto](https://mozzdev.pages.dev/))
+[📩 Contacto](https://mozzdev.pages.dev/)
 
 </div>
 
