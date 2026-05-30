@@ -224,8 +224,8 @@
         <a href="https://twitter.com/intent/tweet?url=https://fixturewc2026.pages.dev/&text=Fixture%20completo%20Mundial%20FIFA%202026%20%E2%9A%BD&via=mozz_vader" target="_blank" rel="noopener noreferrer" title="Compartir en X">
           <i class="fa-brands fa-x-twitter"></i>
         </a>
-        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" title="Instagram">
-          <i class="fa-brands fa-instagram"></i>
+        <a href="#" onclick="copyShareLink(event); return false;" title="Copiar link">
+          <i class="fa-solid fa-link"></i>
         </a>
         <a href="https://api.whatsapp.com/send?text=Fixture%20completo%20Mundial%20FIFA%202026%20%E2%9A%BD%20https%3A%2F%2Ffixturewc2026.pages.dev%2F" target="_blank" rel="noopener noreferrer" title="Compartir por WhatsApp">
           <i class="fa-brands fa-whatsapp"></i>
@@ -233,9 +233,9 @@
       </div>
       <!-- GitHub & Cafecito (center) -->
       <div class="footer__center">
-        <a href="https://github.com/mozzvader/FixtureWC2026" target="_blank" rel="noopener noreferrer" title="GitHub">
-          <i class="fa-brands fa-github"></i>
-          <span>GitHub</span>
+        <a href="https://mozzdev.pages.dev/" target="_blank" rel="noopener noreferrer" title="Contacto">
+          <i class="fa-solid fa-envelope"></i>
+          <span>Contacto</span>
         </a>
         <span class="footer-sep">|</span>
         <a href="https://cafecito.app/mozz_vader" target="_blank" rel="noopener noreferrer" title="Cafecito">
@@ -281,6 +281,32 @@
   <script>
     // Initialize toast system (notification permission requested on first user click)
     initToast();
+
+    // Copy share link to clipboard
+    function copyShareLink(e) {
+      e.preventDefault();
+      const url = window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        if (typeof showToastMessage === 'function') {
+          showToastMessage('Link copiado al portapapeles', 'info');
+        } else if (typeof showToast === 'function') {
+          showToast('custom', { message: 'Link copiado al portapapeles' });
+        } else {
+          alert('Link copiado: ' + url);
+        }
+      }).catch(() => {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (typeof showToastMessage === 'function') {
+          showToastMessage('Link copiado al portapapeles', 'info');
+        }
+      });
+    }
   </script>
   <script>
     /* ═══ DARK MODE TOGGLE ═══ */
