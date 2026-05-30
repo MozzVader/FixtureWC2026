@@ -6,7 +6,7 @@
 
 **48 selecciones · 12 grupos · 104 partidos · 16 sedes**
 
-[![Live Site](https://img.shields.io/badge/Site-Live-0288D1?style=for-the-badge&logo=github&logoColor=white)](https://mozzvader.github.io/FixtureWC2026/)
+[![Live Site](https://img.shields.io/badge/Site-Live-0288D1?style=for-the-badge&logo=github&logoColor=white)](https://fixturewc2026.pages.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28?style=flat-square&logo=firebase&logoColor=black)](https://firebase.google.com)
 [![ESPN API](https://img.shields.io/badge/Data-ESPN_API-E50414?style=flat-square&logo=espn&logoColor=white)](https://site.api.espn.com)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)](.github/workflows/espn-sync.yml)
@@ -14,7 +14,7 @@
 
 <br>
 
-[🌐 Ver en vivo](https://mozzvader.github.io/FixtureWC2026/) ·
+[🌐 Ver en vivo](https://fixturewc2026.pages.dev/) ·
 [🏆 Predicción AI](PREDICCION_AI.md) ·
 [☕ Cafecito](https://cafecito.app/mozz_vader) ·
 [🐦 Contacto](https://twitter.com/mozz_vader)
