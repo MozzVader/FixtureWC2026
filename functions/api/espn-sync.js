@@ -4,14 +4,14 @@
  *
  * Environment variables (set in Cloudflare Pages → Settings → Environment variables):
  *   FIREBASE_PROJECT_ID
- *   FIREBASE_PRIVATE_KEY   (PEM string with \n as literal \\n)
+ *   FIREBASE_PRIVATE_KEY   (PEM string, \n as literal \\n or real newlines)
  *   FIREBASE_CLIENT_EMAIL
  *   CRON_SECRET            (optional, prevent unauthorized calls)
  */
 
 const ESPN_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
 
-/* ─── ESPN Maps (same as espn-poller.js) ─── */
+/* ─── ESPN Maps ─── */
 const ESPN_GROUP_MAP = {
   1:'760415',2:'760414',3:'760416',4:'760417',5:'760420',6:'760419',7:'760418',8:'760421',
   9:'760422',10:'760423',11:'760425',12:'760424',13:'760426',14:'760427',15:'760428',16:'760429',
@@ -23,7 +23,6 @@ const ESPN_GROUP_MAP = {
   57:'760473',58:'760468',59:'760471',60:'760472',61:'760476',62:'760477',63:'760478',64:'760479',
   65:'760475',66:'760474',67:'760483',68:'760484',69:'760481',70:'760482',71:'760485',72:'760480'
 };
-
 const ESPN_TO_LOCAL = {};
 for (const [lid, eid] of Object.entries(ESPN_GROUP_MAP)) ESPN_TO_LOCAL[eid] = parseInt(lid);
 
@@ -46,34 +45,21 @@ function parseStatus(name) {
   return 'upcoming';
 }
 
-function parseMinute(comp) {
-  const m = comp.status?.displayClock || comp.status?.type?.detail || '';
-  if (!m || m === '0' || m === "0'") return null;
-  return String(m).replace("'", '');
-}
-
 function parseDetails(comp, competitors) {
   const details = comp.details || [];
   const goals = [], cards = [];
   const idToCode = {};
   if (competitors) competitors.forEach(c => { if (c.team?.id && c.team?.abbreviation) idToCode[c.team.id] = c.team.abbreviation; });
-
   for (const d of details) {
     const minute = d.clock?.displayValue || '';
     const isGoal = d.scoringPlay === true;
     let teamCode = d.team?.abbreviation || idToCode[d.team?.id] || '';
-    let athlete = '', assistName = '';
-    if (d.participants?.[0]?.athlete?.displayName) {
-      athlete = d.participants[0].athlete.displayName;
-      assistName = d.participants?.[1]?.athlete?.displayName || '';
-    } else if (d.athletesInvolved?.[0]?.displayName) {
-      athlete = d.athletesInvolved[0].displayName;
-      assistName = d.athletesInvolved?.[1]?.displayName || '';
-    }
+    let athlete = '';
+    if (d.participants?.[0]?.athlete?.displayName) athlete = d.participants[0].athlete.displayName;
+    else if (d.athletesInvolved?.[0]?.displayName) athlete = d.athletesInvolved[0].displayName;
     const code = TEAM_MAP[teamCode] || teamCode;
     const isYellow = (d.cardType?.displayValue || '').includes('Yellow') || d.yellowCard === true;
     const isRed = (d.cardType?.displayValue || '').includes('Red') || d.redCard === true;
-
     if (isGoal && athlete) goals.push({ minute, team: code, scorer: athlete, type: d.ownGoal ? 'own_goal' : d.penaltyKick ? 'penalty' : 'goal' });
     if (isYellow && athlete) cards.push({ minute, team: code, player: athlete, type: 'yellow' });
     else if (isRed && athlete) cards.push({ minute, team: code, player: athlete, type: 'red' });
@@ -81,16 +67,15 @@ function parseDetails(comp, competitors) {
   return { goals, cards };
 }
 
-/* ─── Firebase Auth (JWT signing via Web Crypto API) ─── */
-function base64url(buf) {
-  const bytes = buf instanceof Uint8Array ? buf : new TextEncoder().encode(buf);
-  let str = '';
-  bytes.forEach(b => str += String.fromCharCode(b));
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/* ─── Firebase Auth (JWT via Web Crypto API) ─── */
+function b64url(data) {
+  const bytes = data instanceof Uint8Array ? data : new TextEncoder().encode(String(data));
+  let s = ''; bytes.forEach(b => s += String.fromCharCode(b));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
 function pemToDer(pem) {
-  const b64 = pem.replace(/-----BEGIN.*?-----/, '').replace(/-----END.*?-----/, '').replace(/\s/g, '');
+  const b64 = pem.replace(/-----BEGIN[^-]*-----/, '').replace(/-----END[^-]*-----/, '').replace(/\s/g, '');
   const bin = atob(b64);
   const buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
@@ -99,203 +84,210 @@ function pemToDer(pem) {
 
 async function getAccessToken(clientEmail, privateKey) {
   const now = Math.floor(Date.now() / 1000);
-  const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const payload = base64url(JSON.stringify({
-    iss: clientEmail,
-    scope: 'https://www.googleapis.com/auth/cloud-platform',
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now, exp: now + 3600
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload = b64url(JSON.stringify({
+    iss: clientEmail, scope: 'https://www.googleapis.com/auth/cloud-platform',
+    aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600
   }));
   const unsigned = `${header}.${payload}`;
-
-  const key = await crypto.subtle.importKey(
-    'pkcs8', pemToDer(privateKey),
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']
-  );
+  const key = await crypto.subtle.importKey('pkcs8', pemToDer(privateKey),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(unsigned));
-  const jwt = `${unsigned}.${base64url(sig)}`;
+  const jwt = `${unsigned}.${b64url(sig)}`;
 
   const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
   });
   const data = await res.json();
-  if (!data.access_token) throw new Error('No access_token: ' + JSON.stringify(data));
+  if (!data.access_token) throw new Error('OAuth failed: ' + JSON.stringify(data));
   return data.access_token;
 }
 
-/* ─── Firestore REST API helpers ─── */
-async function fsSet(token, projectId, collection, docId, fields) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}/${docId}`;
-  const body = { fields: {} };
-  for (const [k, v] of Object.entries(fields)) {
-    if (v === null || v === undefined) { body.fields[k] = { nullValue: null }; }
-    else if (typeof v === 'number') { body.fields[k] = { integerValue: v }; }
-    else if (typeof v === 'boolean') { body.fields[k] = { booleanValue: v }; }
-    else if (typeof v === 'string') { body.fields[k] = { stringValue: v }; }
-    else if (v === 'SERVER_TIMESTAMP') { body.fields[k] = { sentinelValue: 'SERVER_TIMESTAMP' }; }
-  }
-  // Use merge via PATCH (mask with *)
-  await fetch(url + '?updateMask.fieldPaths=*', {
-    method: 'PATCH',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+/* ─── Firestore REST API ─── */
+const FS = (pid, path) => `https://firestore.googleapis.com/v1/projects/${pid}/databases/(default)/documents/${path}`;
+const authHeaders = (token) => ({ 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' });
+
+function toFieldValue(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'number') return { integerValue: v };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  return { stringValue: String(v) };
 }
 
-async function fsAdd(token, projectId, collection, fields) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}`;
-  const body = { fields: {} };
-  for (const [k, v] of Object.entries(fields)) {
-    if (v === null || v === undefined) { body.fields[k] = { nullValue: null }; }
-    else if (typeof v === 'number') { body.fields[k] = { integerValue: v }; }
-    else if (typeof v === 'boolean') { body.fields[k] = { booleanValue: v }; }
-    else if (typeof v === 'string') { body.fields[k] = { stringValue: v }; }
-  }
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+function toFields(obj) {
+  const fields = {};
+  for (const [k, v] of Object.entries(obj)) fields[k] = toFieldValue(v);
+  return fields;
 }
 
-async function fsQuery(token, projectId, collection, whereField, whereOp, whereValue) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+// Merge-write a document (only updates specified fields)
+async function fsMerge(token, pid, collection, docId, fields) {
+  const url = FS(pid, `${collection}/${docId}`);
+  // Build updateMask from field names
+  const mask = Object.keys(fields).map(f => `updateMask.fieldPaths=${f}`).join('&');
+  const res = await fetch(`${url}?${mask}`, {
+    method: 'PATCH', headers: authHeaders(token),
+    body: JSON.stringify({ fields: toFields(fields) })
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`fsMerge ${collection}/${docId}: ${res.status} ${err}`);
+  }
+}
+
+// Add a new document (auto-ID)
+async function fsAdd(token, pid, collection, fields) {
+  const res = await fetch(FS(pid, collection), {
+    method: 'POST', headers: authHeaders(token),
+    body: JSON.stringify({ fields: toFields(fields) })
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`fsAdd ${collection}: ${res.status} ${err}`);
+  }
+  return res.json();
+}
+
+// Query documents
+async function fsQuery(token, pid, collection, field, value) {
+  const res = await fetch(FS(pid, ':runQuery'), {
+    method: 'POST', headers: authHeaders(token),
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId: collection }],
-        where: { fieldFilter: { field: { fieldPath: whereField }, op: whereOp, value: { stringValue: whereValue } } }
+        where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } }
       }
     })
   });
   const data = await res.json();
-  return (data || []).filter(r => r.document).map(r => r.document);
+  return (data || []).filter(r => r.document).map(r => ({
+    path: r.document.name.split('/documents/')[1],
+    data: r.document.fields
+  }));
 }
 
-async function fsDelete(token, projectId, docPath) {
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${docPath}`;
-  await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+// Delete a document
+async function fsDelete(token, pid, docPath) {
+  await fetch(FS(pid, docPath), { method: 'DELETE', headers: authHeaders(token) });
 }
 
-/* ─── Main poll logic ─── */
+/* ─── Poll Logic ─── */
 function getDates() {
   const dates = [];
-  const now = new Date();
   for (let off = -1; off <= 1; off++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + off);
+    const d = new Date(); d.setDate(d.getDate() + off);
     dates.push(d.toISOString().split('T')[0].replace(/-/g, ''));
   }
   return dates;
 }
 
-async function pollDate(dateStr, token, projectId) {
-  const res = await fetch(`${ESPN_BASE}/scoreboard?dates=${dateStr}`);
-  const data = await res.json();
-  const events = data.events || [];
-  let updated = 0, errors = 0;
+async function processMatch(token, pid, comp) {
+  const espnId = String(comp.id);
+  const localId = ESPN_TO_LOCAL[espnId];
+  if (!localId) return null;
 
-  for (const ev of events) {
-    const comp = ev.competitions[0];
-    const espnId = String(ev.id);
-    const statusName = comp.status.type.name;
-    if (statusName === 'STATUS_SCHEDULED') continue;
+  const home = comp.competitors.find(t => t.homeAway === 'home');
+  const away = comp.competitors.find(t => t.homeAway === 'away');
+  const hs = parseInt(home.score) || 0, as = parseInt(away.score) || 0;
+  const status = parseStatus(comp.status.type.name);
+  const minute = (status === 'live' || status === 'halftime')
+    ? (status === 'halftime' ? 'HT' : (comp.status.displayClock || '')) : '';
+  const { goals, cards } = parseDetails(comp, comp.competitors);
 
-    try {
-      const localId = ESPN_TO_LOCAL[espnId];
-      if (!localId) continue;
+  // Write match score
+  await fsMerge(token, pid, 'matches', String(localId), {
+    id: localId,
+    homeScore: status !== 'upcoming' ? hs : null,
+    awayScore: status !== 'upcoming' ? as : null,
+    status, minute,
+    lastUpdated: new Date().toISOString()
+  });
 
-      const home = comp.competitors.find(t => t.homeAway === 'home');
-      const away = comp.competitors.find(t => t.homeAway === 'away');
-      const hs = parseInt(home.score) || 0, as = parseInt(away.score) || 0;
-      const status = parseStatus(statusName);
-      const minute = (status === 'live' || status === 'halftime')
-        ? (status === 'halftime' ? 'HT' : (comp.status.displayClock || null)) : null;
-      const { goals, cards } = parseDetails(comp, comp.competitors);
-
-      // Write match
-      await fsSet(token, projectId, 'matches', String(localId), {
-        id: localId,
-        homeScore: status !== 'upcoming' ? hs : null,
-        awayScore: status !== 'upcoming' ? as : null,
-        status, minute,
-        lastUpdated: 'SERVER_TIMESTAMP'
+  // Scorers: delete old, write new
+  if (goals.length > 0) {
+    const old = await fsQuery(token, pid, 'scorers', 'matchId', String(localId));
+    for (const doc of old) await fsDelete(token, pid, doc.path);
+    for (const g of goals) {
+      await fsAdd(token, pid, 'scorers', {
+        name: g.scorer, teamCode: g.team, goals: 1, assists: 0,
+        matchId: String(localId), minute: g.minute, type: g.type
       });
+    }
+  }
 
-      // Write scorers (delete old first, then add new)
-      if (goals.length > 0) {
-        const old = await fsQuery(token, projectId, 'scorers', 'matchId', 'EQUAL', String(localId));
-        for (const doc of old) await fsDelete(token, projectId, doc.name.split('/documents/')[1]);
-        for (const g of goals) {
-          await fsAdd(token, projectId, 'scorers', {
+  // Cards: delete old, write new
+  if (cards.length > 0) {
+    const old = await fsQuery(token, pid, 'cards', 'matchId', String(localId));
+    for (const doc of old) await fsDelete(token, pid, doc.path);
+    for (const c of cards) {
+      await fsAdd(token, pid, 'cards', {
+        name: c.player, teamCode: c.team, type: c.type, count: 1,
+        matchId: String(localId), minute: c.minute
+      });
+    }
+  }
+
+  // For completed: also fetch summary for richer details
+  if (status === 'completed') {
+    try {
+      const sumRes = await fetch(`${ESPN_BASE}/summary?event=${espnId}`);
+      const sum = await sumRes.json();
+      const sumComp = sum.header.competitions[0];
+      const { goals: dg, cards: dc } = parseDetails(sumComp, sumComp.competitors);
+
+      if (dg.length > 0) {
+        const old = await fsQuery(token, pid, 'scorers', 'matchId', String(localId));
+        for (const doc of old) await fsDelete(token, pid, doc.path);
+        for (const g of dg) {
+          await fsAdd(token, pid, 'scorers', {
             name: g.scorer, teamCode: g.team, goals: 1, assists: 0,
             matchId: String(localId), minute: g.minute, type: g.type
           });
         }
       }
-
-      // Write cards (delete old first, then add new)
-      if (cards.length > 0) {
-        const old = await fsQuery(token, projectId, 'cards', 'matchId', 'EQUAL', String(localId));
-        for (const doc of old) await fsDelete(token, projectId, doc.name.split('/documents/')[1]);
-        for (const c of cards) {
-          await fsAdd(token, projectId, 'cards', {
+      if (dc.length > 0) {
+        const old = await fsQuery(token, pid, 'cards', 'matchId', String(localId));
+        for (const doc of old) await fsDelete(token, pid, doc.path);
+        for (const c of dc) {
+          await fsAdd(token, pid, 'cards', {
             name: c.player, teamCode: c.team, type: c.type, count: 1,
             matchId: String(localId), minute: c.minute
           });
         }
       }
-
-      // If completed, also fetch summary for richer data
-      if (status === 'completed') {
-        try {
-          const sumRes = await fetch(`${ESPN_BASE}/summary?event=${espnId}`);
-          const sum = await sumRes.json();
-          const sumComp = sum.header.competitions[0];
-          const { goals: dg, cards: dc } = parseDetails(sumComp, sumComp.competitors);
-
-          if (dg.length > 0) {
-            const old = await fsQuery(token, projectId, 'scorers', 'matchId', 'EQUAL', String(localId));
-            for (const doc of old) await fsDelete(token, projectId, doc.name.split('/documents/')[1]);
-            for (const g of dg) {
-              await fsAdd(token, projectId, 'scorers', {
-                name: g.scorer, teamCode: g.team, goals: 1, assists: 0,
-                matchId: String(localId), minute: g.minute, type: g.type
-              });
-            }
-          }
-          if (dc.length > 0) {
-            const old = await fsQuery(token, projectId, 'cards', 'matchId', 'EQUAL', String(localId));
-            for (const doc of old) await fsDelete(token, projectId, doc.name.split('/documents/')[1]);
-            for (const c of dc) {
-              await fsAdd(token, projectId, 'cards', {
-                name: c.player, teamCode: c.team, type: c.type, count: 1,
-                matchId: String(localId), minute: c.minute
-              });
-            }
-          }
-        } catch (_) {}
-      }
-
-      updated++;
     } catch (e) {
-      console.error(`Error ${espnId}:`, e.message);
-      errors++;
+      console.error('Summary error:', e.message);
     }
   }
-  return { matches: events.length, updated, errors };
+
+  return { localId, status, homeScore: hs, awayScore: as, goals: goals.length, cards: cards.length };
 }
 
-/* ─── Request Handler ─── */
+async function pollDate(dateStr, token, pid) {
+  const res = await fetch(`${ESPN_BASE}/scoreboard?dates=${dateStr}`);
+  const data = await res.json();
+  const events = data.events || [];
+  const results = [];
+
+  for (const ev of events) {
+    const comp = ev.competitions[0];
+    if (comp.status.type.name === 'STATUS_SCHEDULED') continue;
+    try {
+      const r = await processMatch(token, pid, comp);
+      if (r) results.push(r);
+    } catch (e) {
+      results.push({ error: e.message, espnId: ev.id });
+    }
+  }
+  return results;
+}
+
+/* ─── Handler ─── */
 export async function onRequestGet(context) {
   const { FIREBASE_PROJECT_ID: pid, FIREBASE_PRIVATE_KEY: pk, FIREBASE_CLIENT_EMAIL: ce, CRON_SECRET: secret } = context.env;
 
-  // Auth check
-  if (!pid || !pk || !ce) return new Response(JSON.stringify({ error: 'Missing Firebase config' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  if (!pid || !pk || !ce) return new Response(JSON.stringify({ error: 'Missing Firebase env vars' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   const url = new URL(context.request.url);
   if (secret && url.searchParams.get('secret') !== secret) return new Response('Unauthorized', { status: 401 });
 
@@ -303,19 +295,17 @@ export async function onRequestGet(context) {
   try {
     const token = await getAccessToken(ce, pk.replace(/\\n/g, '\n'));
     const dates = getDates();
-    const results = {};
+    const details = {};
     let totalUpdated = 0;
-
     for (const d of dates) {
-      results[d] = await pollDate(d, token, pid);
-      totalUpdated += results[d].updated;
+      details[d] = await pollDate(d, token, pid);
+      totalUpdated += details[d].length;
     }
-
-    return new Response(JSON.stringify({ ok: true, ms: Date.now() - start, totalUpdated, details: results }), {
+    return new Response(JSON.stringify({ ok: true, ms: Date.now() - start, totalUpdated, details }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: e.message, ms: Date.now() - start }), {
+    return new Response(JSON.stringify({ ok: false, error: e.message, stack: e.stack, ms: Date.now() - start }), {
       status: 500, headers: { 'Content-Type': 'application/json' }
     });
   }
