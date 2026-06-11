@@ -105,6 +105,9 @@ function initFirebase() {
     listenScorers();
     listenCards();
 
+    // Start browser-side ESPN polling → writes to 'matches' collection
+    startEspnPolling();
+
     // Enable toasts after a delay (all 4 listeners got their first snapshot)
     setTimeout(() => {
       _toastsReady = true;
@@ -966,4 +969,147 @@ function refreshKnockoutCalendar() {
       renderKnockoutCalendar(container);
     }
   }
+}
+
+/* ===== ESPN BROWSER POLLING =====
+ * Polls ESPN API directly from the browser and writes live scores
+ * to the Firestore 'matches' collection. The existing onSnapshot
+ * listener (listenMatches) picks up the changes and refreshes the UI.
+ *
+ * This complements the server-side espn-poller.js (GitHub Actions)
+ * by providing real-time updates when users have the page open.
+ */
+
+// ESPN Group Match Mapping (local_id → ESPN event ID) — same as espn-poller.js
+const ESPN_GROUP_MAP = {
+  1:'760415',2:'760414',3:'760416',4:'760417',5:'760420',6:'760419',7:'760418',8:'760421',
+  9:'760422',10:'760423',11:'760425',12:'760424',13:'760426',14:'760427',15:'760428',16:'760429',
+  17:'760432',18:'760430',19:'760433',20:'760431',21:'760435',22:'760436',23:'760437',24:'760434',
+  25:'760438',26:'760441',27:'760439',28:'760440',29:'760445',30:'760444',31:'760442',32:'760443',
+  33:'760448',34:'760446',35:'760447',36:'760449',37:'760451',38:'760452',39:'760453',40:'760450',
+  41:'760457',42:'760454',43:'760456',44:'760455',45:'760461',46:'760459',47:'760458',48:'760460',
+  49:'760467',50:'760466',51:'760463',52:'760462',53:'760465',54:'760464',55:'760470',56:'760469',
+  57:'760473',58:'760468',59:'760471',60:'760472',61:'760476',62:'760477',63:'760478',64:'760479',
+  65:'760475',66:'760474',67:'760483',68:'760484',69:'760481',70:'760482',71:'760485',72:'760480'
+};
+
+// Reverse map: ESPN ID → local match ID
+const ESPN_TO_LOCAL = {};
+for (const [localId, espnId] of Object.entries(ESPN_GROUP_MAP)) {
+  ESPN_TO_LOCAL[espnId] = parseInt(localId);
+}
+
+const ESPN_API_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
+const ESPN_CORS_PROXIES = [
+  { name: 'allorigins', build: u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+  { name: 'corsproxy.org', build: u => 'https://corsproxy.org/?' + encodeURIComponent(u) },
+  { name: 'corsproxy.io',  build: u => 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+];
+
+let _espnPollTimer = null;
+
+function _parseESPNStatus(statusName) {
+  switch (statusName) {
+    case 'STATUS_IN_PROGRESS': case 'STATUS_1ST_PERIOD': case 'STATUS_2ND_PERIOD':
+    case 'STATUS_3RD_PERIOD': case 'STATUS_FIRST_HALF': case 'STATUS_SECOND_HALF':
+    case 'STATUS_EXTRA_TIME': case 'STATUS_PENALTY_SHOOTOUT':
+      return 'live';
+    case 'STATUS_HALFTIME': case 'STATUS_HALF_TIME':
+      return 'halftime';
+    case 'STATUS_FULL_TIME': case 'STATUS_FINAL':
+    case 'STATUS_FINAL_AET': case 'STATUS_FINAL_PEN':
+      return 'completed';
+    default:
+      return 'upcoming';
+  }
+}
+
+async function _espnBrowserFetch(url) {
+  try {
+    const res = await fetch(url);
+    if (res.ok) return await res.json();
+  } catch (e) { /* CORS blocked */ }
+  for (const proxy of ESPN_CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy.build(url));
+      if (res.ok) {
+        console.log(`[ESPN-Poll] via ${proxy.name}`);
+        return await res.json();
+      }
+    } catch (e) { /* try next */ }
+  }
+  return null;
+}
+
+function _getEspnPollDates() {
+  const dates = [];
+  const now = new Date();
+  for (let offset = -1; offset <= 1; offset++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + offset);
+    dates.push(d.toISOString().split('T')[0].replace(/-/g, ''));
+  }
+  return dates;
+}
+
+async function _espnPollOnce() {
+  if (!db) return;
+  const dates = _getEspnPollDates();
+  let updated = 0;
+
+  for (const dateStr of dates) {
+    const url = `${ESPN_API_BASE}/scoreboard?dates=${dateStr}`;
+    const data = await _espnBrowserFetch(url);
+    if (!data || !data.events) continue;
+
+    for (const event of data.events) {
+      const espnId = String(event.id);
+      const comp = event.competitions[0];
+      const statusName = comp.status.type.name;
+      if (statusName === 'STATUS_SCHEDULED') continue;
+
+      const localId = ESPN_TO_LOCAL[espnId];
+      if (!localId) continue;
+
+      const homeTeam = comp.competitors.find(t => t.homeAway === 'home');
+      const awayTeam = comp.competitors.find(t => t.homeAway === 'away');
+      if (!homeTeam || !awayTeam) continue;
+
+      const homeScore = parseInt(homeTeam.score) || 0;
+      const awayScore = parseInt(awayTeam.score) || 0;
+      const status = _parseESPNStatus(statusName);
+      const displayClock = comp.status.displayClock || '';
+      const minute = (status === 'live' || status === 'halftime')
+        ? (status === 'halftime' ? 'HT' : (displayClock || null))
+        : null;
+
+      try {
+        await db.collection('matches').doc(String(localId)).set({
+          id: localId,
+          homeScore: homeScore,
+          awayScore: awayScore,
+          status: status,
+          minute: minute,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        updated++;
+      } catch (e) {
+        console.warn(`[ESPN-Poll] Error writing match ${localId}:`, e.message);
+      }
+    }
+  }
+  if (updated > 0) {
+    console.log(`[ESPN-Poll] ${updated} match(es) updated → matches collection`);
+  }
+}
+
+/**
+ * Start browser-side ESPN polling (every 2 min).
+ * Idempotent — safe to call multiple times.
+ */
+function startEspnPolling() {
+  if (_espnPollTimer) return;
+  console.log('[ESPN-Poll] Starting every 2 min...');
+  _espnPollOnce();
+  _espnPollTimer = setInterval(_espnPollOnce, 120000);
 }
