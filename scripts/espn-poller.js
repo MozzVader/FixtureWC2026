@@ -152,14 +152,14 @@ function initFirebase() {
   }
 
   try {
-    const admin = require('firebase-admin');
-    const cred = admin.credential.cert({
+    const adminMod = require('firebase-admin');
+    const cred = adminMod.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     });
-    admin.initializeApp({ credential: cred });
-    db = admin.firestore();
+    adminMod.initializeApp({ credential: cred });
+    db = adminMod.firestore();
     console.log('[ESPN] ✅ Firebase Admin inicializado');
   } catch (e) {
     console.error('[ESPN] ❌ Error inicializando Firebase:', e.message);
@@ -185,7 +185,7 @@ async function writeGroupMatch(localId, comp) {
     awayScore: status !== 'upcoming' ? awayScore : null,
     status,
     minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
   };
 
   await db.collection('matches').doc(String(localId)).set(data, { merge: true });
@@ -265,7 +265,7 @@ async function findAndWriteKnockout(comp) {
     awayScore: status !== 'upcoming' ? awayScore : null,
     status,
     minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
   };
 
   await db.collection('knockout').doc(matchDoc.id).set(data, { merge: true });
