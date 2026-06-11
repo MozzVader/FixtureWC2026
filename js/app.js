@@ -168,7 +168,10 @@ function renderTodayMatches() {
 
   // Also check static KNOCKOUT data if no live data yet
   if (todayKnockoutMatches.length === 0 && typeof KNOCKOUT !== 'undefined') {
-    todayKnockoutMatches = KNOCKOUT.flat().filter(m => m.date === todayStr);
+    try {
+      const allKo = flattenKnockout(KNOCKOUT);
+      todayKnockoutMatches = allKo.filter(m => m.date === todayStr);
+    } catch(e) { /* KNOCKOUT structure not compatible, skip */ }
   }
 
   const allToday = [...todayGroupMatches, ...todayKnockoutMatches];
