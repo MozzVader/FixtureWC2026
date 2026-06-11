@@ -312,7 +312,7 @@ async function writeScorers(goals, matchId) {
       name: goal.scorer,
       teamCode: goal.team,
       goals: 1,
-      assists: goal.assist ? 1 : 0,
+      assists: 0,
       matchId: String(matchId),
       minute: goal.minute,
       type: goal.type,
