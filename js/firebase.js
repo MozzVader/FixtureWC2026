@@ -105,9 +105,6 @@ function initFirebase() {
     listenScorers();
     listenCards();
 
-    // Start browser-side ESPN polling → writes to 'matches' collection
-    startEspnPolling();
-
     // Enable toasts after a delay (all 4 listeners got their first snapshot)
     setTimeout(() => {
       _toastsReady = true;
@@ -117,6 +114,9 @@ function initFirebase() {
   } catch (e) {
     console.error('[WC2026] Error al inicializar Firebase:', e);
   }
+
+  // ESPN polling works independently of Firebase (direct API → MATCHES[] → UI)
+  startEspnPolling();
 }
 
 /* ===== MATCH LISTENER ===== */
@@ -1040,7 +1040,6 @@ function _getEspnPollDates() {
 }
 
 async function _espnPollOnce() {
-  if (!db) return;
   const dates = _getEspnPollDates();
   let updated = 0;
 
@@ -1058,6 +1057,10 @@ async function _espnPollOnce() {
       const localId = ESPN_TO_LOCAL_BROWSER[espnId];
       if (!localId) continue;
 
+      // Update MATCHES[] in memory directly (no Firestore write needed)
+      const localMatch = MATCHES.find(m => m.id === localId);
+      if (!localMatch) continue;
+
       const homeTeam = comp.competitors.find(t => t.homeAway === 'home');
       const awayTeam = comp.competitors.find(t => t.homeAway === 'away');
       if (!homeTeam || !awayTeam) continue;
@@ -1070,23 +1073,25 @@ async function _espnPollOnce() {
         ? (status === 'halftime' ? 'HT' : (displayClock || null))
         : null;
 
-      try {
-        await db.collection('matches').doc(String(localId)).set({
-          id: localId,
-          homeScore: homeScore,
-          awayScore: awayScore,
-          status: status,
-          minute: minute,
-          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+      // Only update if something changed
+      if (localMatch.status !== status ||
+          localMatch.homeScore !== homeScore ||
+          localMatch.awayScore !== awayScore ||
+          localMatch.minute !== minute) {
+        localMatch.homeScore = homeScore;
+        localMatch.awayScore = awayScore;
+        localMatch.status = status;
+        localMatch.minute = minute;
         updated++;
-      } catch (e) {
-        console.warn(`[ESPN-Poll] Error writing match ${localId}:`, e.message);
       }
     }
   }
+
   if (updated > 0) {
-    console.log(`[ESPN-Poll] ${updated} match(es) updated → matches collection`);
+    console.log(`[ESPN-Poll] ${updated} match(es) updated from ESPN API`);
+    // Refresh the entire UI with new data
+    recalculateStandings();
+    refreshUI();
   }
 }
 
