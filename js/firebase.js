@@ -424,9 +424,10 @@ function listenCards() {
  * Preserves current filter state in calendar.
  */
 function refreshUI() {
-  // Today's matches in hero section (replaces countdown during tournament)
-  renderTodayMatches();
-  // Upcoming matches in hero section (team picker)
+  // Today's matches in hero section
+  if (typeof renderTodayMatches === 'function') renderTodayMatches();
+
+  // Upcoming matches in hero section
   renderUpcomingMatches();
 
   // Calendar (preserve active filter/tab)

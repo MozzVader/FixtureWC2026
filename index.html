@@ -99,28 +99,8 @@
     <h1 class="hero__title">World Cup 2026</h1>
     <p class="hero__subtitle">Estados Unidos · México · Canadá</p>
 
-    <!-- Flip Clock Countdown (hidden during tournament) -->
-    <div class="countdown" id="countdown">
-      <div class="countdown__unit">
-        <div class="countdown__flip-card"><span class="countdown__number" id="cd-days">--</span></div>
-        <span class="countdown__label">Días</span>
-      </div>
-      <div class="countdown__unit">
-        <div class="countdown__flip-card"><span class="countdown__number" id="cd-hours">--</span></div>
-        <span class="countdown__label">Horas</span>
-      </div>
-      <div class="countdown__unit">
-        <div class="countdown__flip-card"><span class="countdown__number" id="cd-minutes">--</span></div>
-        <span class="countdown__label">Minutos</span>
-      </div>
-      <div class="countdown__unit">
-        <div class="countdown__flip-card"><span class="countdown__number" id="cd-seconds">--</span></div>
-        <span class="countdown__label">Segundos</span>
-      </div>
-    </div>
-
-    <!-- Today's Matches (shown during tournament, replaces countdown) -->
-    <div class="hero-today" id="hero-today" style="display:none"></div>
+    <!-- Today's Matches (replaces countdown) -->
+    <div id="today-matches" class="today-matches"></div>
 
     <!-- Team Selector Chip -->
     <button class="team-picker__chip" id="team-picker-chip" aria-label="Elegir selección">
@@ -237,7 +217,7 @@
       </div>
       <!-- GitHub & Cafecito (center) -->
       <div class="footer__center">
-        <a href="https://www.mozzdev.com/" target="_blank" rel="noopener noreferrer" title="Contacto">
+        <a href="https://mozzdev.pages.dev/" target="_blank" rel="noopener noreferrer" title="Contacto">
           <i class="fa-solid fa-envelope"></i>
           <span>Contacto</span>
         </a>

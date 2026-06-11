@@ -42,8 +42,8 @@ function convertTime(timeStr, dateStr) {
 
 /** Re-render all time-dependent UI sections when TZ changes */
 function refreshTimes() {
-  renderUpcomingMatches();
   renderTodayMatches();
+  renderUpcomingMatches();
   const calContainer = document.getElementById('calendar-content');
   if (calContainer) {
     const activeFilter = document.querySelector('.calendar__filter-btn.active');
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initFirebase();   // Firebase real-time listeners (non-blocking)
   initNavbar();
   initTeamPicker();
-  initCountdown();
+  renderTodayMatches();   // Today's matches in hero (replaces countdown)
   initCalendar();
   initGroups();
   initBracket();
@@ -121,135 +121,131 @@ function updateActiveLink() {
   });
 }
 
-/* ===== COUNTDOWN ===== */
-function isTournamentLive() {
-  // Tournament starts at TOURNAMENT.startDate (2026-06-11T16:00 ART)
-  return Date.now() >= new Date(TOURNAMENT.startDate).getTime();
-}
+/* ===== TODAY'S MATCHES (Hero — replaces countdown) ===== */
 
 /**
- * Get today's date in ART (UTC-3) with a 2AM cutoff.
- * A match ending at 1:59 AM ART still belongs to the previous "match day".
+ * Get today's date in Argentina (UTC-3) with a 2AM cutoff.
+ * If it's before 2AM ART, we consider it "yesterday's matchday" still.
+ * Returns "YYYY-MM-DD" string.
  */
-function getMatchDayART() {
+function getArtTodayDate() {
   const now = new Date();
-  // Convert to ART: UTC - 3h
-  const artMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 3600000;
+  // Convert to Argentina time (UTC-3)
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const artMs = utcMs - 3 * 60 * 60000;
   const artDate = new Date(artMs);
-  // If ART hour < 2, this is still the previous match day
+  // 2AM cutoff: if before 2AM, subtract one day
   if (artDate.getHours() < 2) {
     artDate.setDate(artDate.getDate() - 1);
   }
-  return artDate.toISOString().slice(0, 10);
+  const y = artDate.getFullYear();
+  const m = String(artDate.getMonth() + 1).padStart(2, '0');
+  const d = String(artDate.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 /**
- * Collect all matches for a given date string (group + knockout).
+ * Render today's matches in the hero section using calendar__match format.
+ * Reads from MATCHES[] (which is updated in real-time by firebase.js onSnapshot).
+ * Also includes knockout matches if KNOCKOUT_LIVE data is available.
  */
-function getMatchesByDate(dateStr) {
-  const all = [];
-  // Group stage
-  if (typeof MATCHES !== 'undefined') {
-    MATCHES.forEach(m => {
-      if (m.date === dateStr) {
-        m._source = 'group';
-        all.push(m);
-      }
-    });
+function renderTodayMatches() {
+  const container = document.getElementById('today-matches');
+  if (!container) return;
+
+  const todayStr = getArtTodayDate();
+
+  // Gather group stage matches for today
+  let todayGroupMatches = MATCHES.filter(m => m.date === todayStr);
+
+  // Gather knockout matches for today (from live Firestore data)
+  let todayKnockoutMatches = [];
+  if (KNOCKOUT_LIVE) {
+    // KNOCKOUT_LIVE is organized by round, flatten it
+    const allKo = flattenKnockout(KNOCKOUT_LIVE);
+    todayKnockoutMatches = allKo.filter(m => m.date === todayStr);
   }
-  // Knockout stage
-  const koSource = (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE)
-    ? KNOCKOUT_LIVE
-    : (typeof KNOCKOUT !== 'undefined' ? KNOCKOUT : null);
-  if (koSource) {
-    Object.values(koSource).flat().forEach(m => {
-      if (m.date === dateStr) {
-        m._source = 'knockout';
-        all.push(m);
-      }
-    });
+
+  // Also check static KNOCKOUT data if no live data yet
+  if (todayKnockoutMatches.length === 0 && typeof KNOCKOUT !== 'undefined') {
+    todayKnockoutMatches = KNOCKOUT.flat().filter(m => m.date === todayStr);
   }
-  return all;
-}
 
-function initCountdown() {
-  const countdownEl = document.getElementById('countdown');
-  const heroToday = document.getElementById('hero-today');
+  const allToday = [...todayGroupMatches, ...todayKnockoutMatches];
 
-  if (isTournamentLive()) {
-    // ── TOURNAMENT MODE: hide countdown, show today's matches in hero ──
-    if (countdownEl) countdownEl.style.display = 'none';
-    if (heroToday) heroToday.style.display = '';
-    renderTodayMatches();
-    renderUpcomingMatches();
+  if (allToday.length === 0) {
+    // No matches today — show a subtle message
+    container.innerHTML = '<div class="today-matches__empty">No hay partidos hoy</div>';
+    return;
+  }
 
-    // Auto-refresh at next 2AM ART boundary
-    scheduleDayRollover();
-  } else {
-    // ── PRE-TOURNAMENT: show countdown + inaugural/selected team matches ──
-    const target = new Date(TOURNAMENT.startDate).getTime();
-    const els = {
-      days: document.getElementById('cd-days'),
-      hours: document.getElementById('cd-hours'),
-      minutes: document.getElementById('cd-minutes'),
-      seconds: document.getElementById('cd-seconds')
-    };
+  let html = '<div class="calendar__match-list today-matches__list">';
 
-    function update() {
-      const now = new Date().getTime();
-      const diff = target - now;
+  allToday.forEach(match => {
+    const home = TEAMS[match.home];
+    const away = TEAMS[match.away];
+    if (!home || !away) return;
 
-      if (diff <= 0) {
-        if (els.days) els.days.textContent = '0';
-        if (els.hours) els.hours.textContent = '0';
-        if (els.minutes) els.minutes.textContent = '0';
-        if (els.seconds) els.seconds.textContent = '0';
-        // Tournament just started — switch to live mode
-        if (countdownEl) countdownEl.style.display = 'none';
-        if (heroToday) heroToday.style.display = '';
-        renderTodayMatches();
-        renderUpcomingMatches();
-        scheduleDayRollover();
-        return;
-      }
+    const status = match.status || 'upcoming';
+    const isLive = status === 'live' || status === 'halftime';
+    const isCompleted = status === 'completed';
+    const isHalftime = match.minute === 'HT';
+    const hasScore = match.homeScore != null && match.awayScore != null;
 
-      const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const s = Math.floor((diff % (1000 * 60)) / 1000);
+    // Match wrapper class
+    const matchClasses = ['calendar__match'];
+    if (isLive) matchClasses.push('calendar__match--live');
+    if (isCompleted) matchClasses.push('calendar__match--completed');
 
-      if (els.days) els.days.textContent = String(d).padStart(2, '0');
-      if (els.hours) els.hours.textContent = String(h).padStart(2, '0');
-      if (els.minutes) els.minutes.textContent = String(m).padStart(2, '0');
-      if (els.seconds) els.seconds.textContent = String(s).padStart(2, '0');
+    // Time/status column
+    let timeDisplay = convertTime(match.time, match.date);
+    if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
+    else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
+    else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
+
+    // Score or VS display
+    let scoreHtml;
+    if (hasScore) {
+      scoreHtml = `
+        <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
+        <span class="calendar__match-vs--dash">-</span>
+        <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
+      `;
+    } else {
+      scoreHtml = `
+        <div class="calendar__match-score"></div>
+        <span class="calendar__match-vs">VS</span>
+        <div class="calendar__match-score"></div>
+      `;
     }
 
-    update();
-    setInterval(update, 1000);
-    renderUpcomingMatches();
-  }
-}
+    // Group label (for group stage) or round label (for knockout)
+    const groupLabel = match.group ? `Grupo ${match.group}` : (match._round || '');
 
-/** Schedule a re-render at the next 2AM ART boundary. */
-function scheduleDayRollover() {
-  const now = new Date();
-  const artMs = now.getTime() + now.getTimezoneOffset() * 60000 - 3 * 3600000;
-  const artDate = new Date(artMs);
-  // Calculate ms until next 2AM ART
-  let msUntil2AM;
-  if (artDate.getHours() < 2) {
-    // Already past midnight but before 2AM — next rollover is tomorrow
-    msUntil2AM = (24 - artDate.getHours() + 2) * 3600000 - artDate.getMinutes() * 60000 - artDate.getSeconds() * 1000;
-  } else {
-    // Before midnight ART
-    msUntil2AM = (24 - artDate.getHours() + 2) * 3600000 - artDate.getMinutes() * 60000 - artDate.getSeconds() * 1000;
-  }
-  setTimeout(() => {
-    renderTodayMatches();
-    renderUpcomingMatches();
-    // Schedule next rollover
-    scheduleDayRollover();
-  }, Math.max(msUntil2AM, 60000));
+    html += `
+      <div class="${matchClasses.join(' ')}">
+        <div class="calendar__match-time">${timeDisplay}</div>
+        <div class="calendar__match-teams">
+          <div class="calendar__match-team">
+            ${getFlagHtml(home.code)}
+            <span>${home.name}</span>
+          </div>
+          ${scoreHtml}
+          <div class="calendar__match-team">
+            ${getFlagHtml(away.code)}
+            <span>${away.name}</span>
+          </div>
+        </div>
+        <div class="calendar__match-venue">
+          <span class="calendar__match-venue--city">${match.city || ''}</span>
+          ${groupLabel ? `<span class="calendar__match-group">${groupLabel}</span>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 /* ===== TEAM PICKER ===== */
@@ -371,17 +367,17 @@ function updateChipLabel(label, chip) {
   }
 }
 
-/* ===== UPCOMING MATCHES (team picker section — always shows team/inaugural matches) ===== */
+/* ===== UPCOMING MATCHES ===== */
 function renderUpcomingMatches() {
   const container = document.getElementById('upcoming-matches');
   if (!container) return;
 
   let upcoming;
-
-  // Always: selected team's ALL matches, or inaugural (first 3)
   if (selectedTeam && TEAMS[selectedTeam]) {
+    // Show all matches for the selected team (group stage)
     upcoming = MATCHES.filter(m => m.home === selectedTeam || m.away === selectedTeam);
   } else {
+    // Show first 3 group stage matches (inaugural)
     upcoming = MATCHES.slice(0, 3);
   }
 
@@ -418,12 +414,6 @@ function renderUpcomingMatches() {
 
     const matchClass = isLive ? 'upcoming__match--live' : (isCompleted ? 'upcoming__match--completed' : '');
 
-    // Info line: show time for upcoming, venue for live/completed
-    const isKnockout = match._source === 'knockout';
-    const groupLabel = isKnockout
-      ? (match._round || 'Eliminatoria')
-      : `Grupo ${match.group}`;
-
     html += `
       <div class="upcoming__match ${matchClass}">
         ${statusBadge}
@@ -439,101 +429,13 @@ function renderUpcomingMatches() {
           </div>
         </div>
         <div class="upcoming__info">
-          ${!isCompleted && !isLive ? `<span class="upcoming__date">${convertTime(match.time, match.date)} hs</span>` : ''}
-          <span>${match.city} · <span class="calendar__match-group">${groupLabel}</span></span>
+          <span class="upcoming__date">${formatDate(match.date)} — ${convertTime(match.time, match.date)} hs</span>
+          <span>${match.city} · <span class="calendar__match-group">Grupo ${match.group}</span></span>
         </div>
       </div>
     `;
   });
 
-  container.innerHTML = html;
-}
-
-/* ===== TODAY'S MATCHES (hero section, calendar bar format) ===== */
-function renderTodayMatches() {
-  const container = document.getElementById('hero-today');
-  if (!container) return;
-  if (container.style.display === 'none') return; // not in tournament mode
-
-  const todayStr = getMatchDayART();
-  const todayMatches = getMatchesByDate(todayStr);
-
-  if (todayMatches.length === 0) {
-    container.innerHTML = '<div class="hero-today__empty">No hay partidos programados para hoy.</div>';
-    return;
-  }
-
-  let html = '<div class="hero-today__title"><i class="fas fa-calendar-day"></i> Partidos de Hoy</div>';
-  html += '<div class="calendar__match-list">';
-
-  todayMatches.forEach(match => {
-    // Normalize home/away for knockout matches
-    const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
-    const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
-    const home = TEAMS[homeCode];
-    const away = TEAMS[awayCode];
-    if (!home || !away) return;
-
-    const status = match.status || 'upcoming';
-    const isLive = status === 'live' || status === 'halftime';
-    const isCompleted = status === 'completed';
-    const isHalftime = match.minute === 'HT';
-    const hasScore = match.homeScore != null && match.awayScore != null;
-
-    const matchClasses = ['calendar__match'];
-    if (isLive) matchClasses.push('calendar__match--live');
-    if (isCompleted) matchClasses.push('calendar__match--completed');
-
-    // Time/status column
-    let timeDisplay = match.time ? convertTime(match.time, match.date) : '';
-    if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
-    else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
-    else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
-
-    // Score or VS display
-    let scoreHtml;
-    if (hasScore) {
-      scoreHtml = `
-        <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
-        <span class="calendar__match-vs--dash">-</span>
-        <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
-      `;
-    } else {
-      scoreHtml = `
-        <div class="calendar__match-score"></div>
-        <span class="calendar__match-vs">VS</span>
-        <div class="calendar__match-score"></div>
-      `;
-    }
-
-    const isKnockout = match._source === 'knockout';
-    const groupLabel = isKnockout
-      ? (match._round || 'Eliminatoria')
-      : `Grupo ${match.group}`;
-
-    html += `
-      <div class="${matchClasses.join(' ')}">
-        <div class="calendar__match-time">${timeDisplay}</div>
-        <div class="calendar__match-teams">
-          <div class="calendar__match-team">
-            ${getFlagHtml(home.code)}
-            <span>${home.name}</span>
-          </div>
-          ${scoreHtml}
-          <div class="calendar__match-team">
-            ${getFlagHtml(away.code)}
-            <span>${away.name}</span>
-          </div>
-        </div>
-        <div class="calendar__match-venue">
-          <span class="calendar__match-venue--city">${match.city}</span>
-          <span class="calendar__match-group">${groupLabel}</span>
-        </div>
-      </div>
-    `;
-  });
-
-  html += '</div>';
   container.innerHTML = html;
 }
 

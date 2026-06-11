@@ -57,58 +57,50 @@
   text-transform: uppercase;
 }
 
-/* ===== FLIP CLOCK ===== */
-.countdown {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 60px;
+/* ===== TODAY'S MATCHES (Hero) ===== */
+.today-matches {
+  width: 100%;
+  max-width: 750px;
+  margin-bottom: 40px;
 }
 
-.countdown__unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+.today-matches__list {
+  gap: 6px;
 }
 
-.countdown__flip-card {
-  position: relative;
-  width: 90px;
-  height: 110px;
-  background: rgba(1, 87, 155, 0.5);
-  border: 1px solid var(--dorado-600);
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+.today-matches__list .calendar__match {
+  padding: 12px 16px;
+  font-size: 0.9rem;
 }
 
-.countdown__flip-card::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 4px;
-  right: 4px;
-  height: 1px;
-  background: rgba(0, 0, 0, 0.2);
-  z-index: -1;
+.today-matches__list .calendar__match-team img {
+  width: 24px;
+  height: 16px;
 }
 
-.countdown__number {
-  font-family: var(--font-display);
-  font-size: 3.6rem;
-  color: var(--blanco);
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
- line-height: 1;
+.today-matches__list .calendar__match-team span {
+  font-size: 0.85rem;
 }
 
-.countdown__label {
-  font-family: var(--font-display);
+.today-matches__list .calendar__match-time {
+  min-width: 90px;
   font-size: 0.8rem;
+}
+
+.today-matches__list .calendar__match-venue {
+  min-width: 80px;
+  font-size: 0.75rem;
+}
+
+.today-matches__empty {
+  font-family: var(--font-display);
+  font-size: 1rem;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: var(--dorado-500);
+  color: var(--blanco-60);
+  padding: 20px;
+  border: 1px dashed rgba(255, 215, 0, 0.2);
+  border-radius: var(--radius-md);
 }
 
 /* ===== UPCOMING MATCHES ===== */
@@ -365,11 +357,6 @@
     radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
 }
 
-[data-theme="dark"] .countdown__flip-card {
-  background: rgba(15, 25, 55, 0.6);
-  border-color: rgba(212, 175, 55, 0.35);
-}
-
 [data-theme="dark"] .team-picker__chip {
   background: rgba(15, 25, 55, 0.55);
   border-color: rgba(212, 175, 55, 0.35);
@@ -493,21 +480,12 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .countdown {
-    gap: 10px;
+  .today-matches__list .calendar__match-venue {
+    display: none;
   }
 
-  .countdown__flip-card {
-    width: 65px;
-    height: 82px;
-  }
-
-  .countdown__number {
-    font-size: 2.5rem;
-  }
-
-  .countdown__label {
-    font-size: 0.7rem;
+  .today-matches {
+    max-width: 100%;
   }
 
   .upcoming__grid {
@@ -520,16 +498,7 @@
     padding-top: calc(var(--navbar-height) + 20px);
   }
 
-  .countdown__flip-card {
-    width: 55px;
-    height: 70px;
-  }
-
-  .countdown__number {
-    font-size: 2rem;
-  }
-
-  .countdown {
-    gap: 6px;
+  .today-matches__list .calendar__match-time {
+    min-width: 70px;
   }
 }
