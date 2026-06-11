@@ -980,23 +980,10 @@ function refreshKnockoutCalendar() {
  * by providing real-time updates when users have the page open.
  */
 
-// ESPN Group Match Mapping (local_id → ESPN event ID) — same as espn-poller.js
-const ESPN_GROUP_MAP = {
-  1:'760415',2:'760414',3:'760416',4:'760417',5:'760420',6:'760419',7:'760418',8:'760421',
-  9:'760422',10:'760423',11:'760425',12:'760424',13:'760426',14:'760427',15:'760428',16:'760429',
-  17:'760432',18:'760430',19:'760433',20:'760431',21:'760435',22:'760436',23:'760437',24:'760434',
-  25:'760438',26:'760441',27:'760439',28:'760440',29:'760445',30:'760444',31:'760442',32:'760443',
-  33:'760448',34:'760446',35:'760447',36:'760449',37:'760451',38:'760452',39:'760453',40:'760450',
-  41:'760457',42:'760454',43:'760456',44:'760455',45:'760461',46:'760459',47:'760458',48:'760460',
-  49:'760467',50:'760466',51:'760463',52:'760462',53:'760465',54:'760464',55:'760470',56:'760469',
-  57:'760473',58:'760468',59:'760471',60:'760472',61:'760476',62:'760477',63:'760478',64:'760479',
-  65:'760475',66:'760474',67:'760483',68:'760484',69:'760481',70:'760482',71:'760485',72:'760480'
-};
-
-// Reverse map: ESPN ID → local match ID
-const ESPN_TO_LOCAL = {};
+// Reverse map: ESPN ID → local match ID (ESPN_GROUP_MAP is in data.js)
+const ESPN_TO_LOCAL_BROWSER = {};
 for (const [localId, espnId] of Object.entries(ESPN_GROUP_MAP)) {
-  ESPN_TO_LOCAL[espnId] = parseInt(localId);
+  ESPN_TO_LOCAL_BROWSER[espnId] = parseInt(localId);
 }
 
 const ESPN_API_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
@@ -1068,7 +1055,7 @@ async function _espnPollOnce() {
       const statusName = comp.status.type.name;
       if (statusName === 'STATUS_SCHEDULED') continue;
 
-      const localId = ESPN_TO_LOCAL[espnId];
+      const localId = ESPN_TO_LOCAL_BROWSER[espnId];
       if (!localId) continue;
 
       const homeTeam = comp.competitors.find(t => t.homeAway === 'home');
