@@ -92,30 +92,59 @@ function parseMinute(comp) {
   return String(minute).replace("'", '');
 }
 
-function parseMatchDetails(comp) {
+function parseMatchDetails(comp, competitors) {
   const details = comp.details || [];
   const goals = [];
   const cards = [];
 
+  // Build team ID → abbreviation map from competitors (scoreboard only has team.id)
+  const idToCode = {};
+  if (competitors) {
+    competitors.forEach(c => {
+      if (c.team?.id && c.team?.abbreviation) {
+        idToCode[c.team.id] = c.team.abbreviation;
+      }
+    });
+  }
+
   for (const d of details) {
     const minute = d.clock?.displayValue || '';
-    const teamCode = d.team?.abbreviation || '';
-    const ourCode = TEAM_MAP[teamCode] || teamCode;
-    const athlete = d.participants?.[0]?.athlete?.displayName || '';
     const isGoal = d.scoringPlay === true;
-    const cardType = d.cardType?.displayValue || '';
 
-    if (isGoal) {
+    // Support both scoreboard and summary structures
+    // Summary: d.team.abbreviation, d.participants[0].athlete.displayName
+    // Scoreboard: d.team.id, d.athletesInvolved[0].displayName
+    let teamCode = d.team?.abbreviation || idToCode[d.team?.id] || '';
+    let athlete = '';
+    let assistName = '';
+    if (d.participants?.[0]?.athlete?.displayName) {
+      // Summary structure
+      athlete = d.participants[0].athlete.displayName;
+      assistName = d.participants?.[1]?.athlete?.displayName || '';
+    } else if (d.athletesInvolved?.[0]?.displayName) {
+      // Scoreboard structure
+      athlete = d.athletesInvolved[0].displayName;
+      assistName = d.athletesInvolved?.[1]?.displayName || '';
+    }
+    const ourCode = TEAM_MAP[teamCode] || teamCode;
+
+    // Cards: support both structures
+    // Summary: d.cardType.displayValue = "Yellow Card" / "Red Card"
+    // Scoreboard: d.yellowCard = true/false, d.redCard = true/false
+    const cardType = d.cardType?.displayValue || '';
+    const isYellow = cardType.includes('Yellow') || d.yellowCard === true;
+    const isRed = cardType.includes('Red') || d.redCard === true;
+
+    if (isGoal && athlete) {
       const ownGoal = d.ownGoal === true;
       const penalty = d.penaltyKick === true;
       const type = ownGoal ? 'own_goal' : (penalty ? 'penalty' : 'goal');
-      const assist = d.participants?.[1]?.athlete?.displayName || '';
-      goals.push({ minute, team: ourCode, scorer: athlete, assist, type });
+      goals.push({ minute, team: ourCode, scorer: athlete, assist: assistName, type });
     }
 
-    if (cardType.includes('Yellow')) {
+    if (isYellow && athlete) {
       cards.push({ minute, team: ourCode, player: athlete, type: 'yellow' });
-    } else if (cardType.includes('Red')) {
+    } else if (isRed && athlete) {
       cards.push({ minute, team: ourCode, player: athlete, type: 'red' });
     }
   }
@@ -177,7 +206,7 @@ async function writeGroupMatch(localId, comp) {
   const awayScore = parseInt(awayTeam.score) || 0;
   const status = parseESPNStatus(comp.status.type.name);
   const minute = parseMinute(comp);
-  const { goals, cards } = parseMatchDetails(comp);
+  const { goals, cards } = parseMatchDetails(comp, comp.competitors);
 
   const data = {
     id: localId,
@@ -252,7 +281,7 @@ async function findAndWriteKnockout(comp) {
   const awayScore = parseInt(awayTeam.score) || 0;
   const status = parseESPNStatus(comp.status.type.name);
   const minute = parseMinute(comp);
-  const { goals, cards } = parseMatchDetails(comp);
+  const { goals, cards } = parseMatchDetails(comp, comp.competitors);
 
   const homeName = homeCode;
   const awayName = awayCode;
@@ -383,7 +412,7 @@ async function poll(dateStr) {
           try {
             const summary = await fetchJSON(`${ESPN_BASE}/summary?event=${espnId}`);
             const sumComp = summary.header.competitions[0];
-            const { goals: detailedGoals, cards: detailedCards } = parseMatchDetails(sumComp);
+            const { goals: detailedGoals, cards: detailedCards } = parseMatchDetails(sumComp, sumComp.competitors);
             // Delete old scorer/card entries and rewrite with detailed data
             if (detailedGoals.length > 0) {
               // Delete old entries
