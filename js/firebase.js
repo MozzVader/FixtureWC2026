@@ -298,23 +298,24 @@ function listenScorers() {
   if (!db) return;
 
   db.collection('scorers')
-    .orderBy('goals', 'desc')
-    .limit(20)
     .onSnapshot(snapshot => {
       if (snapshot.empty && _knownScorers.size === 0) return;
-      // Deduplicate by player name + team (in case of double-seed)
-      const seen = {};
-      const unique = [];
+      // Aggregate goals/assists per player (each goal is a separate doc)
+      const playerMap = {};
       snapshot.docs.forEach(doc => {
         const d = doc.data();
         const key = (d.name || '') + '_' + (d.teamCode || '');
-        if (!seen[key]) { seen[key] = true; unique.push(d); }
+        if (!playerMap[key]) {
+          playerMap[key] = { name: d.name, teamCode: d.teamCode, goals: 0, assists: 0 };
+        }
+        playerMap[key].goals += (d.goals || 1);
+        playerMap[key].assists += (d.assists || 0);
       });
-      unique.sort((a, b) => {
+      const aggregated = Object.values(playerMap).sort((a, b) => {
         if (b.goals !== a.goals) return b.goals - a.goals;
         return (b.assists || 0) - (a.assists || 0);
       });
-      STATS.scorers = unique;
+      STATS.scorers = aggregated.slice(0, 20);
       renderScorers();
       console.log('[WC2026] Goleadores actualizados:', STATS.scorers.length);
 

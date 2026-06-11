@@ -901,12 +901,12 @@ function renderCards() {
   yellows.forEach(y => {
     const key = y.name + '_' + y.teamCode;
     if (!playerMap[key]) playerMap[key] = { name: y.name, teamCode: y.teamCode, yellow: 0, red: 0 };
-    playerMap[key].yellow = y.count || 1;
+    playerMap[key].yellow += y.count || 1;
   });
   reds.forEach(r => {
     const key = r.name + '_' + r.teamCode;
     if (!playerMap[key]) playerMap[key] = { name: r.name, teamCode: r.teamCode, yellow: 0, red: 0 };
-    playerMap[key].red = r.count || 1;
+    playerMap[key].red += r.count || 1;
   });
 
   const players = Object.values(playerMap).sort((a, b) => (b.yellow + b.red) - (a.yellow + a.red));
