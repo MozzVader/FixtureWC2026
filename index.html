@@ -99,8 +99,8 @@
     <h1 class="hero__title">World Cup 2026</h1>
     <p class="hero__subtitle">Estados Unidos · México · Canadá</p>
 
-    <!-- Flip Clock Countdown -->
-    <div class="countdown">
+    <!-- Flip Clock Countdown (hidden during tournament) -->
+    <div class="countdown" id="countdown">
       <div class="countdown__unit">
         <div class="countdown__flip-card"><span class="countdown__number" id="cd-days">--</span></div>
         <span class="countdown__label">Días</span>
@@ -118,6 +118,9 @@
         <span class="countdown__label">Segundos</span>
       </div>
     </div>
+
+    <!-- Today's Matches (shown during tournament, replaces countdown) -->
+    <div class="hero-today" id="hero-today" style="display:none"></div>
 
     <!-- Team Selector Chip -->
     <button class="team-picker__chip" id="team-picker-chip" aria-label="Elegir selección">

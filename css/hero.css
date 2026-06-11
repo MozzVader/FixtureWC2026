@@ -117,6 +117,51 @@
   max-width: 900px;
 }
 
+/* ===== HERO TODAY MATCHES (replaces countdown during tournament) ===== */
+.hero-today {
+  width: 100%;
+  max-width: 780px;
+  margin-bottom: 24px;
+}
+
+.hero-today__title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--dorado-500);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-today__title i {
+  font-size: 0.85rem;
+}
+
+.hero-today__empty {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  color: var(--blanco-60);
+  padding: 16px;
+}
+
+/* Reuse calendar__match-list from calendar.css — add hero-specific tweaks */
+.hero-today .calendar__match-list {
+  gap: 6px;
+}
+
+.hero-today .calendar__match {
+  padding: 12px 16px;
+}
+
+.hero-today .calendar__match-venue {
+  min-width: 100px;
+  font-size: 0.75rem;
+}
+
 /* ===== TEAM PICKER CHIP ===== */
 .team-picker__chip {
   display: inline-flex;
