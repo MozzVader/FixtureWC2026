@@ -1039,6 +1039,57 @@ function _getEspnPollDates() {
   return dates;
 }
 
+const ESPN_CACHE_KEY = 'wc2026_espn_cache';
+const ESPN_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours — stale but better than nothing
+
+/**
+ * Save current live scores to localStorage.
+ * Stores a map of matchId → { homeScore, awayScore, status, minute, ts }
+ */
+function _saveEspnCache() {
+  const cache = {};
+  MATCHES.forEach(m => {
+    if (m.status && m.status !== 'upcoming') {
+      cache[m.id] = {
+        homeScore: m.homeScore,
+        awayScore: m.awayScore,
+        status: m.status,
+        minute: m.minute,
+        ts: Date.now()
+      };
+    }
+  });
+  try {
+    localStorage.setItem(ESPN_CACHE_KEY, JSON.stringify(cache));
+  } catch(e) { /* quota exceeded, ignore */ }
+}
+
+/**
+ * Restore live scores from localStorage cache into MATCHES[].
+ * Called on page load before first ESPN poll.
+ */
+function _restoreEspnCache() {
+  try {
+    const raw = localStorage.getItem(ESPN_CACHE_KEY);
+    if (!raw) return 0;
+    const cache = JSON.parse(raw);
+    let restored = 0;
+    MATCHES.forEach(m => {
+      const c = cache[m.id];
+      if (!c) return;
+      // Apply cached data (even if slightly stale, better than 'upcoming')
+      if (c.homeScore != null) { m.homeScore = c.homeScore; restored++; }
+      if (c.awayScore != null) { m.awayScore = c.awayScore; }
+      if (c.status) { m.status = c.status; }
+      if (c.minute != null) { m.minute = c.minute; }
+    });
+    if (restored > 0) {
+      console.log(`[ESPN-Cache] ${restored} match(es) restored from localStorage`);
+    }
+    return restored;
+  } catch(e) { return 0; }
+}
+
 async function _espnPollOnce() {
   const dates = _getEspnPollDates();
   let updated = 0;
@@ -1089,6 +1140,8 @@ async function _espnPollOnce() {
 
   if (updated > 0) {
     console.log(`[ESPN-Poll] ${updated} match(es) updated from ESPN API`);
+    // Persist to localStorage for next visit
+    _saveEspnCache();
     // Refresh the entire UI with new data
     recalculateStandings();
     refreshUI();
@@ -1097,11 +1150,85 @@ async function _espnPollOnce() {
 
 /**
  * Start browser-side ESPN polling (every 2 min).
+ * Restores localStorage cache first for instant data on page load.
+ * If cache is empty, backfills recent completed matchdays from ESPN.
  * Idempotent — safe to call multiple times.
  */
 function startEspnPolling() {
   if (_espnPollTimer) return;
   console.log('[ESPN-Poll] Starting every 2 min...');
+  // Restore cached results from previous visits (instant, no API call)
+  const restored = _restoreEspnCache();
+  if (restored > 0) {
+    recalculateStandings();
+    refreshUI();
+  }
+  // Fetch current live data immediately
   _espnPollOnce();
+  // If no cache at all, backfill recent past matchdays (async, non-blocking)
+  if (restored === 0) {
+    _espnBackfill();
+  }
   _espnPollTimer = setInterval(_espnPollOnce, 120000);
+}
+
+/**
+ * Backfill: fetch past matchdays from ESPN to populate scores for
+ * matches that already ended. Runs once on first visit with empty cache.
+ */
+async function _espnBackfill() {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0].replace(/-/g, '');
+  // Check up to 10 past days
+  const pastDates = [];
+  for (let i = 1; i <= 10; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    pastDates.push(d.toISOString().split('T')[0].replace(/-/g, ''));
+  }
+
+  let totalUpdated = 0;
+  for (const dateStr of pastDates) {
+    // Stop if we've gone before the tournament start
+    if (dateStr < '20260611') break;
+    const url = `${ESPN_API_BASE}/scoreboard?dates=${dateStr}`;
+    const data = await _espnBrowserFetch(url);
+    if (!data || !data.events) continue;
+
+    for (const event of data.events) {
+      const espnId = String(event.id);
+      const comp = event.competitions[0];
+      const statusName = comp.status.type.name;
+
+      // Only interested in completed matches for backfill
+      const status = _parseESPNStatus(statusName);
+      if (status !== 'completed') continue;
+
+      const localId = ESPN_TO_LOCAL_BROWSER[espnId];
+      if (!localId) continue;
+      const localMatch = MATCHES.find(m => m.id === localId);
+      if (!localMatch) continue;
+      // Skip if already has this result
+      if (localMatch.status === 'completed' && localMatch.homeScore != null) continue;
+
+      const homeTeam = comp.competitors.find(t => t.homeAway === 'home');
+      const awayTeam = comp.competitors.find(t => t.homeAway === 'away');
+      if (!homeTeam || !awayTeam) continue;
+
+      localMatch.homeScore = parseInt(homeTeam.score) || 0;
+      localMatch.awayScore = parseInt(awayTeam.score) || 0;
+      localMatch.status = 'completed';
+      localMatch.minute = null;
+      totalUpdated++;
+    }
+    // Small delay between days to be nice to API
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  if (totalUpdated > 0) {
+    console.log(`[ESPN-Backfill] ${totalUpdated} historical match(es) restored`);
+    _saveEspnCache();
+    recalculateStandings();
+    refreshUI();
+  }
 }
