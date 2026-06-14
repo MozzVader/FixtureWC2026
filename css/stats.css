@@ -12,6 +12,9 @@
   overflow: hidden;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  max-height: 950px;
 }
 
 .stat-card__header {
@@ -36,6 +39,8 @@
 
 .stat-card__body {
   padding: 0;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .stat-card__table {

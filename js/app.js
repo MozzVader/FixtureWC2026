@@ -951,12 +951,6 @@ function renderCards() {
 
   html += '</tbody></table></div>';
   container.innerHTML = html;
-  // Limit card height and add scroll
-  const tableWrap = container.querySelector('.stat-card__body');
-  if (tableWrap) {
-    tableWrap.style.maxHeight = '800px';
-    tableWrap.style.overflowY = 'auto';
-  }
 }
 
 /* ===== KNOCKOUT CALENDAR (Tab View) ===== */
