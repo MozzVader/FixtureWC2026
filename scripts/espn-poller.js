@@ -118,9 +118,13 @@ function parseMatchDetails(comp, competitors) {
     let athlete = '';
     let assistName = '';
     if (d.participants?.[0]?.athlete?.displayName) {
-      // Summary structure
+      // Summary structure (full)
       athlete = d.participants[0].athlete.displayName;
       assistName = d.participants?.[1]?.athlete?.displayName || '';
+    } else if (d.participants?.[0]?.name) {
+      // Summary structure (flat — no .athlete wrapper)
+      athlete = d.participants[0].name;
+      assistName = d.participants?.[1]?.name || '';
     } else if (d.athletesInvolved?.[0]?.displayName) {
       // Scoreboard structure
       athlete = d.athletesInvolved[0].displayName;
