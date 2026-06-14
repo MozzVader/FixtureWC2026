@@ -909,10 +909,31 @@ function renderCards() {
     playerMap[key].red += r.count || 1;
   });
 
-  const players = Object.values(playerMap).sort((a, b) => (b.yellow + b.red) - (a.yellow + a.red));
+  // Default sort: reds desc, then yellows desc
+  const sortCards = (arr, key, dir) => {
+    const d = dir === 'asc' ? 1 : -1;
+    if (key === 'name') return arr.sort((a, b) => a.name.localeCompare(b.name) * d);
+    if (key === 'team') return arr.sort((a, b) => a.teamCode.localeCompare(b.teamCode) * d);
+    if (key === 'yellow') return arr.sort((a, b) => (a.yellow - b.yellow) * d || (b.red - a.red));
+    if (key === 'red') return arr.sort((a, b) => (a.red - b.red) * d || (b.yellow - a.yellow));
+    // default: reds first, then yellows
+    return arr.sort((a, b) => (b.red - a.red) || (b.yellow - a.yellow));
+  };
+
+  if (!window._cardsSortState) window._cardsSortState = { key: 'red', dir: 'desc' };
+  const players = sortCards(Object.values(playerMap), window._cardsSortState.key, window._cardsSortState.dir);
+
+  const arrow = (k) => {
+    if (window._cardsSortState.key !== k) return '';
+    return window._cardsSortState.dir === 'asc' ? ' ▲' : ' ▼';
+  };
 
   let html = '<div class="stat-card__body" style="padding:0"><table class="stat-card__table"><thead><tr>';
-  html += '<th style="width:30px">#</th><th style="text-align:left">Jugador</th><th>Selección</th><th style="text-align:center">Amarillas</th><th style="text-align:center">Rojas</th>';
+  html += '<th style="width:30px">#</th>';
+  html += '<th style="text-align:left;cursor:pointer" onclick="window._cardsSortState={key:\'name\',dir:window._cardsSortState.key===\'name\'&&window._cardsSortState.dir===\'asc\'?\'desc\':\'asc\'};renderCards()">Jugador' + arrow('name') + '</th>';
+  html += '<th style="cursor:pointer" onclick="window._cardsSortState={key:\'team\',dir:window._cardsSortState.key===\'team\'&&window._cardsSortState.dir===\'asc\'?\'desc\':\'asc\'};renderCards()">Selección' + arrow('team') + '</th>';
+  html += '<th style="text-align:center;cursor:pointer" onclick="window._cardsSortState={key:\'yellow\',dir:window._cardsSortState.key===\'yellow\'&&window._cardsSortState.dir===\'asc\'?\'desc\':\'asc\'};renderCards()">Amarillas' + arrow('yellow') + '</th>';
+  html += '<th style="text-align:center;cursor:pointer" onclick="window._cardsSortState={key:\'red\',dir:window._cardsSortState.key===\'red\'&&window._cardsSortState.dir===\'asc\'?\'desc\':\'asc\'};renderCards()">Rojas' + arrow('red') + '</th>';
   html += '</tr></thead><tbody>';
 
   players.forEach((p, i) => {
