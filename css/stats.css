@@ -25,6 +25,7 @@
   padding: 16px 20px;
   background: rgba(0, 0, 0, 0.15);
   border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  flex-shrink: 0;
 }
 
 .stat-card__header i {
@@ -43,6 +44,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  max-height: calc(950px - 55px);
 }
 
 .stat-card__table {
