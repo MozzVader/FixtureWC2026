@@ -10,7 +10,6 @@
   background: rgba(1, 87, 155, 0.35);
   border: 1px solid var(--dorado-600);
   border-radius: var(--radius-md);
-  overflow: hidden;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
