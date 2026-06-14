@@ -493,9 +493,9 @@ async function main() {
   if (specificDate) {
     dates.push(specificDate);
   } else {
-    // Poll today + yesterday + tomorrow (to catch late results and early matches)
+    // Poll 2 days back through tomorrow (to catch late results and backfill)
     const artNow = new Date(now.getTime() + (-3 * 60 * 60000 + now.getTimezoneOffset() * 60000));
-    for (let offset = -1; offset <= 1; offset++) {
+    for (let offset = -2; offset <= 1; offset++) {
       const d = new Date(artNow.getTime() + offset * 86400000);
       dates.push(d.toISOString().slice(0, 10).replace(/-/g, ''));
     }
