@@ -315,7 +315,7 @@ function listenScorers() {
         if (b.goals !== a.goals) return b.goals - a.goals;
         return (b.assists || 0) - (a.assists || 0);
       });
-      STATS.scorers = aggregated.slice(0, 20);
+      STATS.scorers = aggregated;
       renderScorers();
       console.log('[WC2026] Goleadores actualizados:', STATS.scorers.length);
 
