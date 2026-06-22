@@ -7,7 +7,12 @@
 name: ESPN Live Sync
 
 on:
-  workflow_dispatch:  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      poll_date:
+        description: 'Fecha específica para backfill (YYYYMMDD, ej: 20260612). Si se omite, usa el rango normal.'
+        required: false
+        default: ''
 
 jobs:
   sync:
@@ -52,16 +57,22 @@ jobs:
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FORCE_POLL: ${{ github.event_name == 'workflow_dispatch' && 'true' || '' }}
+          POLL_DATE: ${{ inputs.poll_date }}
         run: |
-          for i in 1 2 3; do
-            echo "⏱️ Poll iteration $i/3"
+          if [ -n "$POLL_DATE" ]; then
+            echo "🎯 Backfill para $POLL_DATE (single run)"
             node scripts/espn-poller.js
-            if [ $i -lt 3 ]; then
-              echo "😴 Waiting 120s before next poll..."
-              sleep 120
-            fi
-          done
-          echo "✅ All 3 iterations completed"
+          else
+            for i in 1 2 3; do
+              echo "⏱️ Poll iteration $i/3"
+              node scripts/espn-poller.js
+              if [ $i -lt 3 ]; then
+                echo "😴 Waiting 120s before next poll..."
+                sleep 120
+              fi
+            done
+            echo "✅ All 3 iterations completed"
+          fi
 
       - name: Log result
         if: always()
