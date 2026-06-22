@@ -6,6 +6,10 @@
 
 name: ESPN Live Sync
 
+concurrency:
+  group: espn-sync
+  cancel-in-progress: false  # Don't cancel backfill when normal poll starts
+
 on:
   workflow_dispatch:
     inputs:
