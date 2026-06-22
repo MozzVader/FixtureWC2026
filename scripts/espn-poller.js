@@ -468,8 +468,9 @@ async function main() {
   // For testing: allow FORCE_POLL=true or specific date
   const forcePoll = process.env.FORCE_POLL === 'true';
   const specificDate = process.env.POLL_DATE; // YYYYMMDD format
+  const backfillAll = process.env.BACKFILL_ALL === 'true';
 
-  if (!isTournament && !forcePoll && !specificDate) {
+  if (!isTournament && !forcePoll && !specificDate && !backfillAll) {
     console.log('[ESPN] ℹ️  Fuera del rango del torneo. No hay nada que actualizar.');
     console.log('[ESPN] ℹ️  Setear FORCE_POLL=true o POLL_DATE=YYYYMMDD para forzar.');
     return;
@@ -477,6 +478,50 @@ async function main() {
 
   // Initialize Firebase
   initFirebase();
+
+  // ─── BACKFILL ALL MODE: clean scorers/cards, then re-process all dates sequentially ───
+  if (backfillAll) {
+    console.log('[ESPN] 🧹 BACKFILL ALL — limpiando colecciones scorers y cards...');
+    // Delete entire scorers collection
+    const scorersSnap = await db.collection('scorers').get();
+    if (scorersSnap.size > 0) {
+      const batch = db.batch();
+      scorersSnap.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      console.log(`[ESPN] 🗑️  Eliminados ${scorersSnap.size} docs de scorers`);
+    }
+    // Delete entire cards collection
+    const cardsSnap = await db.collection('cards').get();
+    if (cardsSnap.size > 0) {
+      const batch2 = db.batch();
+      cardsSnap.forEach(doc => batch2.delete(doc.ref));
+      await batch2.commit();
+      console.log(`[ESPN] 🗑️  Eliminados ${cardsSnap.size} docs de cards`);
+    }
+    console.log('[ESPN] 📅 Procesando todas las fechas del torneo secuencialmente...');
+
+    // Generate all dates from tournament start to today (ART)
+    const artNow = new Date(now.getTime() + (-3 * 60 * 60000 + now.getTimezoneOffset() * 60000));
+    let d = new Date(tournamentStart.getTime() + (-3 * 60 * 60000 + new Date('2026-06-11').getTimezoneOffset() * 60000));
+    const end = new Date(artNow.getTime());
+    let totalUpdated = 0;
+    let dayNum = 0;
+    while (d <= end) {
+      const dateStr = d.toISOString().slice(0, 10).replace(/-/g, '');
+      dayNum++;
+      console.log(`\n[ESPN] 📅 Día ${dayNum}: ${dateStr}`);
+      const result = await poll(dateStr);
+      totalUpdated += result.updated;
+      // Wait between dates to avoid Firestore quota
+      if (d < end) {
+        console.log('[ESPN] 😴 Esperando 3s antes de la próxima fecha...');
+        await delay(3000);
+      }
+      d = new Date(d.getTime() + 86400000);
+    }
+    console.log(`\n[ESPN] 🏁 BACKFILL ALL completado: ${totalUpdated} partido(s) actualizado(s)`);
+    return;
+  }
 
   // Determine dates to poll
   const dates = [];

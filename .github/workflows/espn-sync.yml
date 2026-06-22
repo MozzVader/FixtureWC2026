@@ -13,6 +13,11 @@ on:
         description: 'Fecha específica para backfill (YYYYMMDD, ej: 20260612). Si se omite, usa el rango normal.'
         required: false
         default: ''
+      backfill_all:
+        description: 'Limpiar scorers/cards y re-procesar todo desde el inicio del torneo secuencialmente'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   sync:
@@ -52,14 +57,19 @@ jobs:
 
       - name: Run ESPN Poller
         if: steps.check.outputs.SKIP != 'true'
+        timeout-minutes: 30
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FORCE_POLL: ${{ github.event_name == 'workflow_dispatch' && 'true' || '' }}
           POLL_DATE: ${{ inputs.poll_date }}
+          BACKFILL_ALL: ${{ inputs.backfill_all && 'true' || '' }}
         run: |
-          if [ -n "$POLL_DATE" ]; then
+          if [ "$BACKFILL_ALL" = "true" ]; then
+            echo "🔄 BACKFILL ALL — limpiando y re-procesando todo el torneo"
+            node scripts/espn-poller.js
+          elif [ -n "$POLL_DATE" ]; then
             echo "🎯 Backfill para $POLL_DATE (single run)"
             node scripts/espn-poller.js
           else
