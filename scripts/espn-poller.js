@@ -382,32 +382,26 @@ async function poll(dateStr) {
         console.log(`  ✅ #${localId} ${homeTeam.team.abbreviation} ${result.homeScore}-${result.awayScore} ${awayTeam.team.abbreviation} [${result.status}]`);
         updated++;
 
-        // Write goals and cards if match completed or has live action
-        // Always delete old entries first to avoid duplicates on re-poll
-        if (result.goals.length > 0 || result.cards.length > 0) {
-          // Delete old scorers for this match
+        // Write goals and cards — delete and rewrite per collection independently
+        // to avoid cross-collection data loss (e.g. goals found but 0 cards → don't delete cards)
+        if (result.goals.length > 0) {
           const oldScorers = await db.collection('scorers')
-            .where('matchId', '==', String(localId))
-            .get();
+            .where('matchId', '==', String(localId)).get();
           if (oldScorers.size > 0) {
             const delBatch = db.batch();
             oldScorers.forEach(doc => delBatch.delete(doc.ref));
             await delBatch.commit();
           }
-          // Delete old cards for this match
-          const oldCards = await db.collection('cards')
-            .where('matchId', '==', String(localId))
-            .get();
-          if (oldCards.size > 0) {
-            const delBatch2 = db.batch();
-            oldCards.forEach(doc => delBatch2.delete(doc.ref));
-            await delBatch2.commit();
-          }
-        }
-        if (result.goals.length > 0) {
           await writeScorers(result.goals, localId);
         }
         if (result.cards.length > 0) {
+          const oldCards = await db.collection('cards')
+            .where('matchId', '==', String(localId)).get();
+          if (oldCards.size > 0) {
+            const delBatch = db.batch();
+            oldCards.forEach(doc => delBatch.delete(doc.ref));
+            await delBatch.commit();
+          }
           await writeCards(result.cards, localId);
         }
 
@@ -417,12 +411,9 @@ async function poll(dateStr) {
             const summary = await fetchJSON(`${ESPN_BASE}/summary?event=${espnId}`);
             const sumComp = summary.header.competitions[0];
             const { goals: detailedGoals, cards: detailedCards } = parseMatchDetails(sumComp, sumComp.competitors);
-            // Delete old scorer/card entries and rewrite with detailed data
             if (detailedGoals.length > 0) {
-              // Delete old entries
               const oldScorers = await db.collection('scorers')
-                .where('matchId', '==', String(localId))
-                .get();
+                .where('matchId', '==', String(localId)).get();
               const batch = db.batch();
               oldScorers.forEach(doc => batch.delete(doc.ref));
               await batch.commit();
@@ -430,8 +421,7 @@ async function poll(dateStr) {
             }
             if (detailedCards.length > 0) {
               const oldCards = await db.collection('cards')
-                .where('matchId', '==', String(localId))
-                .get();
+                .where('matchId', '==', String(localId)).get();
               const batch2 = db.batch();
               oldCards.forEach(doc => batch2.delete(doc.ref));
               await batch2.commit();

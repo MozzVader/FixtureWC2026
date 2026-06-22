@@ -368,8 +368,6 @@ function listenCards() {
   if (!db) return;
 
   db.collection('cards')
-    .orderBy('count', 'desc')
-    .limit(30)
     .onSnapshot(snapshot => {
       if (snapshot.empty && _knownCards.size === 0) return;
       const all = snapshot.docs.map(doc => doc.data());
