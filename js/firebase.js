@@ -581,29 +581,45 @@ function listenKnockout() {
  * - Top 2 from each of 12 groups (24 teams)
  * - 8 best third-placed teams
  *
+ * If partial=true, only returns completed groups (no thirds calculation).
  * Tiebreakers for thirds: Points → GD → GF → Alphabetical
- * Returns { groupWinners, groupRunnersUp, bestThirds } or null if groups not complete.
+ * Returns { groupWinners, groupRunnersUp, bestThirds, completedGroups } or null if no groups complete.
  */
-function determineQualifiers() {
-  const groupMatches = MATCHES.filter(m => m.stage === 'group');
-  const totalGroupMatches = groupMatches.length;
-  const completedGroupMatches = groupMatches.filter(m => m.status === 'completed').length;
-
-  if (completedGroupMatches < totalGroupMatches) {
-    console.warn(`[WC2026] Fase de grupos incompleta: ${completedGroupMatches}/${totalGroupMatches} partidos.`);
-    return null;
-  }
-
+function determineQualifiers(partial = false) {
   recalculateStandings();
 
-  const groupWinners = {};   // '1A': 'MEX'
-  const groupRunnersUp = {}; // '2B': 'CAN'
-  const allThirds = [];
+  const completedGroups = [];
 
   'ABCDEFGHIJKL'.split('').forEach(g => {
     const teams = GROUPS[g];
     if (!teams || teams.length < 3) return;
 
+    // Check if all 6 matches in this group are completed
+    const groupMatchIds = MATCHES.filter(m => m.stage === 'group').filter(m => {
+      const ht = typeof TEAMS !== 'undefined' ? TEAMS[m.home] : null;
+      const at = typeof TEAMS !== 'undefined' ? TEAMS[m.away] : null;
+      return (ht && ht.group === g) || (at && at.group === g);
+    }).map(m => m.id);
+    const groupCompleted = groupMatchIds.every(id => {
+      const match = MATCHES.find(m => m.id === id);
+      return match && match.status === 'completed';
+    });
+    if (!groupCompleted) return;
+
+    completedGroups.push(g);
+  });
+
+  if (completedGroups.length === 0) {
+    console.warn('[WC2026] Ningún grupo completado aún.');
+    return null;
+  }
+
+  const groupWinners = {};   // '1A': 'MEX'
+  const groupRunnersUp = {}; // '2B': 'CAN'
+  const allThirds = [];
+
+  completedGroups.forEach(g => {
+    const teams = GROUPS[g];
     groupWinners[`1${g}`] = teams[0].code;
     groupRunnersUp[`2${g}`] = teams[1].code;
 
@@ -618,15 +634,20 @@ function determineQualifiers() {
     });
   });
 
-  // Sort thirds by FIFA tiebreakers
-  allThirds.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
-    if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
-    return a.name.localeCompare(b.name);
-  });
+  // Only calculate best 8 thirds when ALL 12 groups are complete
+  let bestThirds = [];
+  if (completedGroups.length === 12 || !partial) {
+    // Sort thirds by FIFA tiebreakers
+    allThirds.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+      if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+      return a.name.localeCompare(b.name);
+    });
+    bestThirds = allThirds.slice(0, 8);
+  }
 
-  return { groupWinners, groupRunnersUp, bestThirds: allThirds.slice(0, 8) };
+  return { groupWinners, groupRunnersUp, bestThirds, completedGroups };
 }
 
 /**
@@ -694,17 +715,17 @@ function assignThirdPlaceTeams(bestThirds) {
 
 /**
  * Calculate qualifiers and write R32 assignments to Firestore.
- * Call from admin-seed.html after all 72 group matches are completed.
+ * Works in partial mode: writes 1st/2nd of completed groups, thirds only when all 12 groups are done.
  */
 async function calculateAndAssignQualifiers() {
   if (!db) return { success: false, message: 'Firebase no conectado.' };
 
-  const result = determineQualifiers();
+  const result = determineQualifiers(true);
   if (!result) {
-    return { success: false, message: 'No todos los partidos de grupos están completados.' };
+    return { success: false, message: 'No hay ningún grupo completado aún.' };
   }
 
-  const { groupWinners, groupRunnersUp, bestThirds } = result;
+  const { groupWinners, groupRunnersUp, bestThirds, completedGroups } = result;
   const batch = db.batch();
 
   // Build a date lookup from static KNOCKOUT data
@@ -796,7 +817,9 @@ async function calculateAndAssignQualifiers() {
 
   return {
     success: true,
-    message: `32 clasificados. R32 actualizado.`,
+    message: bestThirds.length > 0
+      ? `32 clasificados (12 grupos completos). R32 actualizado con 1°, 2° y mejores 3°.`
+      : `Grupos completados: ${completedGroups.join(', ')}. 1° y 2° escritos. Terceros pendientes hasta que todos los grupos terminen.`,
     qualified: qualified,
     thirds: bestThirds.map(t => `${t.name} (${t.group}) - ${t.points}pts, GD:${t.goalDiff}`)
   };
