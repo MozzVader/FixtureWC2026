@@ -647,11 +647,18 @@ function initBracket() {
   // Use live Firebase data if available, otherwise static KNOCKOUT
   const src = (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) ? KNOCKOUT_LIVE : KNOCKOUT;
 
-  // Fallback to static KNOCKOUT if a round array is empty in live data
-  const r32 = (src.roundOf32 && src.roundOf32.length) ? src.roundOf32 : KNOCKOUT.roundOf32;
-  const r16 = (src.roundOf16 && src.roundOf16.length) ? src.roundOf16 : KNOCKOUT.roundOf16;
-  const qf  = (src.quarterfinals && src.quarterfinals.length) ? src.quarterfinals : KNOCKOUT.quarterfinals;
-  const sf  = (src.semifinals && src.semifinals.length) ? src.semifinals : KNOCKOUT.semifinals;
+  // Merge live data into static structure so partial writes don't hide unmatched slots
+  const mergeRound = (staticRound, liveRound) => {
+    if (!liveRound || !liveRound.length) return staticRound;
+    const liveMap = {};
+    liveRound.forEach(m => { liveMap[m.id] = m; });
+    return staticRound.map(m => liveMap[m.id] || m);
+  };
+
+  const r32 = mergeRound(KNOCKOUT.roundOf32, src.roundOf32);
+  const r16 = mergeRound(KNOCKOUT.roundOf16, src.roundOf16);
+  const qf  = mergeRound(KNOCKOUT.quarterfinals, src.quarterfinals);
+  const sf  = mergeRound(KNOCKOUT.semifinals, src.semifinals);
   const fin = src.final || KNOCKOUT.final;
   const tp  = src.thirdPlace || KNOCKOUT.thirdPlace;
 
@@ -965,6 +972,15 @@ function renderKnockoutCalendar(container) {
     return;
   }
 
+  // Merge live data into static structure so partial writes don't hide unmatched slots
+  const mergeRound = (staticRound, liveRound) => {
+    if (!liveRound || !liveRound.length) return staticRound;
+    const liveMap = {};
+    liveRound.forEach(m => { liveMap[m.id] = m; });
+    return staticRound.map(m => liveMap[m.id] || m);
+  };
+  const mergeSingle = (staticMatch, liveMatch) => (liveMatch && liveMatch.id) ? liveMatch : staticMatch;
+
   // Flatten all knockout matches into a single array
   const all = [];
   const roundOrder = [
@@ -977,19 +993,20 @@ function renderKnockoutCalendar(container) {
   ];
 
   roundOrder.forEach(round => {
+    const staticMatches = fallback ? fallback[round.key] : null;
+    const liveMatches = src ? src[round.key] : null;
+    if (!staticMatches && !liveMatches) return;
+
     let matches;
-    if (src) {
-      matches = src[round.key];
+    if (Array.isArray(staticMatches)) {
+      matches = mergeRound(staticMatches, liveMatches);
     } else {
-      matches = fallback[round.key];
+      matches = mergeSingle(staticMatches, liveMatches);
     }
 
-    if (!matches) return;
-
-    // Handle array rounds vs single-match rounds (final, thirdPlace)
     if (Array.isArray(matches)) {
       matches.forEach(m => all.push({ ...m, _round: round.label }));
-    } else {
+    } else if (matches) {
       all.push({ ...matches, _round: round.label });
     }
   });
