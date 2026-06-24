@@ -766,12 +766,12 @@ async function calculateAndAssignQualifiers() {
   };
 
   Object.entries(r32GroupMatchups).forEach(([id, teams]) => {
-    if (!teams.home || !teams.away) return;
-    const homeName = TEAMS[teams.home]?.name || teams.home;
-    const awayName = TEAMS[teams.away]?.name || teams.away;
+    if (!teams.home && !teams.away) return; // Skip only if BOTH are null
+    const homeName = teams.home ? (TEAMS[teams.home]?.name || teams.home) : 'Por definir';
+    const awayName = teams.away ? (TEAMS[teams.away]?.name || teams.away) : 'Por definir';
     writeKO(id, {
-      home: teams.home,
-      away: teams.away,
+      home: teams.home || null,
+      away: teams.away || null,
       label: `${homeName} vs ${awayName}`
     });
   });
