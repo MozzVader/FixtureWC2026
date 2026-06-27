@@ -595,16 +595,15 @@ function determineQualifiers(partial = false) {
     if (!teams || teams.length < 3) return;
 
     // Check if all 6 matches in this group are completed
-    const groupMatchIds = MATCHES.filter(m => m.stage === 'group').filter(m => {
-      const ht = typeof TEAMS !== 'undefined' ? TEAMS[m.home] : null;
-      const at = typeof TEAMS !== 'undefined' ? TEAMS[m.away] : null;
-      return (ht && ht.group === g) || (at && at.group === g);
-    }).map(m => m.id);
-    const groupCompleted = groupMatchIds.every(id => {
-      const match = MATCHES.find(m => m.id === id);
-      return match && match.status === 'completed';
-    });
-    if (!groupCompleted) return;
+    const groupMatches = MATCHES.filter(m => m.stage === 'group' && m.group === g);
+    const groupMatchIds = groupMatches.map(m => m.id);
+    const missing = groupMatches.filter(m => m.status !== 'completed');
+    if (missing.length > 0) {
+      console.log(`[WC2026] Grupo ${g}: ${missing.length}/6 pendientes →`,
+        missing.map(m => `#${m.id} ${m.home} vs ${m.away} [${m.status}]`).join(', '));
+      return;
+    }
+    console.log(`[WC2026] Grupo ${g}: 6/6 completado. Clasificados: ${GROUPS[g][0].name} (1°), ${GROUPS[g][1].name} (2°)`);
 
     completedGroups.push(g);
   });
