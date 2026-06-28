@@ -1164,39 +1164,6 @@
 
         const result = await calculateAndAssignQualifiers();
 
-        /* ═══ HOTFIX: normalizar objetos en R32-13..R32-16 ═══
-           Si firebase.js cacheado escribió objetos en vez de strings,
-           los corregimos directamente en Firestore. */
-        const fixBatch = db.batch();
-        const TEAMS_LOOKUP = typeof TEAMS !== 'undefined' ? TEAMS : {};
-        for (const matchId of ['R32-13','R32-14','R32-15','R32-16']) {
-          const doc = await db.collection('knockout').doc(matchId).get();
-          if (!doc.exists) continue;
-          const data = doc.data();
-          let needsFix = false;
-          let homeCode = data.home;
-          let awayCode = data.away;
-
-          if (data.home && typeof data.home === 'object') {
-            homeCode = data.home.code || null;
-            needsFix = true;
-          }
-          if (data.away && typeof data.away === 'object') {
-            awayCode = data.away.code || null;
-            needsFix = true;
-          }
-
-          if (needsFix && homeCode && awayCode) {
-            const homeName = TEAMS_LOOKUP[homeCode]?.name || homeCode;
-            const awayName = TEAMS_LOOKUP[awayCode]?.name || awayCode;
-            // Reconstruir el label correctamente
-            const label = `${homeName} (3°) vs ${awayName} (3°)`;
-            fixBatch.set(doc.ref, { home: homeCode, away: awayCode, label: label }, { merge: true });
-            console.log(`[HOTFIX] ${matchId}: corregido → ${homeCode} vs ${awayCode}`);
-          }
-        }
-        await fixBatch.commit();
-
         if (result.success) {
           let details = '<div class="status status-success" style="margin-top:12px">';
           details += '<strong>' + result.message + '</strong><br><br>';
@@ -1310,22 +1277,9 @@
     }
 
     async function fixThirdPlaceTeams() {
-      const fixBatch = db.batch();
-      for (const matchId of ['R32-13','R32-14','R32-15','R32-16']) {
-        const doc = await db.collection('knockout').doc(matchId).get();
-        if (!doc.exists) continue;
-        const data = doc.data();
-        let needsFix = false;
-        let homeCode = data.home, awayCode = data.away;
-        if (data.home && typeof data.home === 'object') { homeCode = data.home.code || null; needsFix = true; }
-        if (data.away && typeof data.away === 'object') { awayCode = data.away.code || null; needsFix = true; }
-        if (needsFix && homeCode && awayCode) {
-          const homeName = TEAMS[homeCode]?.name || homeCode;
-          const awayName = TEAMS[awayCode]?.name || awayCode;
-          fixBatch.set(doc.ref, { home: homeCode, away: awayCode, label: `${homeName} (3°) vs ${awayName} (3°)` }, { merge: true });
-        }
-      }
-      await fixBatch.commit();
+      // No longer needed — third-place assignment is now handled directly by
+      // calculateAndAssignQualifiers() with the correct FIFA 2026 slot-based format.
+      showKOStatus('Función obsoleta. Usar "Calcular Clasificados" directamente.', 'info');
     }
 
     async function seedMatchesRaw() {

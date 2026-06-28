@@ -748,24 +748,28 @@ async function calculateAndAssignQualifiers() {
     }, { merge: true });
   };
 
-  // R32-1 through R32-12: Group winners and runners-up
+  // ─── R32 non-third matches (leaders vs runners-up, runners-up vs runners-up) ───
   const r32GroupMatchups = {
-    'R32-1':  { home: groupWinners['1A'], away: groupRunnersUp['2B'] },
-    'R32-2':  { home: groupWinners['1C'], away: groupRunnersUp['2D'] },
-    'R32-3':  { home: groupWinners['1E'], away: groupRunnersUp['2F'] },
-    'R32-4':  { home: groupWinners['1G'], away: groupRunnersUp['2H'] },
-    'R32-5':  { home: groupWinners['1I'], away: groupRunnersUp['2J'] },
-    'R32-6':  { home: groupWinners['1K'], away: groupRunnersUp['2L'] },
-    'R32-7':  { home: groupWinners['1B'], away: groupRunnersUp['2A'] },
-    'R32-8':  { home: groupWinners['1D'], away: groupRunnersUp['2C'] },
-    'R32-9':  { home: groupWinners['1F'], away: groupRunnersUp['2E'] },
-    'R32-10': { home: groupWinners['1H'], away: groupRunnersUp['2G'] },
-    'R32-11': { home: groupWinners['1J'], away: groupRunnersUp['2I'] },
-    'R32-12': { home: groupWinners['1L'], away: groupRunnersUp['2K'] }
+    // M73: Runner-up vs Runner-up
+    'R32-1':  { home: groupRunnersUp['2A'], away: groupRunnersUp['2B'] },
+    // M75: Leader vs Runner-up
+    'R32-2':  { home: groupWinners['1F'],   away: groupRunnersUp['2C'] },
+    // M76: Leader vs Runner-up
+    'R32-5':  { home: groupWinners['1C'],   away: groupRunnersUp['2F'] },
+    // M78: Runner-up vs Runner-up
+    'R32-6':  { home: groupRunnersUp['2E'], away: groupRunnersUp['2I'] },
+    // M83: Runner-up vs Runner-up
+    'R32-10': { home: groupRunnersUp['2K'], away: groupRunnersUp['2L'] },
+    // M84: Leader vs Runner-up
+    'R32-13': { home: groupWinners['1H'],   away: groupRunnersUp['2J'] },
+    // M86: Leader vs Runner-up
+    'R32-14': { home: groupWinners['1J'],   away: groupRunnersUp['2H'] },
+    // M88: Runner-up vs Runner-up
+    'R32-16': { home: groupRunnersUp['2D'], away: groupRunnersUp['2G'] },
   };
 
   Object.entries(r32GroupMatchups).forEach(([id, teams]) => {
-    if (!teams.home && !teams.away) return; // Skip only if BOTH are null
+    if (!teams.home && !teams.away) return;
     const homeName = teams.home ? (TEAMS[teams.home]?.name || teams.home) : 'Por definir';
     const awayName = teams.away ? (TEAMS[teams.away]?.name || teams.away) : 'Por definir';
     writeKO(id, {
@@ -775,22 +779,40 @@ async function calculateAndAssignQualifiers() {
     });
   });
 
-  // R32-13 through R32-16: Third-placed teams with descriptive labels
-  const thirdAssignments = assignThirdPlaceTeams(bestThirds);
+  // ─── R32 third-place slots: 8 leaders vs 8 best thirds ───
+  // Each slot has a fixed group winner and a third-place team from a specific group set.
+  // The assignment follows FIFA's combination table: process slots in order,
+  // for each pick the best available (unused) third from the slot's group set.
+  const thirdSlots = [
+    { id: 'R32-3',  winnerKey: '1E', groupSet: 'ABCDF' },  // M74
+    { id: 'R32-4',  winnerKey: '1I', groupSet: 'CDFGH' },  // M77
+    { id: 'R32-7',  winnerKey: '1A', groupSet: 'CEFHI' },  // M79
+    { id: 'R32-8',  winnerKey: '1L', groupSet: 'EHIJK' },  // M80
+    { id: 'R32-9',  winnerKey: '1D', groupSet: 'BEFIJ' },  // M81
+    { id: 'R32-11', winnerKey: '1G', groupSet: 'AEHIJ' },  // M82
+    { id: 'R32-12', winnerKey: '1B', groupSet: 'EFGIJ' },  // M85
+    { id: 'R32-15', winnerKey: '1K', groupSet: 'DEIJL' },  // M87
+  ];
 
-  Object.entries(thirdAssignments).forEach(([id, teams]) => {
-    if (!teams.home || !teams.away) return;
-    const homeName = TEAMS[teams.home]?.name || teams.home;
-    const awayName = TEAMS[teams.away]?.name || teams.away;
-    // Show which group the 3rd place came from
-    const homeTeam = bestThirds.find(t => t.code === teams.home);
-    const awayTeam = bestThirds.find(t => t.code === teams.away);
-    const homeGroup = homeTeam ? `(3° ${homeTeam.group})` : '';
-    const awayGroup = awayTeam ? `(3° ${awayTeam.group})` : '';
-    writeKO(id, {
-      home: teams.home,
-      away: teams.away,
-      label: `${homeName} ${homeGroup} vs ${awayName} ${awayGroup}`
+  const usedThirdCodes = new Set();
+  const rankedThirds = bestThirds; // already sorted by points, GD, GF, alphabetical
+
+  thirdSlots.forEach(slot => {
+    const winnerCode = groupWinners[slot.winnerKey] || null;
+    // Find best unused third from the slot's group set
+    const third = rankedThirds.find(t =>
+      !usedThirdCodes.has(t.code) && slot.groupSet.includes(t.group)
+    );
+    if (third) usedThirdCodes.add(third.code);
+
+    if (!winnerCode && !third) return;
+
+    const winnerName = winnerCode ? (TEAMS[winnerCode]?.name || winnerCode) : 'Por definir';
+    const thirdName = third ? `${third.name} (3° ${third.group})` : 'Por definir';
+    writeKO(slot.id, {
+      home: winnerCode || null,
+      away: third ? third.code : null,
+      label: `${winnerName} vs ${thirdName}`
     });
   });
 

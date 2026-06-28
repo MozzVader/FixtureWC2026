@@ -354,29 +354,45 @@ const MATCHES = [
 ];
 
 /**
- * KNOCKOUT BRACKET — Template structure
+ * KNOCKOUT BRACKET — Template structure (FIFA 2026 official format)
  * Teams will be populated dynamically based on group results
  * Date ranges: R32 Jun 28-Jul 3, R16 Jul 4-7, QF Jul 9-11, SF Jul 14-15, TP Jul 18, Final Jul 19
+ *
+ * R32 matchups (FIFA Match 73-88):
+ *   M73: 2A vs 2B          M74: 1E vs 3rd(A/B/C/D/F)   M75: 1F vs 2C
+ *   M76: 1C vs 2F          M77: 1I vs 3rd(C/D/F/G/H)   M78: 2E vs 2I
+ *   M79: 1A vs 3rd(C/E/F/H/I)  M80: 1L vs 3rd(E/H/I/J/K)
+ *   M81: 1D vs 3rd(B/E/F/I/J)  M82: 1G vs 3rd(A/E/H/I/J)
+ *   M83: 2K vs 2L          M84: 1H vs 2J
+ *   M85: 1B vs 3rd(E/F/G/I/J)  M86: 1J vs 2H
+ *   M87: 1K vs 3rd(D/E/I/J/L)  M88: 2D vs 2G
  */
 const KNOCKOUT = {
   roundOf32: [
-    { id: 'R32-1',  label: '1A vs 2B',              date: '2026-06-28', home: null, away: null },
-    { id: 'R32-2',  label: '1C vs 2D',              date: '2026-06-28', home: null, away: null },
-    { id: 'R32-3',  label: '1E vs 2F',              date: '2026-06-28', home: null, away: null },
-    { id: 'R32-4',  label: '1G vs 2H',              date: '2026-06-28', home: null, away: null },
-    { id: 'R32-5',  label: '1I vs 2J',              date: '2026-06-29', home: null, away: null },
-    { id: 'R32-6',  label: '1K vs 2L',              date: '2026-06-29', home: null, away: null },
-    { id: 'R32-7',  label: '1B vs 2A',              date: '2026-06-29', home: null, away: null },
-    { id: 'R32-8',  label: '1D vs 2C',              date: '2026-06-29', home: null, away: null },
-    { id: 'R32-9',  label: '1F vs 2E',              date: '2026-06-30', home: null, away: null },
-    { id: 'R32-10', label: '1H vs 2G',              date: '2026-06-30', home: null, away: null },
-    { id: 'R32-11', label: '1J vs 2I',              date: '2026-06-30', home: null, away: null },
-    { id: 'R32-12', label: '1L vs 2K',              date: '2026-06-30', home: null, away: null },
-    // 8 best third-placed teams
-    { id: 'R32-13', label: '3A/B/C vs 3D/E/F',      date: '2026-07-01', home: null, away: null },
-    { id: 'R32-14', label: '3A/B/C vs 3D/E/F',      date: '2026-07-01', home: null, away: null },
-    { id: 'R32-15', label: '3G/H/I vs 3J/K/L',      date: '2026-07-02', home: null, away: null },
-    { id: 'R32-16', label: '3G/H/I vs 3J/K/L',      date: '2026-07-02', home: null, away: null }
+    // Row 1-2 → R16-1
+    { id: 'R32-1',  label: '2°A vs 2°B',           date: '2026-06-28', home: null, away: null },
+    { id: 'R32-2',  label: '1°F vs 2°C',           date: '2026-06-28', home: null, away: null },
+    // Row 3-4 → R16-2
+    { id: 'R32-3',  label: '1°E vs Mejor 3°',      date: '2026-06-28', home: null, away: null },
+    { id: 'R32-4',  label: '1°I vs Mejor 3°',      date: '2026-06-29', home: null, away: null },
+    // Row 5-6 → R16-3
+    { id: 'R32-5',  label: '1°C vs 2°F',           date: '2026-06-29', home: null, away: null },
+    { id: 'R32-6',  label: '2°E vs 2°I',           date: '2026-06-29', home: null, away: null },
+    // Row 7-8 → R16-4
+    { id: 'R32-7',  label: '1°A vs Mejor 3°',      date: '2026-06-30', home: null, away: null },
+    { id: 'R32-8',  label: '1°L vs Mejor 3°',      date: '2026-06-30', home: null, away: null },
+    // Row 9-10 → R16-5
+    { id: 'R32-9',  label: '1°D vs Mejor 3°',      date: '2026-06-30', home: null, away: null },
+    { id: 'R32-10', label: '2°K vs 2°L',           date: '2026-07-01', home: null, away: null },
+    // Row 11-12 → R16-6
+    { id: 'R32-11', label: '1°G vs Mejor 3°',      date: '2026-07-01', home: null, away: null },
+    { id: 'R32-12', label: '1°B vs Mejor 3°',      date: '2026-07-01', home: null, away: null },
+    // Row 13-14 → R16-7
+    { id: 'R32-13', label: '1°H vs 2°J',           date: '2026-07-02', home: null, away: null },
+    { id: 'R32-14', label: '1°J vs 2°H',           date: '2026-07-02', home: null, away: null },
+    // Row 15-16 → R16-8
+    { id: 'R32-15', label: '1°K vs Mejor 3°',      date: '2026-07-03', home: null, away: null },
+    { id: 'R32-16', label: '2°D vs 2°G',           date: '2026-07-03', home: null, away: null }
   ],
   roundOf16: [
     { id: 'R16-1', label: 'Ganador R32-1  vs Ganador R32-2',  date: '2026-07-04', home: null, away: null },
