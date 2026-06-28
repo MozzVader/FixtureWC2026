@@ -753,23 +753,16 @@ async function calculateAndAssignQualifiers() {
   };
 
   // ─── R32 non-third matches (leaders vs runners-up, runners-up vs runners-up) ───
+  // IDs match data.js: R32-N.id → matchNumber mapping
   const r32GroupMatchups = {
-    // M73: Runner-up vs Runner-up
-    'R32-1':  { home: groupRunnersUp['2A'], away: groupRunnersUp['2B'] },
-    // M75: Leader vs Runner-up
-    'R32-2':  { home: groupWinners['1F'],   away: groupRunnersUp['2C'] },
-    // M76: Leader vs Runner-up
-    'R32-5':  { home: groupWinners['1C'],   away: groupRunnersUp['2F'] },
-    // M78: Runner-up vs Runner-up
-    'R32-6':  { home: groupRunnersUp['2E'], away: groupRunnersUp['2I'] },
-    // M83: Runner-up vs Runner-up
-    'R32-10': { home: groupRunnersUp['2K'], away: groupRunnersUp['2L'] },
-    // M84: Leader vs Runner-up
-    'R32-13': { home: groupWinners['1H'],   away: groupRunnersUp['2J'] },
-    // M86: Leader vs Runner-up
-    'R32-14': { home: groupWinners['1J'],   away: groupRunnersUp['2H'] },
-    // M88: Runner-up vs Runner-up
-    'R32-16': { home: groupRunnersUp['2D'], away: groupRunnersUp['2G'] },
+    'R32-1':  { home: groupRunnersUp['2A'], away: groupRunnersUp['2B'] },  // M73
+    'R32-2':  { home: groupWinners['1F'],   away: groupRunnersUp['2C'] },  // M75
+    'R32-5':  { home: groupWinners['1C'],   away: groupRunnersUp['2F'] },  // M76
+    'R32-6':  { home: groupRunnersUp['2E'], away: groupRunnersUp['2I'] },  // M78
+    'R32-9':  { home: groupRunnersUp['2K'], away: groupRunnersUp['2L'] },  // M83
+    'R32-10': { home: groupWinners['1H'],   away: groupRunnersUp['2J'] },  // M84
+    'R32-13': { home: groupWinners['1J'],   away: groupRunnersUp['2H'] },  // M86
+    'R32-14': { home: groupRunnersUp['2D'], away: groupRunnersUp['2G'] },  // M88
   };
 
   Object.entries(r32GroupMatchups).forEach(([id, teams]) => {
@@ -787,15 +780,16 @@ async function calculateAndAssignQualifiers() {
   // Each slot has a fixed group winner and a third-place team from a specific group set.
   // The assignment follows FIFA's combination table: process slots in order,
   // for each pick the best available (unused) third from the slot's group set.
+  // IDs match data.js: R32-11=M81, R32-12=M82, R32-15=M85, R32-16=M87
   const thirdSlots = [
     { id: 'R32-3',  winnerKey: '1E', groupSet: 'ABCDF' },  // M74
     { id: 'R32-4',  winnerKey: '1I', groupSet: 'CDFGH' },  // M77
     { id: 'R32-7',  winnerKey: '1A', groupSet: 'CEFHI' },  // M79
     { id: 'R32-8',  winnerKey: '1L', groupSet: 'EHIJK' },  // M80
-    { id: 'R32-9',  winnerKey: '1D', groupSet: 'BEFIJ' },  // M81
-    { id: 'R32-11', winnerKey: '1G', groupSet: 'AEHIJ' },  // M82
-    { id: 'R32-12', winnerKey: '1B', groupSet: 'EFGIJ' },  // M85
-    { id: 'R32-15', winnerKey: '1K', groupSet: 'DEIJL' },  // M87
+    { id: 'R32-11', winnerKey: '1D', groupSet: 'BEFIJ' },  // M81
+    { id: 'R32-12', winnerKey: '1G', groupSet: 'AEHIJ' },  // M82
+    { id: 'R32-15', winnerKey: '1B', groupSet: 'EFGIJ' },  // M85
+    { id: 'R32-16', winnerKey: '1K', groupSet: 'DEIJL' },  // M87
   ];
 
   const usedThirdCodes = new Set();
