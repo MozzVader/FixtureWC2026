@@ -568,6 +568,7 @@ function listenKnockout() {
     console.log('[WC2026] Eliminatorias actualizadas. Re-renderizando bracket...');
     initBracket();
     refreshKnockoutCalendar();
+    renderTodayMatches();
     // Auto-propagate winners when knockout matches are completed (admin-only)
     autoPropagateWinners();
   }, error => {
