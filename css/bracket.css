@@ -48,7 +48,7 @@
 
 /* --- Main bracket grid ---
  * 16 rows × 9 columns (5 match cols + 4 connector cols)
- * Row height: 80px
+ * Row height: 101px
  * Each round's matches span proportionally:
  *   R32 = 1 row, R16 = 2 rows, QF = 4 rows, SF = 8 rows, Final = 16 rows
  */
@@ -60,7 +60,7 @@
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr);
-  grid-template-rows: repeat(16, 91px);
+  grid-template-rows: repeat(16, 101px);
   row-gap: 6px;
   column-gap: 0;
   align-items: center;
