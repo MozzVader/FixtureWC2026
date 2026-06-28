@@ -185,9 +185,14 @@ function renderTodayMatches() {
   let html = '<div class="calendar__match-list today-matches__list">';
 
   allToday.forEach(match => {
-    const home = TEAMS[match.home];
-    const away = TEAMS[match.away];
-    if (!home || !away) return;
+    const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
+    const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
+    const home = homeCode ? TEAMS[homeCode] : null;
+    const away = awayCode ? TEAMS[awayCode] : null;
+    const isTBD = !home || !away;
+    const labelParts = (match.label || '').split(' vs ');
+    const homeName = home ? home.name : (labelParts[0] || 'Por definir');
+    const awayName = away ? away.name : (labelParts[1] || 'Por definir');
 
     const status = match.status || 'upcoming';
     const isLive = status === 'live' || status === 'halftime';
@@ -199,6 +204,7 @@ function renderTodayMatches() {
     const matchClasses = ['calendar__match'];
     if (isLive) matchClasses.push('calendar__match--live');
     if (isCompleted) matchClasses.push('calendar__match--completed');
+    if (isTBD) matchClasses.push('calendar__match--tbd');
 
     // Time/status column
     let timeDisplay = convertTime(match.time, match.date);
@@ -223,20 +229,24 @@ function renderTodayMatches() {
     }
 
     // Group label (for group stage) or round label (for knockout)
-    const groupLabel = match.group ? `Grupo ${match.group}` : (match._round || '');
+    let groupLabel = match.group ? `Grupo ${match.group}` : '';
+    if (!groupLabel && match.stage) {
+      const stageNames = { r32: 'Dieciseisavos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semifinal', tp: '3er Puesto', final: 'Final' };
+      groupLabel = stageNames[match.stage] || match.stage || '';
+    }
 
     html += `
       <div class="${matchClasses.join(' ')}">
         <div class="calendar__match-time">${timeDisplay}</div>
         <div class="calendar__match-teams">
           <div class="calendar__match-team">
-            ${getFlagHtml(home.code)}
-            <span>${home.name}</span>
+            ${home ? getFlagHtml(home.code) : '<i class="fas fa-question calendar__tbd-icon"></i>'}
+            <span class="${isTBD ? 'calendar__tbd-name' : ''}">${homeName}</span>
           </div>
           ${scoreHtml}
           <div class="calendar__match-team">
-            ${getFlagHtml(away.code)}
-            <span>${away.name}</span>
+            ${away ? getFlagHtml(away.code) : '<i class="fas fa-question calendar__tbd-icon"></i>'}
+            <span class="${isTBD ? 'calendar__tbd-name' : ''}">${awayName}</span>
           </div>
         </div>
         <div class="calendar__match-venue">
