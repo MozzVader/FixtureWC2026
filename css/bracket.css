@@ -136,7 +136,8 @@
   color: var(--dorado-500);
 }
 
-.bracket__team--winner { color: var(--dorado-300); }
+.bracket__team--winner { color: var(--dorado-300); font-weight: 600; }
+.bracket__team--loser  { opacity: 0.4; }
 
 .bracket__team--tbd {
   color: var(--blanco-60);

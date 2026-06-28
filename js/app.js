@@ -886,6 +886,19 @@ function renderBracketMatch(match, isFinal = false) {
   const isCompleted = status === 'completed';
   const isHalftime = match.minute === 'HT';
 
+  // Determine winner/loser for completed matches
+  let homeResultClass = '';
+  let awayResultClass = '';
+  if (isCompleted && hasScore && homeCode && awayCode) {
+    if (match.homeScore > match.awayScore) {
+      homeResultClass = 'bracket__team--winner';
+      awayResultClass = 'bracket__team--loser';
+    } else if (match.awayScore > match.homeScore) {
+      awayResultClass = 'bracket__team--winner';
+      homeResultClass = 'bracket__team--loser';
+    }
+  }
+
   // Status badge
   let statusHtml = '';
   if (isHalftime) statusHtml = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
@@ -895,12 +908,12 @@ function renderBracketMatch(match, isFinal = false) {
   return `
     <div class="bracket__match" ${isFinal ? 'style="border-color: var(--dorado-500); box-shadow: var(--sombra-dorada);"' : ''}>
       ${statusHtml ? '<div style="text-align:center;margin-bottom:4px">' + statusHtml + '</div>' : ''}
-      <div class="bracket__team ${homeTeam ? '' : 'bracket__team--tbd'}">
+      <div class="bracket__team ${homeTeam ? homeResultClass : 'bracket__team--tbd'}">
         ${homeTeam ? getFlagHtml(homeTeam.code) : ''}
         <span class="bracket__team-name">${homeLabel}</span>
         ${hasScore ? `<span class="bracket__team-score">${match.homeScore}</span>` : ''}
       </div>
-      <div class="bracket__team ${awayTeam ? '' : 'bracket__team--tbd'}">
+      <div class="bracket__team ${awayTeam ? awayResultClass : 'bracket__team--tbd'}">
         ${awayTeam ? getFlagHtml(awayTeam.code) : ''}
         <span class="bracket__team-name">${awayLabel}</span>
         ${hasScore ? `<span class="bracket__team-score">${match.awayScore}</span>` : ''}
