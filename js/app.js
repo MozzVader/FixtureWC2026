@@ -158,20 +158,32 @@ function renderTodayMatches() {
   // Gather group stage matches for today
   let todayGroupMatches = MATCHES.filter(m => m.date === todayStr);
 
-  // Gather knockout matches for today (from live Firestore data)
+  // Gather knockout matches for today
+  // Always use static KNOCKOUT as base (has correct teams/venues),
+  // then overlay live scores/status from KNOCKOUT_LIVE if available.
   let todayKnockoutMatches = [];
-  if (KNOCKOUT_LIVE) {
-    // KNOCKOUT_LIVE is organized by round, flatten it
-    const allKo = flattenKnockout(KNOCKOUT_LIVE);
-    todayKnockoutMatches = allKo.filter(m => m.date === todayStr);
-  }
-
-  // Also check static KNOCKOUT data if no live data yet
-  if (todayKnockoutMatches.length === 0 && typeof KNOCKOUT !== 'undefined') {
+  if (typeof KNOCKOUT !== 'undefined') {
     try {
-      const allKo = flattenKnockout(KNOCKOUT);
-      todayKnockoutMatches = allKo.filter(m => m.date === todayStr);
-    } catch(e) { /* KNOCKOUT structure not compatible, skip */ }
+      const staticKo = flattenKnockout(KNOCKOUT);
+      todayKnockoutMatches = staticKo.filter(m => m.date === todayStr);
+
+      // Overlay live data (scores, status, minute) but keep static teams
+      if (KNOCKOUT_LIVE && todayKnockoutMatches.length > 0) {
+        const liveKo = flattenKnockout(KNOCKOUT_LIVE);
+        todayKnockoutMatches = todayKnockoutMatches.map(staticMatch => {
+          const liveMatch = liveKo.find(lm => lm.id === staticMatch.id);
+          if (!liveMatch) return staticMatch;
+          // Merge: keep static teams/label, take live scores/status/minute
+          return {
+            ...staticMatch,
+            homeScore: liveMatch.homeScore != null ? liveMatch.homeScore : staticMatch.homeScore,
+            awayScore: liveMatch.awayScore != null ? liveMatch.awayScore : staticMatch.awayScore,
+            status: liveMatch.status || staticMatch.status,
+            minute: liveMatch.minute || staticMatch.minute
+          };
+        });
+      }
+    } catch(e) { /* skip */ }
   }
 
   const allToday = [...todayGroupMatches, ...todayKnockoutMatches];
@@ -403,24 +415,24 @@ function renderUpcomingMatches() {
 
     koRounds.forEach(m => {
       if (!m || !m.id) return;
-      // Check if live data overrides this match
       let matchData = m;
+      // Overlay live scores/status but keep static teams
       if (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) {
-        const liveRound = KNOCKOUT_LIVE.roundOf32 || KNOCKOUT_LIVE.roundOf16 ||
-                          KNOCKOUT_LIVE.quarterfinals || KNOCKOUT_LIVE.semifinals;
-        // Search across all live rounds
+        let liveMatch = null;
         for (const key of ['roundOf32','roundOf16','quarterfinals','semifinals']) {
           const arr = KNOCKOUT_LIVE[key];
-          if (arr) {
-            const found = arr.find(lm => lm.id === m.id);
-            if (found) { matchData = { ...m, ...found }; break; }
-          }
+          if (arr) { liveMatch = arr.find(lm => lm.id === m.id); if (liveMatch) break; }
         }
-        if (KNOCKOUT_LIVE.thirdPlace && KNOCKOUT_LIVE.thirdPlace.id === m.id) {
-          matchData = { ...m, ...KNOCKOUT_LIVE.thirdPlace };
-        }
-        if (KNOCKOUT_LIVE.final && KNOCKOUT_LIVE.final.id === m.id) {
-          matchData = { ...m, ...KNOCKOUT_LIVE.final };
+        if (!liveMatch && KNOCKOUT_LIVE.thirdPlace && KNOCKOUT_LIVE.thirdPlace.id === m.id) liveMatch = KNOCKOUT_LIVE.thirdPlace;
+        if (!liveMatch && KNOCKOUT_LIVE.final && KNOCKOUT_LIVE.final.id === m.id) liveMatch = KNOCKOUT_LIVE.final;
+        if (liveMatch) {
+          matchData = {
+            ...m,  // static teams/label/venue as base
+            homeScore: liveMatch.homeScore != null ? liveMatch.homeScore : m.homeScore,
+            awayScore: liveMatch.awayScore != null ? liveMatch.awayScore : m.awayScore,
+            status: liveMatch.status || m.status,
+            minute: liveMatch.minute || m.minute
+          };
         }
       }
       allMatches.push({ ...matchData, _source: 'knockout' });
