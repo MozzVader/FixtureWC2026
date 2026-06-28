@@ -354,10 +354,10 @@ const MATCHES = [
 ];
 
 /**
- * KNOCKOUT BRACKET — Template structure (FIFA 2026 official format)
- * Teams will be populated dynamically based on group results
- * Times: converted to ART (UTC-3). Source: Wikipedia (FIFA official), cross-verified.
- * Venues: FIFA official stadium assignments.
+ * KNOCKOUT BRACKET — FIFA 2026 official format
+ * R32 teams hardcoded from FIFA.com (final group stage results).
+ * R16+ teams populated dynamically (winners propagate).
+ * Times: local venue time. Source: FIFA.com.
  *
  * R32 matchups (FIFA Match 73-88):
  *   M73: 2A vs 2B          M74: 1E vs 3rd(A/B/C/D/F)   M75: 1F vs 2C
@@ -377,29 +377,29 @@ const MATCHES = [
 const KNOCKOUT = {
   roundOf32: [
     // Row 1-2 → R16-1 (M89: W73 vs W75)
-    { id: 'R32-1',  label: '2°A vs 2°B',           date: '2026-06-28', time: '16:00', venue: 'SoFi Stadium',               city: 'Inglewood',         home: null, away: null, stage: 'r32', matchNumber: 73 },
-    { id: 'R32-2',  label: '1°F vs 2°C',           date: '2026-06-29', time: '22:00', venue: 'Estadio BBVA',               city: 'Guadalupe',         home: null, away: null, stage: 'r32', matchNumber: 75 },
+    { id: 'R32-1',  label: 'Sudáfrica vs Canadá',            date: '2026-06-28', time: '16:00', venue: 'SoFi Stadium',               city: 'Inglewood',         home: 'RSA', away: 'CAN', stage: 'r32', matchNumber: 73 },
+    { id: 'R32-2',  label: 'Países Bajos vs Marruecos',     date: '2026-06-29', time: '22:00', venue: 'Estadio BBVA',               city: 'Guadalupe',         home: 'NED', away: 'MAR', stage: 'r32', matchNumber: 75 },
     // Row 3-4 → R16-2 (M90: W74 vs W77)
-    { id: 'R32-3',  label: '1°E vs Mejor 3°',      date: '2026-06-29', time: '17:30', venue: 'Gillette Stadium',           city: 'Foxborough',        home: null, away: null, stage: 'r32', matchNumber: 74 },
-    { id: 'R32-4',  label: '1°I vs Mejor 3°',      date: '2026-06-30', time: '18:00', venue: 'MetLife Stadium',            city: 'East Rutherford',   home: null, away: null, stage: 'r32', matchNumber: 77 },
+    { id: 'R32-3',  label: 'Alemania vs Paraguay',          date: '2026-06-29', time: '17:30', venue: 'Gillette Stadium',           city: 'Foxborough',        home: 'GER', away: 'PAR', stage: 'r32', matchNumber: 74 },
+    { id: 'R32-4',  label: 'Francia vs Suecia',             date: '2026-06-30', time: '18:00', venue: 'MetLife Stadium',            city: 'East Rutherford',   home: 'FRA', away: 'SWE', stage: 'r32', matchNumber: 77 },
     // Row 5-6 → R16-3 (M91: W76 vs W78)
-    { id: 'R32-5',  label: '1°C vs 2°F',           date: '2026-06-29', time: '14:00', venue: 'NRG Stadium',                city: 'Houston',           home: null, away: null, stage: 'r32', matchNumber: 76 },
-    { id: 'R32-6',  label: '2°E vs 2°I',           date: '2026-06-30', time: '14:00', venue: 'AT&T Stadium',              city: 'Arlington',         home: null, away: null, stage: 'r32', matchNumber: 78 },
+    { id: 'R32-5',  label: 'Brasil vs Japón',               date: '2026-06-29', time: '14:00', venue: 'NRG Stadium',                city: 'Houston',           home: 'BRA', away: 'JPN', stage: 'r32', matchNumber: 76 },
+    { id: 'R32-6',  label: 'Costa de Marfil vs Noruega',    date: '2026-06-30', time: '14:00', venue: 'AT&T Stadium',              city: 'Arlington',         home: 'CIV', away: 'NOR', stage: 'r32', matchNumber: 78 },
     // Row 7-8 → R16-4 (M92: W79 vs W80)
-    { id: 'R32-7',  label: '1°A vs Mejor 3°',      date: '2026-06-30', time: '22:00', venue: 'Estadio Azteca',              city: 'Ciudad de México',  home: null, away: null, stage: 'r32', matchNumber: 79 },
-    { id: 'R32-8',  label: '1°L vs Mejor 3°',      date: '2026-07-01', time: '13:00', venue: 'Mercedes-Benz Stadium',      city: 'Atlanta',           home: null, away: null, stage: 'r32', matchNumber: 80 },
+    { id: 'R32-7',  label: 'México vs Ecuador',             date: '2026-06-30', time: '22:00', venue: 'Estadio Azteca',              city: 'Ciudad de México',  home: 'MEX', away: 'ECU', stage: 'r32', matchNumber: 79 },
+    { id: 'R32-8',  label: 'Inglaterra vs RD del Congo',    date: '2026-07-01', time: '13:00', venue: 'Mercedes-Benz Stadium',      city: 'Atlanta',           home: 'ENG', away: 'COD', stage: 'r32', matchNumber: 80 },
     // Row 9-10 → R16-5 (M93: W83 vs W84)
-    { id: 'R32-9',  label: '2°K vs 2°L',           date: '2026-07-02', time: '20:00', venue: 'BMO Field',                  city: 'Toronto',           home: null, away: null, stage: 'r32', matchNumber: 83 },
-    { id: 'R32-10', label: '1°H vs 2°J',           date: '2026-07-02', time: '16:00', venue: 'SoFi Stadium',               city: 'Inglewood',         home: null, away: null, stage: 'r32', matchNumber: 84 },
+    { id: 'R32-9',  label: 'Portugal vs Croacia',           date: '2026-07-02', time: '20:00', venue: 'BMO Field',                  city: 'Toronto',           home: 'POR', away: 'CRO', stage: 'r32', matchNumber: 83 },
+    { id: 'R32-10', label: 'España vs Austria',             date: '2026-07-02', time: '16:00', venue: 'SoFi Stadium',               city: 'Inglewood',         home: 'ESP', away: 'AUT', stage: 'r32', matchNumber: 84 },
     // Row 11-12 → R16-6 (M94: W81 vs W82)
-    { id: 'R32-11', label: '1°D vs Mejor 3°',      date: '2026-07-01', time: '21:00', venue: "Levi's Stadium",             city: 'Santa Clara',       home: null, away: null, stage: 'r32', matchNumber: 81 },
-    { id: 'R32-12', label: '1°G vs Mejor 3°',      date: '2026-07-01', time: '17:00', venue: 'Lumen Field',                city: 'Seattle',           home: null, away: null, stage: 'r32', matchNumber: 82 },
+    { id: 'R32-11', label: 'Estados Unidos vs Bosnia',     date: '2026-07-01', time: '21:00', venue: "Levi's Stadium",             city: 'Santa Clara',       home: 'USA', away: 'BIH', stage: 'r32', matchNumber: 81 },
+    { id: 'R32-12', label: 'Bélgica vs Senegal',           date: '2026-07-01', time: '17:00', venue: 'Lumen Field',                city: 'Seattle',           home: 'BEL', away: 'SEN', stage: 'r32', matchNumber: 82 },
     // Row 13-14 → R16-7 (M95: W86 vs W88)
-    { id: 'R32-13', label: '1°J vs 2°H',           date: '2026-07-03', time: '19:00', venue: 'Hard Rock Stadium',          city: 'Miami Gardens',     home: null, away: null, stage: 'r32', matchNumber: 86 },
-    { id: 'R32-14', label: '2°D vs 2°G',           date: '2026-07-03', time: '15:00', venue: 'AT&T Stadium',              city: 'Arlington',         home: null, away: null, stage: 'r32', matchNumber: 88 },
+    { id: 'R32-13', label: 'Argentina vs Cabo Verde',       date: '2026-07-03', time: '19:00', venue: 'Hard Rock Stadium',          city: 'Miami Gardens',     home: 'ARG', away: 'CPV', stage: 'r32', matchNumber: 86 },
+    { id: 'R32-14', label: 'Australia vs Egipto',           date: '2026-07-03', time: '15:00', venue: 'AT&T Stadium',              city: 'Arlington',         home: 'AUS', away: 'EGY', stage: 'r32', matchNumber: 88 },
     // Row 15-16 → R16-8 (M96: W85 vs W87)
-    { id: 'R32-15', label: '1°B vs Mejor 3°',      date: '2026-07-02', time: '00:00', venue: 'BC Place',                   city: 'Vancouver',         home: null, away: null, stage: 'r32', matchNumber: 85 },
-    { id: 'R32-16', label: '1°K vs Mejor 3°',      date: '2026-07-03', time: '22:30', venue: 'Arrowhead Stadium',          city: 'Kansas City',       home: null, away: null, stage: 'r32', matchNumber: 87 }
+    { id: 'R32-15', label: 'Suiza vs Argelia',             date: '2026-07-03', time: '00:00', venue: 'BC Place',                   city: 'Vancouver',         home: 'SUI', away: 'ALG', stage: 'r32', matchNumber: 85 },
+    { id: 'R32-16', label: 'Colombia vs Ghana',             date: '2026-07-03', time: '22:30', venue: 'Arrowhead Stadium',          city: 'Kansas City',       home: 'COL', away: 'GHA', stage: 'r32', matchNumber: 87 }
   ],
   roundOf16: [
     { id: 'R16-1', label: 'Ganador R32-1  vs Ganador R32-2',  date: '2026-07-04', time: '14:00', venue: 'NRG Stadium',                city: 'Houston',           home: null, away: null, stage: 'r16', matchNumber: 89 },
