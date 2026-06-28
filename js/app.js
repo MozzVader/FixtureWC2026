@@ -375,13 +375,71 @@ function renderUpcomingMatches() {
   const container = document.getElementById('upcoming-matches');
   if (!container) return;
 
-  let upcoming;
-  if (selectedTeam && TEAMS[selectedTeam]) {
-    // Show all matches for the selected team (group stage)
-    upcoming = MATCHES.filter(m => m.home === selectedTeam || m.away === selectedTeam);
-  } else {
-    // Show first 3 group stage matches (inaugural)
-    upcoming = MATCHES.slice(0, 3);
+  const now = new Date();
+
+  // Build combined list: group stage + knockout
+  let allMatches = MATCHES.map(m => ({ ...m, _source: 'group' }));
+
+  // Add knockout matches (use live data if available)
+  if (typeof KNOCKOUT !== 'undefined') {
+    const koRounds = [
+      ...(KNOCKOUT.roundOf32 || []),
+      ...(KNOCKOUT.roundOf16 || []),
+      ...(KNOCKOUT.quarterfinals || []),
+      ...(KNOCKOUT.semifinals || []),
+    ];
+    if (KNOCKOUT.thirdPlace) koRounds.push(KNOCKOUT.thirdPlace);
+    if (KNOCKOUT.final) koRounds.push(KNOCKOUT.final);
+
+    koRounds.forEach(m => {
+      if (!m || !m.id) return;
+      // Check if live data overrides this match
+      let matchData = m;
+      if (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) {
+        const liveRound = KNOCKOUT_LIVE.roundOf32 || KNOCKOUT_LIVE.roundOf16 ||
+                          KNOCKOUT_LIVE.quarterfinals || KNOCKOUT_LIVE.semifinals;
+        // Search across all live rounds
+        for (const key of ['roundOf32','roundOf16','quarterfinals','semifinals']) {
+          const arr = KNOCKOUT_LIVE[key];
+          if (arr) {
+            const found = arr.find(lm => lm.id === m.id);
+            if (found) { matchData = { ...m, ...found }; break; }
+          }
+        }
+        if (KNOCKOUT_LIVE.thirdPlace && KNOCKOUT_LIVE.thirdPlace.id === m.id) {
+          matchData = { ...m, ...KNOCKOUT_LIVE.thirdPlace };
+        }
+        if (KNOCKOUT_LIVE.final && KNOCKOUT_LIVE.final.id === m.id) {
+          matchData = { ...m, ...KNOCKOUT_LIVE.final };
+        }
+      }
+      allMatches.push({ ...matchData, _source: 'knockout' });
+    });
+  }
+
+  // Filter: upcoming or live (not completed), sort by date+time
+  let upcoming = allMatches.filter(m => {
+    const status = m.status || 'upcoming';
+    if (status === 'completed') return false;
+    if (selectedTeam && TEAMS[selectedTeam]) {
+      const homeCode = typeof m.home === 'object' && m.home !== null ? m.home.code : m.home;
+      const awayCode = typeof m.away === 'object' && m.away !== null ? m.away.code : m.away;
+      return homeCode === selectedTeam || awayCode === selectedTeam;
+    }
+    return true;
+  });
+
+  // Sort by date + time
+  upcoming.sort((a, b) => {
+    const da = a.date || '9999-99-99';
+    const db = b.date || '9999-99-99';
+    if (da !== db) return da.localeCompare(db);
+    return (a.time || '99:99').localeCompare(b.time || '99:99');
+  });
+
+  // Limit to 3 if no team selected
+  if (!selectedTeam || !TEAMS[selectedTeam]) {
+    upcoming = upcoming.slice(0, 3);
   }
 
   if (upcoming.length === 0) {
@@ -391,9 +449,17 @@ function renderUpcomingMatches() {
 
   let html = '';
   upcoming.forEach(match => {
-    const home = TEAMS[match.home];
-    const away = TEAMS[match.away];
-    if (!home || !away) return;
+    // Normalize home/away codes
+    const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
+    const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
+    const home = homeCode ? TEAMS[homeCode] : null;
+    const away = awayCode ? TEAMS[awayCode] : null;
+
+    // For TBD matches, use label
+    const isTBD = !home || !away;
+    const labelParts = (match.label || '').split(' vs ');
+    const homeName = home ? home.name : (labelParts[0] || 'Por definir');
+    const awayName = away ? away.name : (labelParts[1] || 'Por definir');
 
     const status = match.status || 'upcoming';
     const isLive = status === 'live' || status === 'halftime';
@@ -401,7 +467,7 @@ function renderUpcomingMatches() {
     const isHalftime = match.minute === 'HT';
     const hasScore = match.homeScore != null && match.awayScore != null;
 
-    // Status badge (LIVE, HT or FT)
+    // Status badge
     let statusBadge = '';
     if (isHalftime) statusBadge = `<div class="upcoming__match-badge"><span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span></div>`;
     else if (isLive) statusBadge = `<div class="upcoming__match-badge"><span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span></div>`;
@@ -416,24 +482,38 @@ function renderUpcomingMatches() {
     }
 
     const matchClass = isLive ? 'upcoming__match--live' : (isCompleted ? 'upcoming__match--completed' : '');
+    const tbdClass = isTBD ? ' upcoming__match--tbd' : '';
+
+    // Time display
+    const timeStr = match.time ? convertTime(match.time, match.date) : '';
+    const dateStr = match.date ? formatDate(match.date) : '';
+
+    // Stage label
+    let stageLabel = '';
+    if (match._source === 'knockout') {
+      const stageNames = { r32: 'Dieciseisavos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semifinal', tp: '3er Puesto', final: 'Final' };
+      stageLabel = stageNames[match.stage] || match.stage || 'Eliminatoria';
+    } else {
+      stageLabel = `Grupo ${match.group}`;
+    }
 
     html += `
-      <div class="upcoming__match ${matchClass}">
+      <div class="upcoming__match ${matchClass}${tbdClass}">
         ${statusBadge}
         <div class="upcoming__teams">
           <div class="upcoming__team">
-            ${getFlagHtml(home.code, 'lg')}
-            <span class="upcoming__team-name">${home.name}</span>
+            ${home ? getFlagHtml(home.code, 'lg') : '<i class="fas fa-question upcoming__tbd-icon"></i>'}
+            <span class="upcoming__team-name">${homeName}</span>
           </div>
           ${vsOrScore}
           <div class="upcoming__team">
-            ${getFlagHtml(away.code, 'lg')}
-            <span class="upcoming__team-name">${away.name}</span>
+            ${away ? getFlagHtml(away.code, 'lg') : '<i class="fas fa-question upcoming__tbd-icon"></i>'}
+            <span class="upcoming__team-name">${awayName}</span>
           </div>
         </div>
         <div class="upcoming__info">
-          <span class="upcoming__date">${formatDate(match.date)} — ${convertTime(match.time, match.date)} hs</span>
-          <span>${match.city} · <span class="calendar__match-group">Grupo ${match.group}</span></span>
+          <span class="upcoming__date">${dateStr}${timeStr ? ' — ' + timeStr + ' hs' : ''}</span>
+          <span>${match.city || ''}${match.city && stageLabel ? ' · ' : ''}<span class="calendar__match-group">${stageLabel}</span></span>
         </div>
       </div>
     `;
@@ -1052,11 +1132,12 @@ function renderKnockoutCalendar(container) {
       if (isLive) matchClasses.push('calendar__match--live');
       if (isCompleted) matchClasses.push('calendar__match--completed');
 
-      // Time/status
-      let timeDisplay = match._round || '';
+      // Time/status — show real time converted to user TZ
+      let timeDisplay = '';
       if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
       else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
       else if (isCompleted) timeDisplay = '<span class="ft-badge">FT</span>';
+      else if (match.time) timeDisplay = convertTime(match.time, match.date) + ' hs';
 
       // Score or VS
       let scoreHtml;
@@ -1089,7 +1170,7 @@ function renderKnockoutCalendar(container) {
             </div>
           </div>
           <div class="calendar__match-venue">
-            <span class="calendar__match-venue--city">${date === 'TBD' ? '' : formatDate(date)}</span>
+            <span class="calendar__match-venue--city">${match.city || ''}</span>
             <span class="calendar__match-group">${match._round || ''}</span>
           </div>
         </div>

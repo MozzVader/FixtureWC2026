@@ -727,19 +727,23 @@ async function calculateAndAssignQualifiers() {
   const { groupWinners, groupRunnersUp, bestThirds, completedGroups } = result;
   const batch = db.batch();
 
-  // Build a date lookup from static KNOCKOUT data
-  const staticDates = {};
+  // Build a date/time/venue lookup from static KNOCKOUT data
+  const staticMeta = {};
   if (typeof KNOCKOUT !== 'undefined') {
     [...KNOCKOUT.roundOf32, ...KNOCKOUT.roundOf16, ...KNOCKOUT.quarterfinals,
      ...KNOCKOUT.semifinals, KNOCKOUT.thirdPlace, KNOCKOUT.final]
-      .forEach(m => { if (m && m.id) staticDates[m.id] = m.date; });
+      .forEach(m => { if (m && m.id) staticMeta[m.id] = { date: m.date, time: m.time || '', venue: m.venue || '', city: m.city || '' }; });
   }
 
   // Helper: safely write a knockout match (creates if missing, merges if exists)
   const writeKO = (id, data) => {
+    const meta = staticMeta[id] || {};
     batch.set(db.collection('knockout').doc(id), {
       id: id,
-      date: staticDates[id] || '',
+      date: meta.date || '',
+      time: meta.time || '',
+      venue: meta.venue || '',
+      city: meta.city || '',
       homeScore: null,
       awayScore: null,
       status: 'upcoming',
