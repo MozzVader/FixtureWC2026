@@ -1,14 +1,22 @@
 #!/usr/bin/env node
 /**
- * ESPN → Firestore Poller para WC2026
+ * ESPN → Firestore Poller para WC2026 (OPTIMIZED)
  *
  * Este script se ejecuta como GitHub Actions (cron cada 5 min).
  * Función:
  *   1. Obtiene partidos del día desde ESPN API
  *   2. Para cada partido, determina si es fase de grupos o eliminatoria
- *   3. Parsea marcador, estado, goles, tarjetas
+ *   3. Parsea marcador, estado
  *   4. Escribe a Firestore (las colecciones /matches y /knockout)
- *   5. Los listeners onSnapshot del frontend se actualizan automáticamente
+ *   5. Scorers/cards SOLO se escriben cuando un partido TERMINA (summary API)
+ *   6. Los listeners onSnapshot del frontend se actualizan automáticamente
+ *
+ * Optimizaciones vs. versión original:
+ *   - No re-procesa partidos ya completados (skip completed)
+ *   - Scorers/cards solo al completar (no durante live) → elimina ~90% de snapshot reads
+ *   - Scorers/cards en batch (delete+add en un solo commit) → 1 snapshot trigger en vez de N
+ *   - Usa summary API para scorers/cards (datos más completos)
+ *   - Cache de knockout docs (1 read por ciclo en vez de por partido)
  *
  * Uso:
  *   node scripts/espn-poller.js
@@ -200,6 +208,22 @@ function initFirebase() {
   }
 }
 
+// ─── Knockout Doc Cache (1 read per cycle instead of per match) ───
+let _knockoutDocs = null;
+
+function resetKnockoutCache() {
+  _knockoutDocs = null;
+}
+
+async function getKnockoutDocs() {
+  if (!_knockoutDocs) {
+    const snap = await db.collection('knockout').get();
+    _knockoutDocs = snap.docs;
+    console.log(`[ESPN] 📦 Knockout cache cargada: ${_knockoutDocs.length} docs`);
+  }
+  return _knockoutDocs;
+}
+
 // ─── Write Group Match to Firestore ───
 async function writeGroupMatch(localId, comp) {
   const teams = comp.competitors;
@@ -210,7 +234,6 @@ async function writeGroupMatch(localId, comp) {
   const awayScore = parseInt(awayTeam.score) || 0;
   const status = parseESPNStatus(comp.status.type.name);
   const minute = parseMinute(comp);
-  const { goals, cards } = parseMatchDetails(comp, comp.competitors);
 
   const data = {
     id: localId,
@@ -223,10 +246,10 @@ async function writeGroupMatch(localId, comp) {
 
   await db.collection('matches').doc(String(localId)).set(data, { merge: true });
 
-  return { localId, status, homeScore, awayScore, minute, goals, cards };
+  return { localId, status, homeScore, awayScore, minute };
 }
 
-// ─── Write Knockout Match to Firestore ───
+// ─── Find & Write Knockout Match to Firestore ───
 async function findAndWriteKnockout(comp) {
   const teams = comp.competitors;
   const homeTeam = teams.find(t => t.homeAway === 'home');
@@ -239,11 +262,12 @@ async function findAndWriteKnockout(comp) {
     return null;
   }
 
-  // ─── STEP 1: Match by team codes across ALL knockout docs (most reliable) ───
-  // This avoids date timezone issues (local vs ART vs UTC).
-  const allDocs = await db.collection('knockout').get();
+  // ─── Use cached knockout docs ───
+  const allDocs = await getKnockoutDocs();
   let matchDoc = null;
-  for (const doc of allDocs.docs) {
+
+  // STEP 1: Match by team codes (most reliable)
+  for (const doc of allDocs) {
     const d = doc.data();
     if ((d.home === homeCode && d.away === awayCode) ||
         (d.home === awayCode && d.away === homeCode)) {
@@ -252,20 +276,20 @@ async function findAndWriteKnockout(comp) {
     }
   }
 
-  // ─── STEP 2: Fallback — match by date (ART) for upcoming matches ───
+  // STEP 2: Fallback — match by date (ART) for upcoming matches
   if (!matchDoc) {
     const artDate = utcToArtDate(comp.date);
- for (const doc of allDocs.docs) {
+    for (const doc of allDocs) {
       const d = doc.data();
       if (d.date === artDate && d.status === 'upcoming') {
         matchDoc = doc;
         break;
       }
     }
-    // Also try previous day (timezone edge: late local match = next day in ART)
+    // Also try previous day (timezone edge)
     if (!matchDoc) {
       const prevDate = new Date(new Date(artDate + 'T12:00:00').getTime() - 86400000).toISOString().slice(0, 10);
-      for (const doc of allDocs.docs) {
+      for (const doc of allDocs) {
         const d = doc.data();
         if (d.date === prevDate && d.status === 'upcoming') {
           matchDoc = doc;
@@ -280,12 +304,17 @@ async function findAndWriteKnockout(comp) {
     return null;
   }
 
+  // ─── Skip already-completed knockout matches ───
   const existing = matchDoc.data();
+  if (existing.status === 'completed') {
+    console.log(`  ⏭️  ${matchDoc.id} ya completado, saltando`);
+    return null;
+  }
+
   const homeScore = parseInt(homeTeam.score) || 0;
   const awayScore = parseInt(awayTeam.score) || 0;
   const status = parseESPNStatus(comp.status.type.name);
   const minute = parseMinute(comp);
-  const { goals, cards } = parseMatchDetails(comp, comp.competitors);
 
   // Build update — only write scores/status/minute.
   // Do NOT overwrite home/away/label (static data has correct Spanish names).
@@ -299,16 +328,24 @@ async function findAndWriteKnockout(comp) {
 
   await db.collection('knockout').doc(matchDoc.id).set(data, { merge: true });
 
-  return { koId: matchDoc.id, status, homeScore, awayScore, minute, goals, cards };
+  return { koId: matchDoc.id, status, homeScore, awayScore, minute };
 }
 
-// ─── Write Scorers to Firestore ───
-async function writeScorers(goals, matchId) {
-  if (!goals || goals.length === 0) return;
+// ─── Replace Scorers (batched delete + add → 1 snapshot trigger) ───
+async function replaceScorers(goals, matchId) {
+  const batch = db.batch();
 
+  // Delete existing scorers for this match
+  const old = await db.collection('scorers')
+    .where('matchId', '==', String(matchId)).get();
+  old.forEach(doc => batch.delete(doc.ref));
+
+  // Add new scorers
+  let count = 0;
   for (const goal of goals) {
     if (!goal.scorer) continue;
-    await db.collection('scorers').add({
+    const ref = db.collection('scorers').doc();
+    batch.set(ref, {
       name: goal.scorer,
       teamCode: goal.team,
       goals: 1,
@@ -317,16 +354,30 @@ async function writeScorers(goals, matchId) {
       minute: goal.minute,
       type: goal.type,
     });
+    count++;
   }
+
+  if (count > 0 || old.size > 0) {
+    await batch.commit();
+  }
+  return count;
 }
 
-// ─── Write Cards to Firestore ───
-async function writeCards(cards, matchId) {
-  if (!cards || cards.length === 0) return;
+// ─── Replace Cards (batched delete + add → 1 snapshot trigger) ───
+async function replaceCards(cards, matchId) {
+  const batch = db.batch();
 
+  // Delete existing cards for this match
+  const old = await db.collection('cards')
+    .where('matchId', '==', String(matchId)).get();
+  old.forEach(doc => batch.delete(doc.ref));
+
+  // Add new cards
+  let count = 0;
   for (const card of cards) {
     if (!card.player) continue;
-    await db.collection('cards').add({
+    const ref = db.collection('cards').doc();
+    batch.set(ref, {
       name: card.player,
       teamCode: card.team,
       type: card.type,
@@ -334,11 +385,33 @@ async function writeCards(cards, matchId) {
       matchId: String(matchId),
       minute: card.minute,
     });
+    count++;
+  }
+
+  if (count > 0 || old.size > 0) {
+    await batch.commit();
+  }
+  return count;
+}
+
+// ─── Fetch summary and write scorers/cards (single operation per match completion) ───
+async function writeSummaryScorersCards(espnId, localId) {
+  try {
+    const summary = await fetchJSON(`${ESPN_BASE}/summary?event=${espnId}`);
+    const sumComp = summary.header.competitions[0];
+    const { goals, cards } = parseMatchDetails(sumComp, sumComp.competitors);
+
+    // Batched: delete old + add new in single commit per collection
+    const goalCount = await replaceScorers(goals, localId);
+    const cardCount = await replaceCards(cards, localId);
+    console.log(`    📊 ${goalCount} goles, ${cardCount} tarjetas`);
+  } catch (e) {
+    console.log(`    ⚠️ No se pudo obtener summary: ${e.message}`);
   }
 }
 
 // ─── Main Poller ───
-async function poll(dateStr) {
+async function poll(dateStr, { forceWrite = false } = {}) {
   console.log(`\n[ESPN] 🔍 Consultando ${dateStr}...`);
 
   let data;
@@ -358,6 +431,7 @@ async function poll(dateStr) {
   console.log(`[ESPN] 📋 ${events.length} partido(s) encontrado(s)`);
 
   let updated = 0;
+  let skipped = 0;
   let errors = 0;
 
   for (const event of events) {
@@ -372,62 +446,35 @@ async function poll(dateStr) {
       if (isGroupMatch(espnId)) {
         // ─── GROUP MATCH ───
         const localId = ESPN_TO_LOCAL[espnId];
+
+        // ─── Skip already-completed matches (unless forceWrite/backfill) ───
+        if (!forceWrite) {
+          const existingDoc = await db.collection('matches').doc(String(localId)).get();
+          const existingStatus = existingDoc.exists ? existingDoc.data().status : null;
+          if (existingStatus === 'completed') {
+            console.log(`  ⏭️  #${localId} ya completado, saltando`);
+            skipped++;
+            continue;
+          }
+        }
+
+        // Write match data (score, status, minute)
         const result = await writeGroupMatch(localId, comp);
         const homeTeam = comp.competitors.find(t => t.homeAway === 'home');
         const awayTeam = comp.competitors.find(t => t.homeAway === 'away');
         console.log(`  ✅ #${localId} ${homeTeam.team.abbreviation} ${result.homeScore}-${result.awayScore} ${awayTeam.team.abbreviation} [${result.status}]`);
         updated++;
 
-        // Write goals and cards — delete and rewrite per collection independently
-        // to avoid cross-collection data loss (e.g. goals found but 0 cards → don't delete cards)
-        if (result.goals.length > 0) {
-          const oldScorers = await db.collection('scorers')
-            .where('matchId', '==', String(localId)).get();
-          if (oldScorers.size > 0) {
-            const delBatch = db.batch();
-            oldScorers.forEach(doc => delBatch.delete(doc.ref));
-            await delBatch.commit();
-          }
-          await writeScorers(result.goals, localId);
+        // ─── Scorers/Cards: ONLY when match completes ───
+        if (forceWrite && result.status === 'completed') {
+          // Backfill mode: write scorers/cards for all completed matches
+          await writeSummaryScorersCards(espnId, localId);
+        } else if (result.status === 'completed') {
+          // Normal mode: check if this is a transition to completed
+          // (we already skipped if existing was completed, so this IS a transition)
+          await writeSummaryScorersCards(espnId, localId);
         }
-        if (result.cards.length > 0) {
-          const oldCards = await db.collection('cards')
-            .where('matchId', '==', String(localId)).get();
-          if (oldCards.size > 0) {
-            const delBatch = db.batch();
-            oldCards.forEach(doc => delBatch.delete(doc.ref));
-            await delBatch.commit();
-          }
-          await writeCards(result.cards, localId);
-        }
-
-        // If completed, also get detailed summary for accurate data
-        if (result.status === 'completed') {
-          try {
-            const summary = await fetchJSON(`${ESPN_BASE}/summary?event=${espnId}`);
-            const sumComp = summary.header.competitions[0];
-            const { goals: detailedGoals, cards: detailedCards } = parseMatchDetails(sumComp, sumComp.competitors);
-            if (detailedGoals.length > 0) {
-              const oldScorers = await db.collection('scorers')
-                .where('matchId', '==', String(localId)).get();
-              const batch = db.batch();
-              oldScorers.forEach(doc => batch.delete(doc.ref));
-              await batch.commit();
-              await writeScorers(detailedGoals, localId);
-            }
-            if (detailedCards.length > 0) {
-              const oldCards = await db.collection('cards')
-                .where('matchId', '==', String(localId)).get();
-              const batch2 = db.batch();
-              oldCards.forEach(doc => batch2.delete(doc.ref));
-              await batch2.commit();
-              await writeCards(detailedCards, localId);
-            }
-            console.log(`    📊 ${detailedGoals.length} goles, ${detailedCards.length} tarjetas`);
-          } catch (e) {
-            console.log(`    ⚠️ No se pudo obtener summary: ${e.message}`);
-          }
-        }
+        // Live/halftime: NO scorers/cards writes — only score/status/minute above
 
       } else {
         // ─── KNOCKOUT MATCH ───
@@ -448,14 +495,14 @@ async function poll(dateStr) {
     await delay(500); // Rate limit courtesy
   }
 
-  console.log(`[ESPN] ✨ ${dateStr}: ${updated} actualizado(s), ${errors} error(es)`);
-  return { matches: events.length, updated, errors };
+  console.log(`[ESPN] ✨ ${dateStr}: ${updated} actualizado(s), ${skipped} saltado(s), ${errors} error(es)`);
+  return { matches: events.length, updated, skipped, errors };
 }
 
 // ─── Entry Point ───
 async function main() {
   console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║   ESPN → Firestore Poller — WC2026             ║');
+  console.log('║   ESPN → Firestore Poller — WC2026 (OPTIMIZED)  ║');
   console.log('╚══════════════════════════════════════════════════╝');
 
   // Check if we should poll (only during tournament dates)
@@ -509,7 +556,8 @@ async function main() {
       const dateStr = d.toISOString().slice(0, 10).replace(/-/g, '');
       dayNum++;
       console.log(`\n[ESPN] 📅 Día ${dayNum}: ${dateStr}`);
-      const result = await poll(dateStr);
+      // forceWrite=true: don't skip completed matches, always write scorers/cards
+      const result = await poll(dateStr, { forceWrite: true });
       totalUpdated += result.updated;
       // Wait between dates to avoid Firestore quota
       if (d < end) {
@@ -522,14 +570,14 @@ async function main() {
     return;
   }
 
-  // Determine dates to poll
+  // Determine dates to poll (yesterday, today, tomorrow)
   const dates = [];
   if (specificDate) {
     dates.push(specificDate);
   } else {
-    // Poll 2 days back through tomorrow (to catch late results and backfill)
+    // Poll 1 day back through tomorrow
     const artNow = new Date(now.getTime() + (-3 * 60 * 60000 + now.getTimezoneOffset() * 60000));
-    for (let offset = -2; offset <= 1; offset++) {
+    for (let offset = -1; offset <= 1; offset++) {
       const d = new Date(artNow.getTime() + offset * 86400000);
       dates.push(d.toISOString().slice(0, 10).replace(/-/g, ''));
     }
@@ -538,12 +586,20 @@ async function main() {
   // Remove duplicates
   const uniqueDates = [...new Set(dates)];
 
+  // Reset knockout cache for this cycle
+  resetKnockoutCache();
+
   let totalUpdated = 0;
+  let totalSkipped = 0;
   for (const date of uniqueDates) {
     const result = await poll(date);
     totalUpdated += result.updated;
+    totalSkipped += result.skipped || 0;
   }
 
+  if (totalSkipped > 0) {
+    console.log(`[ESPN] ⏭️  ${totalSkipped} partido(s) completados saltados`);
+  }
   console.log(`\n[ESPN] 🏁 Total actualizado: ${totalUpdated} partido(s)`);
 }
 
