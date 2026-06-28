@@ -233,69 +233,65 @@ async function findAndWriteKnockout(comp) {
   const awayTeam = teams.find(t => t.homeAway === 'away');
   const homeCode = TEAM_MAP[homeTeam.team.abbreviation] || homeTeam.team.abbreviation;
   const awayCode = TEAM_MAP[awayTeam.team.abbreviation] || awayTeam.team.abbreviation;
-  const artDate = utcToArtDate(comp.date);
 
   // Skip if teams are still TBD placeholders
   if (!TEAM_MAP[homeTeam.team.abbreviation] && !TEAM_MAP[awayTeam.team.abbreviation]) {
     return null;
   }
 
-  // Look up in Firestore: find knockout doc with matching date + teams
-  // Search through all knockout docs on that date
-  const snapshot = await db.collection('knockout')
-    .where('date', '==', artDate)
-    .get();
-
+  // ─── STEP 1: Match by team codes across ALL knockout docs (most reliable) ───
+  // This avoids date timezone issues (local vs ART vs UTC).
+  const allDocs = await db.collection('knockout').get();
   let matchDoc = null;
-  for (const doc of snapshot.docs) {
+  for (const doc of allDocs.docs) {
     const d = doc.data();
-    if (d.home === homeCode && d.away === awayCode) {
-      matchDoc = doc;
-      break;
-    }
-    // Also try reversed
-    if (d.home === awayCode && d.away === homeCode) {
+    if ((d.home === homeCode && d.away === awayCode) ||
+        (d.home === awayCode && d.away === homeCode)) {
       matchDoc = doc;
       break;
     }
   }
 
+  // ─── STEP 2: Fallback — match by date (ART) for upcoming matches ───
   if (!matchDoc) {
-    // No matching doc found — might be a new knockout match not yet in Firestore
-    // Try to match by date only and update teams
-    const allKoOnDate = await db.collection('knockout')
-      .where('date', '==', artDate)
-      .get();
-
-    for (const doc of allKoOnDate.docs) {
+    const artDate = utcToArtDate(comp.date);
+ for (const doc of allDocs.docs) {
       const d = doc.data();
-      if (d.status === 'upcoming' && (!d.home || !d.away)) {
+      if (d.date === artDate && d.status === 'upcoming') {
         matchDoc = doc;
         break;
+      }
+    }
+    // Also try previous day (timezone edge: late local match = next day in ART)
+    if (!matchDoc) {
+      const prevDate = new Date(new Date(artDate + 'T12:00:00').getTime() - 86400000).toISOString().slice(0, 10);
+      for (const doc of allDocs.docs) {
+        const d = doc.data();
+        if (d.date === prevDate && d.status === 'upcoming') {
+          matchDoc = doc;
+          break;
+        }
       }
     }
   }
 
   if (!matchDoc) {
-    console.log(`  ⚠️  No se encontró doc de eliminatoria para ${homeCode} vs ${awayCode} (${artDate})`);
+    console.log(`  ⚠️  No se encontró doc de eliminatoria para ${homeCode} vs ${awayCode}`);
     return null;
   }
 
+  const existing = matchDoc.data();
   const homeScore = parseInt(homeTeam.score) || 0;
   const awayScore = parseInt(awayTeam.score) || 0;
   const status = parseESPNStatus(comp.status.type.name);
   const minute = parseMinute(comp);
   const { goals, cards } = parseMatchDetails(comp, comp.competitors);
 
-  const homeName = homeCode;
-  const awayName = awayCode;
-
+  // Build update — only write scores/status/minute.
+  // Do NOT overwrite home/away/label (static data has correct Spanish names).
   const data = {
-    home: homeCode,
-    away: awayCode,
-    label: `${homeName} vs ${awayName}`,
-    homeScore: status !== 'upcoming' ? homeScore : null,
-    awayScore: status !== 'upcoming' ? awayScore : null,
+    homeScore: status !== 'upcoming' ? homeScore : (existing.homeScore ?? null),
+    awayScore: status !== 'upcoming' ? awayScore : (existing.awayScore ?? null),
     status,
     minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
     lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
@@ -437,7 +433,10 @@ async function poll(dateStr) {
         // ─── KNOCKOUT MATCH ───
         const result = await findAndWriteKnockout(comp);
         if (result) {
-          console.log(`  ✅ ${result.koId} [${result.status}]`);
+          const homeT = comp.competitors.find(t => t.homeAway === 'home');
+          const awayT = comp.competitors.find(t => t.homeAway === 'away');
+          const score = (result.homeScore != null) ? ` ${result.homeScore}-${result.awayScore} ` : ' ';
+          console.log(`  ✅ ${result.koId} ${homeT.team.abbreviation}${score}${awayT.team.abbreviation} [${result.status}]`);
           updated++;
         }
       }
