@@ -58,6 +58,28 @@ const TEAM_MAP = {
   'POR':'POR','COD':'COD','UZB':'UZB','COL':'COL','ENG':'ENG','CRO':'CRO','GHA':'GHA','PAN':'PAN'
 };
 
+// ─── Knockout Feeder Map (which match feeds into which) ───
+// home/away = which feeder's winner goes to home/away slot.
+// useLoser = true means the LOSER advances (3rd place match).
+const FEEDER_MAP = {
+  'R16-1':  { home: 'R32-1',  away: 'R32-2'  },
+  'R16-2':  { home: 'R32-3',  away: 'R32-4'  },
+  'R16-3':  { home: 'R32-5',  away: 'R32-6'  },
+  'R16-4':  { home: 'R32-7',  away: 'R32-8'  },
+  'R16-5':  { home: 'R32-9',  away: 'R32-10' },
+  'R16-6':  { home: 'R32-11', away: 'R32-12' },
+  'R16-7':  { home: 'R32-13', away: 'R32-14' },
+  'R16-8':  { home: 'R32-15', away: 'R32-16' },
+  'QF-1':   { home: 'R16-1',  away: 'R16-2'  },
+  'QF-2':   { home: 'R16-3',  away: 'R16-4'  },
+  'QF-3':   { home: 'R16-5',  away: 'R16-6'  },
+  'QF-4':   { home: 'R16-7',  away: 'R16-8'  },
+  'SF-1':   { home: 'QF-1',   away: 'QF-2'   },
+  'SF-2':   { home: 'QF-3',   away: 'QF-4'   },
+  'FINAL':  { home: 'SF-1',   away: 'SF-2'   },
+  'TP-1':   { home: 'SF-1',   away: 'SF-2',   useLoser: true }
+};
+
 // ─── Helpers ───
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -410,6 +432,68 @@ async function writeSummaryScorersCards(espnId, localId) {
   }
 }
 
+// ─── Propagate Knockout Winners ───
+// After each cycle, check if any completed match's winner can advance to the next round.
+async function propagateKnockoutWinners() {
+  const allDocs = await getKnockoutDocs();
+  const allMatches = {};
+  allDocs.forEach(doc => { allMatches[doc.id] = doc.data(); });
+
+  const batch = db.batch();
+  let propagated = 0;
+
+  const getAdvancing = (feeder, isLoserSlot) => {
+    if (feeder.status !== 'completed') return null;
+    if (feeder.homeScore == null || feeder.awayScore == null) return null;
+    if (feeder.homeScore === feeder.awayScore) return null; // Draw = not decided
+    if (isLoserSlot) {
+      return feeder.homeScore > feeder.awayScore ? feeder.away : feeder.home;
+    }
+    return feeder.homeScore > feeder.awayScore ? feeder.home : feeder.away;
+  };
+
+  for (const [targetId, feeders] of Object.entries(FEEDER_MAP)) {
+    const target = allMatches[targetId];
+    if (!target) continue;
+
+    const homeFeeder = allMatches[feeders.home];
+    const awayFeeder = allMatches[feeders.away];
+    if (!homeFeeder || !awayFeeder) continue;
+
+    const advancingHome = getAdvancing(homeFeeder, false);
+    const advancingAway = getAdvancing(awayFeeder, feeders.useLoser || false);
+
+    let needsUpdate = false;
+
+    if (advancingHome && target.home !== advancingHome) {
+      target.home = advancingHome;
+      needsUpdate = true;
+    }
+    if (advancingAway && target.away !== advancingAway) {
+      target.away = advancingAway;
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      batch.set(db.collection('knockout').doc(targetId), {
+        home: target.home || null,
+        away: target.away || null,
+        label: `${target.home || 'Por definir'} vs ${target.away || 'Por definir'}`
+      }, { merge: true });
+      propagated++;
+      console.log(`  🔄 ${targetId}: ${target.home} vs ${target.away}`);
+    }
+  }
+
+  if (propagated > 0) {
+    await batch.commit();
+    resetKnockoutCache(); // Invalidate cache after writes
+    console.log(`[ESPN] 🏆 ${propagated} equipo(s) propagados al bracket`);
+  }
+
+  return propagated;
+}
+
 // ─── Main Poller ───
 async function poll(dateStr, { forceWrite = false } = {}) {
   console.log(`\n[ESPN] 🔍 Consultando ${dateStr}...`);
@@ -601,6 +685,9 @@ async function main() {
     console.log(`[ESPN] ⏭️  ${totalSkipped} partido(s) completados saltados`);
   }
   console.log(`\n[ESPN] 🏁 Total actualizado: ${totalUpdated} partido(s)`);
+
+  // ─── Propagate knockout winners after all dates processed ───
+  await propagateKnockoutWinners();
 }
 
 main().catch(e => {
