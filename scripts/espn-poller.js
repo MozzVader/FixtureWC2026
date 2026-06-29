@@ -103,7 +103,7 @@ function parseESPNStatus(statusName) {
                                return 'live';
     case 'STATUS_HALFTIME':
     case 'STATUS_HALF_TIME':   return 'halftime';
-    case 'STATUS_FULL_TIME':
+    case 'STATUS_FULL_TIME':    return 'full_time';  // End of regulation — match may continue (ET/PEN)
     case 'STATUS_FINAL':
     case 'STATUS_FINAL_AET':
     case 'STATUS_FINAL_PEN':   return 'completed';
