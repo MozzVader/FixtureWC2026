@@ -136,9 +136,35 @@ function extractWinnerCode(competitors) {
 }
 
 /**
- * Extract penalty shootout score from ESPN status detail.
- * ESPN formats: "2-3 on Pen", "2-3 (Pen)", "2 - 3 Pen", etc.
- * Returns "2-3" or null.
+ * Extract penalty shootout score by counting scored shootout penalties
+ * per team from ESPN's `details` array (each shootout kick is a detail
+ * entry with `shootout: true` and `penaltyKick: true`; `scoringPlay: true`
+ * means it was converted). This is far more reliable than parsing the
+ * free-text status detail/shortDetail string, whose exact wording ESPN
+ * doesn't keep consistent across leagues/seasons.
+ * Returns "home-away" (e.g. "3-4") or null if there was no shootout.
+ */
+function extractPenaltyScoreFromDetails(comp, homeTeamId, awayTeamId) {
+  const details = comp.details || [];
+  const shootoutKicks = details.filter(d => d.shootout === true);
+  if (shootoutKicks.length === 0) return null;
+
+  let homePens = 0;
+  let awayPens = 0;
+  shootoutKicks.forEach(d => {
+    if (!d.scoringPlay) return; // only count converted kicks
+    const teamId = d.team?.id;
+    if (teamId === homeTeamId) homePens++;
+    else if (teamId === awayTeamId) awayPens++;
+  });
+
+  return `${homePens}-${awayPens}`;
+}
+
+/**
+ * Legacy fallback: try to parse a "2-3 on Pen" style string from the
+ * status detail/shortDetail text. Kept as a fallback for cases where
+ * `details` doesn't include shootout kick-by-kick data.
  */
 function extractPenaltyScore(detail) {
   if (!detail) return null;
@@ -305,7 +331,9 @@ async function writeGroupMatch(localId, comp) {
     minute: (status === 'live' || status === 'halftime' || status === 'full_time') ? (status === 'halftime' ? 'HT' : minute) : null,
     winnerCode: status === 'completed' ? extractWinnerCode(teams) : null,
     afterExtraTime: status === 'completed' ? isAfterExtraTime(statusName) : null,
-    penaltyScore: status === 'completed' ? extractPenaltyScore(comp.status.type.detail) : null,
+    penaltyScore: status === 'completed'
+      ? (extractPenaltyScoreFromDetails(comp, homeTeam.team.id, awayTeam.team.id) || extractPenaltyScore(comp.status.type.detail))
+      : null,
     lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
   };
 
@@ -374,7 +402,9 @@ async function findAndWriteKnockout(comp) {
   // it finished before this poller version existed and needs a one-time
   // backfill of the new fields (otherwise ET/PEN results stay stuck forever).
   const existing = matchDoc.data();
-  const needsBackfill = existing.status === 'completed' && existing.winnerCode === undefined;
+  const needsBackfill = existing.status === 'completed' &&
+    (existing.winnerCode === undefined ||
+     (existing.afterExtraTime === true && existing.penaltyScore === null));
   if (existing.status === 'completed' && !needsBackfill) {
     console.log(`  ⏭️  ${matchDoc.id} ya completado, saltando`);
     return null;
@@ -398,7 +428,9 @@ async function findAndWriteKnockout(comp) {
     minute: (status === 'live' || status === 'halftime' || status === 'full_time') ? (status === 'halftime' ? 'HT' : minute) : null,
     winnerCode: status === 'completed' ? extractWinnerCode(teams) : null,
     afterExtraTime: status === 'completed' ? isAfterExtraTime(statusName) : null,
-    penaltyScore: status === 'completed' ? extractPenaltyScore(comp.status.type.detail) : null,
+    penaltyScore: status === 'completed'
+      ? (extractPenaltyScoreFromDetails(comp, homeTeam.team.id, awayTeam.team.id) || extractPenaltyScore(comp.status.type.detail))
+      : null,
     lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
   };
 

@@ -1076,7 +1076,23 @@ function _espnExtractWinnerCode(competitors) {
   return (typeof ESPN_TEAM_MAP !== 'undefined' && ESPN_TEAM_MAP[rawCode]) || rawCode || null;
 }
 
-// Extract penalty shootout score from ESPN status detail, e.g. "2-3 on Pen" -> "2-3".
+// Extract penalty shootout score by counting scored shootout kicks per
+// team from ESPN's `details` array (mirrors scripts/espn-poller.js).
+function _espnExtractPenaltyScoreFromDetails(comp, homeTeamId, awayTeamId) {
+  const details = comp.details || [];
+  const shootoutKicks = details.filter(d => d.shootout === true);
+  if (shootoutKicks.length === 0) return null;
+  let homePens = 0, awayPens = 0;
+  shootoutKicks.forEach(d => {
+    if (!d.scoringPlay) return;
+    const teamId = d.team?.id;
+    if (teamId === homeTeamId) homePens++;
+    else if (teamId === awayTeamId) awayPens++;
+  });
+  return `${homePens}-${awayPens}`;
+}
+
+// Legacy fallback: parse "2-3 on Pen" style text from the status detail.
 function _espnExtractPenaltyScore(detail) {
   if (!detail) return null;
   const normalized = detail.replace(/\s+/g, ' ');
@@ -1209,7 +1225,9 @@ async function _espnPollOnce() {
         : null;
       const winnerCode = status === 'completed' ? _espnExtractWinnerCode(comp.competitors) : null;
       const afterExtraTime = status === 'completed' ? _espnIsAfterExtraTime(statusName) : null;
-      const penaltyScore = status === 'completed' ? _espnExtractPenaltyScore(comp.status?.type?.detail) : null;
+      const penaltyScore = status === 'completed'
+        ? (_espnExtractPenaltyScoreFromDetails(comp, homeTeam.team.id, awayTeam.team.id) || _espnExtractPenaltyScore(comp.status?.type?.detail))
+        : null;
 
       // Only update if something changed
       if (localMatch.status !== status ||
@@ -1314,7 +1332,7 @@ async function _espnBackfill() {
       localMatch.minute = null;
       localMatch.winnerCode = _espnExtractWinnerCode(comp.competitors);
       localMatch.afterExtraTime = _espnIsAfterExtraTime(statusName);
-      localMatch.penaltyScore = _espnExtractPenaltyScore(comp.status?.type?.detail);
+      localMatch.penaltyScore = _espnExtractPenaltyScoreFromDetails(comp, homeTeam.team.id, awayTeam.team.id) || _espnExtractPenaltyScore(comp.status?.type?.detail);
       totalUpdated++;
     }
     // Small delay between days to be nice to API
