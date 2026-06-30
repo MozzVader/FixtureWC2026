@@ -122,6 +122,45 @@ function parseMinute(comp) {
   return String(minute).replace("'", '');
 }
 
+/**
+ * Extract winner code from ESPN competitors array.
+ * ESPN marks the winning team with `winner: true`.
+ * Returns the team abbreviation mapped to our code, or null.
+ */
+function extractWinnerCode(competitors) {
+  if (!competitors) return null;
+  const winner = competitors.find(c => c.winner === true);
+  if (!winner) return null;
+  const rawCode = winner.team?.abbreviation || '';
+  return TEAM_MAP[rawCode] || rawCode || null;
+}
+
+/**
+ * Extract penalty shootout score from ESPN status detail.
+ * ESPN formats: "2-3 on Pen", "2-3 (Pen)", "2 - 3 Pen", etc.
+ * Returns "2-3" or null.
+ */
+function extractPenaltyScore(detail) {
+  if (!detail) return null;
+  const normalized = detail.replace(/\s+/g, ' ');
+  const match = normalized.match(/(\d+)\s*[-–]\s*(\d+).*(?:Pen|PEN|Penalties|penalti)/i);
+  return match ? `${match[1]}-${match[2]}` : null;
+}
+
+/**
+ * Determine if match went to extra time based on ESPN status.
+ */
+function isAfterExtraTime(statusName) {
+  return statusName === 'STATUS_FINAL_AET' || statusName === 'STATUS_FINAL_PEN';
+}
+
+/**
+ * Determine if match was decided on penalties.
+ */
+function isAfterPenalties(statusName) {
+  return statusName === 'STATUS_FINAL_PEN';
+}
+
 function parseMatchDetails(comp, competitors) {
   const details = comp.details || [];
   const goals = [];
@@ -254,7 +293,8 @@ async function writeGroupMatch(localId, comp) {
 
   const homeScore = parseInt(homeTeam.score) || 0;
   const awayScore = parseInt(awayTeam.score) || 0;
-  const status = parseESPNStatus(comp.status.type.name);
+  const statusName = comp.status.type.name;
+  const status = parseESPNStatus(statusName);
   const minute = parseMinute(comp);
 
   const data = {
@@ -262,7 +302,10 @@ async function writeGroupMatch(localId, comp) {
     homeScore: status !== 'upcoming' ? homeScore : null,
     awayScore: status !== 'upcoming' ? awayScore : null,
     status,
-    minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
+    minute: (status === 'live' || status === 'halftime' || status === 'full_time') ? (status === 'halftime' ? 'HT' : minute) : null,
+    winnerCode: status === 'completed' ? extractWinnerCode(teams) : null,
+    afterExtraTime: status === 'completed' ? isAfterExtraTime(statusName) : null,
+    penaltyScore: status === 'completed' ? extractPenaltyScore(comp.status.type.detail) : null,
     lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
   };
 
@@ -335,7 +378,8 @@ async function findAndWriteKnockout(comp) {
 
   const homeScore = parseInt(homeTeam.score) || 0;
   const awayScore = parseInt(awayTeam.score) || 0;
-  const status = parseESPNStatus(comp.status.type.name);
+  const statusName = comp.status.type.name;
+  const status = parseESPNStatus(statusName);
   const minute = parseMinute(comp);
 
   // Build update — only write scores/status/minute.
@@ -344,7 +388,10 @@ async function findAndWriteKnockout(comp) {
     homeScore: status !== 'upcoming' ? homeScore : (existing.homeScore ?? null),
     awayScore: status !== 'upcoming' ? awayScore : (existing.awayScore ?? null),
     status,
-    minute: (status === 'live' || status === 'halftime') ? (status === 'halftime' ? 'HT' : minute) : null,
+    minute: (status === 'live' || status === 'halftime' || status === 'full_time') ? (status === 'halftime' ? 'HT' : minute) : null,
+    winnerCode: status === 'completed' ? extractWinnerCode(teams) : null,
+    afterExtraTime: status === 'completed' ? isAfterExtraTime(statusName) : null,
+    penaltyScore: status === 'completed' ? extractPenaltyScore(comp.status.type.detail) : null,
     lastUpdated: require('firebase-admin').firestore.FieldValue.serverTimestamp(),
   };
 
@@ -444,8 +491,17 @@ async function propagateKnockoutWinners() {
 
   const getAdvancing = (feeder, isLoserSlot) => {
     if (feeder.status !== 'completed') return null;
+    // Use winnerCode when available (handles ET/PEN draws correctly)
+    if (feeder.winnerCode) {
+      if (isLoserSlot) {
+        // Loser advances (3rd place match)
+        return feeder.home === feeder.winnerCode ? feeder.away : feeder.home;
+      }
+      return feeder.winnerCode;
+    }
+    // Fallback: score comparison (shouldn't normally be needed)
     if (feeder.homeScore == null || feeder.awayScore == null) return null;
-    if (feeder.homeScore === feeder.awayScore) return null; // Draw = not decided
+    if (feeder.homeScore === feeder.awayScore) return null;
     if (isLoserSlot) {
       return feeder.homeScore > feeder.awayScore ? feeder.away : feeder.home;
     }
