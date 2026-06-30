@@ -1052,6 +1052,7 @@ function _parseESPNStatus(statusName, completed) {
     case 'STATUS_IN_PROGRESS': case 'STATUS_1ST_PERIOD': case 'STATUS_2ND_PERIOD':
     case 'STATUS_3RD_PERIOD': case 'STATUS_FIRST_HALF': case 'STATUS_SECOND_HALF':
     case 'STATUS_EXTRA_TIME': case 'STATUS_PENALTY_SHOOTOUT':
+    case 'STATUS_END_OF_EXTRATIME':
       return 'live';
     case 'STATUS_HALFTIME': case 'STATUS_HALF_TIME':
       return 'halftime';
@@ -1064,7 +1065,8 @@ function _parseESPNStatus(statusName, completed) {
     case 'STATUS_FINAL_AET': case 'STATUS_FINAL_PEN':
       return 'completed';
     default:
-      return 'upcoming';
+      console.warn(`[ESPN-Poll] Unknown status: ${statusName} (completed=${completed})`);
+      return completed ? 'completed' : 'live';
   }
 }
 

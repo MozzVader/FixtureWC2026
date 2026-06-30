@@ -100,6 +100,7 @@ function parseESPNStatus(statusName, completed) {
     case 'STATUS_SECOND_HALF':
     case 'STATUS_EXTRA_TIME':
     case 'STATUS_PENALTY_SHOOTOUT':
+    case 'STATUS_END_OF_EXTRATIME':
                                return 'live';
     case 'STATUS_HALFTIME':
     case 'STATUS_HALF_TIME':   return 'halftime';
@@ -113,7 +114,9 @@ function parseESPNStatus(statusName, completed) {
     case 'STATUS_FINAL_PEN':   return 'completed';
     case 'STATUS_POSTPONED':   return 'postponed';
     case 'STATUS_SUSPENDED':   return 'suspended';
-    default:                   return 'upcoming';
+    default:
+      console.warn(`[ESPN] Unknown status: ${statusName} (completed=${completed})`);
+      return completed ? 'completed' : 'live';
   }
 }
 
