@@ -809,10 +809,10 @@ function initBracket() {
   }
 
   // Col 2 — Connectors R32 → R16 (8 groups of 2 rows)
-  // Each feeder is 1 row → offset = 101/2 ≈ 50px
+  // Each feeder is 1 row → offset = 111/2 ≈ 56px
   for (let i = 0; i < 8; i++) {
     const rs = i * 2 + 1;
-    html += buildConnector(2, rs, rs + 2, 50);
+    html += buildConnector(2, rs, rs + 2, 56);
   }
 
   // Col 3 — R16: 8 matches, 2 rows each
@@ -824,10 +824,10 @@ function initBracket() {
   }
 
   // Col 4 — Connectors R16 → QF (4 groups of 4 rows)
-  // Each feeder is 2 rows → offset = (2×101 + 6) / 2 = 104px
+  // Each feeder is 2 rows → offset = (2×111 + 6) / 2 = 114px
   for (let i = 0; i < 4; i++) {
     const rs = i * 4 + 1;
-    html += buildConnector(4, rs, rs + 4, 104);
+    html += buildConnector(4, rs, rs + 4, 114);
   }
 
   // Col 5 — QF: 4 matches, 4 rows each
@@ -839,10 +839,10 @@ function initBracket() {
   }
 
   // Col 6 — Connectors QF → SF (2 groups of 8 rows)
-  // Each feeder is 4 rows → offset = (4×101 + 3×6) / 2 = 211px
+  // Each feeder is 4 rows → offset = (4×111 + 3×6) / 2 = 231px
   for (let i = 0; i < 2; i++) {
     const rs = i * 8 + 1;
-    html += buildConnector(6, rs, rs + 8, 211);
+    html += buildConnector(6, rs, rs + 8, 231);
   }
 
   // Col 7 — SF: 2 matches, 8 rows each
@@ -854,8 +854,8 @@ function initBracket() {
   }
 
   // Col 8 — Connector SF → Final (1 group of 16 rows)
-  // Each feeder is 8 rows → offset = (8×101 + 7×6) / 2 = 425px
-  html += buildConnector(8, 1, 17, 425);
+  // Each feeder is 8 rows → offset = (8×111 + 7×6) / 2 = 465px
+  html += buildConnector(8, 1, 17, 465);
 
   // Col 9 — Final: 1 match, spans all 16 rows (row 1/17)
   html += '<div class="bracket-grid-item bracket-grid-item--final" style="grid-column:9;grid-row:1/17">';
