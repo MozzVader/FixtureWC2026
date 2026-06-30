@@ -89,7 +89,7 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-function parseESPNStatus(statusName) {
+function parseESPNStatus(statusName, completed) {
   switch (statusName) {
     case 'STATUS_SCHEDULED':    return 'upcoming';
     case 'STATUS_IN_PROGRESS':
@@ -103,7 +103,11 @@ function parseESPNStatus(statusName) {
                                return 'live';
     case 'STATUS_HALFTIME':
     case 'STATUS_HALF_TIME':   return 'halftime';
-    case 'STATUS_FULL_TIME':    return 'full_time';  // End of regulation — match may continue (ET/PEN)
+    case 'STATUS_FULL_TIME':
+      // ESPN uses STATUS_FULL_TIME for TWO scenarios:
+      //   completed=true  → match is permanently finished after 90 min
+      //   completed=false → 90 min ended, may continue to ET/PEN
+      return completed ? 'completed' : 'full_time';
     case 'STATUS_FINAL':
     case 'STATUS_FINAL_AET':
     case 'STATUS_FINAL_PEN':   return 'completed';
@@ -320,7 +324,8 @@ async function writeGroupMatch(localId, comp) {
   const homeScore = parseInt(homeTeam.score) || 0;
   const awayScore = parseInt(awayTeam.score) || 0;
   const statusName = comp.status.type.name;
-  const status = parseESPNStatus(statusName);
+  const completed = comp.status.type.completed;
+  const status = parseESPNStatus(statusName, completed);
   const minute = parseMinute(comp);
 
   const data = {
@@ -416,7 +421,8 @@ async function findAndWriteKnockout(comp) {
   const homeScore = parseInt(homeTeam.score) || 0;
   const awayScore = parseInt(awayTeam.score) || 0;
   const statusName = comp.status.type.name;
-  const status = parseESPNStatus(statusName);
+  const completed = comp.status.type.completed;
+  const status = parseESPNStatus(statusName, completed);
   const minute = parseMinute(comp);
 
   // Build update — only write scores/status/minute.

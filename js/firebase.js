@@ -1047,7 +1047,7 @@ const ESPN_CORS_PROXIES = [
 
 let _espnPollTimer = null;
 
-function _parseESPNStatus(statusName) {
+function _parseESPNStatus(statusName, completed) {
   switch (statusName) {
     case 'STATUS_IN_PROGRESS': case 'STATUS_1ST_PERIOD': case 'STATUS_2ND_PERIOD':
     case 'STATUS_3RD_PERIOD': case 'STATUS_FIRST_HALF': case 'STATUS_SECOND_HALF':
@@ -1056,9 +1056,10 @@ function _parseESPNStatus(statusName) {
     case 'STATUS_HALFTIME': case 'STATUS_HALF_TIME':
       return 'halftime';
     case 'STATUS_FULL_TIME':
-      // End of regulation (90 min) — match may continue into ET/PEN.
-      // Keep distinct from 'completed' so the frontend keeps showing it live.
-      return 'full_time';
+      // ESPN uses STATUS_FULL_TIME for TWO scenarios:
+      //   completed=true  → match is permanently finished after 90 min
+      //   completed=false → 90 min ended, may continue to ET/PEN
+      return completed ? 'completed' : 'full_time';
     case 'STATUS_FINAL':
     case 'STATUS_FINAL_AET': case 'STATUS_FINAL_PEN':
       return 'completed';
@@ -1218,7 +1219,8 @@ async function _espnPollOnce() {
 
       const homeScore = parseInt(homeTeam.score) || 0;
       const awayScore = parseInt(awayTeam.score) || 0;
-      const status = _parseESPNStatus(statusName);
+      const completed = comp.status.type.completed;
+      const status = _parseESPNStatus(statusName, completed);
       const displayClock = comp.status.displayClock || '';
       const minute = (status === 'live' || status === 'halftime')
         ? (status === 'halftime' ? 'HT' : (displayClock || null))
@@ -1312,7 +1314,8 @@ async function _espnBackfill() {
       const statusName = comp.status.type.name;
 
       // Only interested in completed matches for backfill
-      const status = _parseESPNStatus(statusName);
+      const completed = comp.status.type.completed;
+      const status = _parseESPNStatus(statusName, completed);
       if (status !== 'completed') continue;
 
       const localId = ESPN_TO_LOCAL_BROWSER[espnId];
