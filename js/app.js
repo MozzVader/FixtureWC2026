@@ -30,7 +30,7 @@ function getUserTimezone() {
  * Build the "FT" style badge text/HTML for a completed match, taking
  * extra time / penalties into account.
  *   - Normal full time            -> "FT"
- * 	 - Extra time, no penalties    -> "FT · AET"
+ *       - Extra time, no penalties    -> "FT · AET"
  *   - Decided on penalties        -> "PEN 4-2"
  */
 function getCompletedBadgeHtml(match) {
@@ -43,11 +43,7 @@ function getCompletedBadgeHtml(match) {
  * Small note to render under/next to the score for matches decided
  * in extra time or on penalties, e.g. "(4-2 pen.)" or "(AET)".
  */
-function getExtraTimeNoteHtml(match) {
-  if (match.penaltyScore) return `<span class="calendar__match-et-note">(${match.penaltyScore} pen.)</span>`;
-  if (match.afterExtraTime) return '<span class="calendar__match-et-note">(AET)</span>';
-  return '';
-}
+// getExtraTimeNoteHtml removed — ET/PEN info is already in the FT badge (getCompletedBadgeHtml)
 
 function convertTime(timeStr, dateStr) {
   if (!timeStr || !dateStr) return timeStr || '';
@@ -230,7 +226,7 @@ function renderTodayMatches() {
     const awayName = away ? away.name : (labelParts[1] || 'Por definir');
 
     const status = match.status || 'upcoming';
-    const isLive = status === 'live' || status === 'halftime' || status === 'full_time';
+    const isLive = status === 'live' || status === 'halftime';
     const isCompleted = status === 'completed';
     const isHalftime = match.minute === 'HT';
     const isFullTime = status === 'full_time';
@@ -245,7 +241,7 @@ function renderTodayMatches() {
     // Time/status column
     let timeDisplay = convertTime(match.time, match.date);
     if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
-    else if (isFullTime) timeDisplay = '<span class="live-badge"><span class="live-dot"></span>90+</span>';
+    else if (isFullTime) timeDisplay = '<span class="ft-badge">90\'</span>';
     else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
     else if (isCompleted) timeDisplay = getCompletedBadgeHtml(match);
 
@@ -256,7 +252,6 @@ function renderTodayMatches() {
         <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
         <span class="calendar__match-vs--dash">-</span>
         <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
-        ${isCompleted ? getExtraTimeNoteHtml(match) : ''}
       `;
     } else {
       scoreHtml = `
@@ -510,7 +505,7 @@ function renderUpcomingMatches() {
     const awayName = away ? away.name : (labelParts[1] || 'Por definir');
 
     const status = match.status || 'upcoming';
-    const isLive = status === 'live' || status === 'halftime' || status === 'full_time';
+    const isLive = status === 'live' || status === 'halftime';
     const isCompleted = status === 'completed';
     const isHalftime = match.minute === 'HT';
     const isFullTime = status === 'full_time';
@@ -519,14 +514,14 @@ function renderUpcomingMatches() {
     // Status badge
     let statusBadge = '';
     if (isHalftime) statusBadge = `<div class="upcoming__match-badge"><span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span></div>`;
-    else if (isFullTime) statusBadge = `<div class="upcoming__match-badge"><span class="live-badge"><span class="live-dot"></span>90+</span></div>`;
+    else if (isFullTime) statusBadge = `<div class="upcoming__match-badge"><span class="ft-badge">90\'</span></div>`;
     else if (isLive) statusBadge = `<div class="upcoming__match-badge"><span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span></div>`;
     else if (isCompleted) statusBadge = `<div class="upcoming__match-badge">${getCompletedBadgeHtml(match)}</div>`;
 
     // Score or VS
     let vsOrScore;
     if (hasScore) {
-      vsOrScore = `<span class="upcoming__score">${match.homeScore} - ${match.awayScore}</span>${isCompleted ? getExtraTimeNoteHtml(match) : ''}`;
+      vsOrScore = `<span class="upcoming__score">${match.homeScore} - ${match.awayScore}</span>`;
     } else {
       vsOrScore = '<span class="upcoming__vs">VS</span>';
     }
@@ -910,7 +905,7 @@ function renderBracketMatch(match, isFinal = false) {
   // Scores (from Firebase knockout or group matches)
   const hasScore = match.homeScore != null && match.awayScore != null;
   const status = match.status || 'upcoming';
-  const isLive = status === 'live' || status === 'halftime' || status === 'full_time';
+  const isLive = status === 'live' || status === 'halftime';
   const isCompleted = status === 'completed';
   const isHalftime = match.minute === 'HT';
   const isFullTime = status === 'full_time';
@@ -941,7 +936,7 @@ function renderBracketMatch(match, isFinal = false) {
   // Status badge
   let statusHtml = '';
   if (isHalftime) statusHtml = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
-  else if (isFullTime) statusHtml = '<span class="live-badge"><span class="live-dot"></span>90+</span>';
+  else if (isFullTime) statusHtml = '<span class="ft-badge">90\'</span>';
   else if (isLive) statusHtml = `<span class="live-badge"><span class="live-dot"></span>${match.minute ? match.minute + "'" : 'EN VIVO'}</span>`;
   else if (isCompleted) statusHtml = getCompletedBadgeHtml(match);
 
@@ -958,7 +953,7 @@ function renderBracketMatch(match, isFinal = false) {
         <span class="bracket__team-name">${awayLabel}</span>
         ${hasScore ? `<span class="bracket__team-score">${match.awayScore}</span>` : ''}
       </div>
-      <div class="bracket__match-info">${match.date ? formatDate(match.date) : ''}${isCompleted ? getExtraTimeNoteHtml(match) : ''}</div>
+      <div class="bracket__match-info">${match.date ? formatDate(match.date) : ''}</div>
     </div>
   `;
 }
@@ -1198,7 +1193,7 @@ function renderKnockoutCalendar(container) {
       const awayName = awayTeam ? awayTeam.name : (labelParts[1] || 'Por definir');
 
       const status = match.status || 'upcoming';
-      const isLive = status === 'live' || status === 'halftime' || status === 'full_time';
+      const isLive = status === 'live' || status === 'halftime';
       const isCompleted = status === 'completed';
       const isHalftime = match.minute === 'HT';
       const isFullTime = status === 'full_time';
@@ -1211,7 +1206,7 @@ function renderKnockoutCalendar(container) {
       // Time/status — show real time converted to user TZ
       let timeDisplay = '';
       if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
-      else if (isFullTime) timeDisplay = '<span class="live-badge"><span class="live-dot"></span>90+</span>';
+      else if (isFullTime) timeDisplay = '<span class="ft-badge">90\'</span>';
       else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
       else if (isCompleted) timeDisplay = getCompletedBadgeHtml(match);
       else if (match.time) timeDisplay = convertTime(match.time, match.date) + ' hs';
@@ -1223,7 +1218,6 @@ function renderKnockoutCalendar(container) {
           <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
           <span class="calendar__match-vs--dash">-</span>
           <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
-          ${isCompleted ? getExtraTimeNoteHtml(match) : ''}
         `;
       } else {
         scoreHtml = `
