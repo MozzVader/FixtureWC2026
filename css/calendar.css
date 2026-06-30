@@ -238,6 +238,27 @@
   letter-spacing: 0.1em;
 }
 
+/* FT badge variant — match decided after extra time (no penalties) */
+.ft-badge--aet {
+  color: #FF9800;
+}
+
+/* FT badge variant — match decided on penalties */
+.ft-badge--pen {
+  color: #D4AF37;
+}
+
+/* Small note under/next to the score for AET/penalty results, e.g. "(4-2 pen.)" */
+.calendar__match-et-note {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--blanco-60, #8892b0);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
 /* Halftime badge — orange pulsing dot */
 .ht-badge {
   display: inline-flex;

@@ -877,6 +877,16 @@ async function propagateWinners() {
     // Determine who advances from each feeder
     const getAdvancing = (feeder, isLoserSlot) => {
       if (feeder.status !== 'completed') return null;
+      // Prefer winnerCode (handles ET/PEN draws correctly — ESPN reports
+      // the final score as a draw even when one team won on penalties).
+      if (feeder.winnerCode) {
+        if (isLoserSlot) {
+          // Loser advances (3rd place)
+          return feeder.home === feeder.winnerCode ? feeder.away : feeder.home;
+        }
+        return feeder.winnerCode;
+      }
+      // Fallback for legacy docs without winnerCode: compare scores.
       if (feeder.homeScore === feeder.awayScore) return null; // Draw = not decided
       if (isLoserSlot) {
         // Loser advances (3rd place)
@@ -1045,12 +1055,38 @@ function _parseESPNStatus(statusName) {
       return 'live';
     case 'STATUS_HALFTIME': case 'STATUS_HALF_TIME':
       return 'halftime';
-    case 'STATUS_FULL_TIME': case 'STATUS_FINAL':
+    case 'STATUS_FULL_TIME':
+      // End of regulation (90 min) — match may continue into ET/PEN.
+      // Keep distinct from 'completed' so the frontend keeps showing it live.
+      return 'full_time';
+    case 'STATUS_FINAL':
     case 'STATUS_FINAL_AET': case 'STATUS_FINAL_PEN':
       return 'completed';
     default:
       return 'upcoming';
   }
+}
+
+// Extract winner code from ESPN competitors array (mirrors scripts/espn-poller.js).
+function _espnExtractWinnerCode(competitors) {
+  if (!competitors) return null;
+  const winner = competitors.find(c => c.winner === true);
+  if (!winner) return null;
+  const rawCode = winner.team?.abbreviation || '';
+  return (typeof ESPN_TEAM_MAP !== 'undefined' && ESPN_TEAM_MAP[rawCode]) || rawCode || null;
+}
+
+// Extract penalty shootout score from ESPN status detail, e.g. "2-3 on Pen" -> "2-3".
+function _espnExtractPenaltyScore(detail) {
+  if (!detail) return null;
+  const normalized = detail.replace(/\s+/g, ' ');
+  const match = normalized.match(/(\d+)\s*[-–]\s*(\d+).*(?:Pen|PEN|Penalties|penalti)/i);
+  return match ? `${match[1]}-${match[2]}` : null;
+}
+
+// Determine if a match went to extra time based on the raw ESPN status name.
+function _espnIsAfterExtraTime(statusName) {
+  return statusName === 'STATUS_FINAL_AET' || statusName === 'STATUS_FINAL_PEN';
 }
 
 async function _espnBrowserFetch(url) {
@@ -1097,6 +1133,9 @@ function _saveEspnCache() {
         awayScore: m.awayScore,
         status: m.status,
         minute: m.minute,
+        winnerCode: m.winnerCode ?? null,
+        afterExtraTime: m.afterExtraTime ?? null,
+        penaltyScore: m.penaltyScore ?? null,
         ts: Date.now()
       };
     }
@@ -1124,6 +1163,9 @@ function _restoreEspnCache() {
       if (c.awayScore != null) { m.awayScore = c.awayScore; }
       if (c.status) { m.status = c.status; }
       if (c.minute != null) { m.minute = c.minute; }
+      if (c.winnerCode != null) { m.winnerCode = c.winnerCode; }
+      if (c.afterExtraTime != null) { m.afterExtraTime = c.afterExtraTime; }
+      if (c.penaltyScore != null) { m.penaltyScore = c.penaltyScore; }
     });
     if (restored > 0) {
       console.log(`[ESPN-Cache] ${restored} match(es) restored from localStorage`);
@@ -1165,16 +1207,25 @@ async function _espnPollOnce() {
       const minute = (status === 'live' || status === 'halftime')
         ? (status === 'halftime' ? 'HT' : (displayClock || null))
         : null;
+      const winnerCode = status === 'completed' ? _espnExtractWinnerCode(comp.competitors) : null;
+      const afterExtraTime = status === 'completed' ? _espnIsAfterExtraTime(statusName) : null;
+      const penaltyScore = status === 'completed' ? _espnExtractPenaltyScore(comp.status?.type?.detail) : null;
 
       // Only update if something changed
       if (localMatch.status !== status ||
           localMatch.homeScore !== homeScore ||
           localMatch.awayScore !== awayScore ||
-          localMatch.minute !== minute) {
+          localMatch.minute !== minute ||
+          localMatch.winnerCode !== winnerCode ||
+          localMatch.afterExtraTime !== afterExtraTime ||
+          localMatch.penaltyScore !== penaltyScore) {
         localMatch.homeScore = homeScore;
         localMatch.awayScore = awayScore;
         localMatch.status = status;
         localMatch.minute = minute;
+        localMatch.winnerCode = winnerCode;
+        localMatch.afterExtraTime = afterExtraTime;
+        localMatch.penaltyScore = penaltyScore;
         updated++;
       }
     }
@@ -1261,6 +1312,9 @@ async function _espnBackfill() {
       localMatch.awayScore = parseInt(awayTeam.score) || 0;
       localMatch.status = 'completed';
       localMatch.minute = null;
+      localMatch.winnerCode = _espnExtractWinnerCode(comp.competitors);
+      localMatch.afterExtraTime = _espnIsAfterExtraTime(statusName);
+      localMatch.penaltyScore = _espnExtractPenaltyScore(comp.status?.type?.detail);
       totalUpdated++;
     }
     // Small delay between days to be nice to API
