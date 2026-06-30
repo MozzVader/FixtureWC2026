@@ -370,10 +370,17 @@ async function findAndWriteKnockout(comp) {
   }
 
   // ─── Skip already-completed knockout matches ───
+  // Don't skip if the doc is missing winnerCode/afterExtraTime/penaltyScore —
+  // it finished before this poller version existed and needs a one-time
+  // backfill of the new fields (otherwise ET/PEN results stay stuck forever).
   const existing = matchDoc.data();
-  if (existing.status === 'completed') {
+  const needsBackfill = existing.status === 'completed' && existing.winnerCode === undefined;
+  if (existing.status === 'completed' && !needsBackfill) {
     console.log(`  ⏭️  ${matchDoc.id} ya completado, saltando`);
     return null;
+  }
+  if (needsBackfill) {
+    console.log(`  🔧 ${matchDoc.id} completado pero sin winnerCode/ET/PEN — backfilling`);
   }
 
   const homeScore = parseInt(homeTeam.score) || 0;
@@ -588,13 +595,21 @@ async function poll(dateStr, { forceWrite = false } = {}) {
         const localId = ESPN_TO_LOCAL[espnId];
 
         // ─── Skip already-completed matches (unless forceWrite/backfill) ───
+        // Don't skip if the doc is missing winnerCode/afterExtraTime/penaltyScore —
+        // those matches finished before this poller version existed and need a
+        // one-time backfill of the new fields.
         if (!forceWrite) {
           const existingDoc = await db.collection('matches').doc(String(localId)).get();
-          const existingStatus = existingDoc.exists ? existingDoc.data().status : null;
-          if (existingStatus === 'completed') {
+          const existingData = existingDoc.exists ? existingDoc.data() : null;
+          const needsBackfill = existingData && existingData.status === 'completed' &&
+            existingData.winnerCode === undefined;
+          if (existingData && existingData.status === 'completed' && !needsBackfill) {
             console.log(`  ⏭️  #${localId} ya completado, saltando`);
             skipped++;
             continue;
+          }
+          if (needsBackfill) {
+            console.log(`  🔧 #${localId} completado pero sin winnerCode/ET/PEN — backfilling`);
           }
         }
 
