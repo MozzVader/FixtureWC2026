@@ -60,7 +60,7 @@
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr) 40px
     minmax(180px, 1fr);
-  grid-template-rows: repeat(16, 111px);
+  grid-template-rows: repeat(16, 121px);
   row-gap: 6px;
   column-gap: 0;
   align-items: center;
