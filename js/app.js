@@ -192,9 +192,11 @@ function renderTodayMatches() {
         todayKnockoutMatches = todayKnockoutMatches.map(staticMatch => {
           const liveMatch = liveKo.find(lm => lm.id === staticMatch.id);
           if (!liveMatch) return staticMatch;
-          // Merge: keep static teams/label, take live scores/status/minute
+          // Merge: keep static teams/label, take live scores/status/minute/teams
           return {
             ...staticMatch,
+            home: liveMatch.home != null ? liveMatch.home : staticMatch.home,
+            away: liveMatch.away != null ? liveMatch.away : staticMatch.away,
             homeScore: liveMatch.homeScore != null ? liveMatch.homeScore : staticMatch.homeScore,
             awayScore: liveMatch.awayScore != null ? liveMatch.awayScore : staticMatch.awayScore,
             status: liveMatch.status || staticMatch.status,
