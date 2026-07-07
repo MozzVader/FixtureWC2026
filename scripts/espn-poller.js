@@ -681,6 +681,11 @@ async function poll(dateStr, { forceWrite = false } = {}) {
           const score = (result.homeScore != null) ? ` ${result.homeScore}-${result.awayScore} ` : ' ';
           console.log(`  ✅ ${result.koId} ${homeT.team.abbreviation}${score}${awayT.team.abbreviation} [${result.status}]`);
           updated++;
+
+          // ─── Scorers/Cards: ONLY when knockout match completes ───
+          if (result.status === 'completed') {
+            await writeSummaryScorersCards(espnId, result.koId);
+          }
         }
       }
     } catch (e) {
