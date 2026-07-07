@@ -793,7 +793,7 @@ async function main() {
   let totalUpdated = 0;
   let totalSkipped = 0;
   for (const date of uniqueDates) {
-    const result = await poll(date);
+    const result = await poll(date, { forceWrite: !!specificDate });
     totalUpdated += result.updated;
     totalSkipped += result.skipped || 0;
   }
