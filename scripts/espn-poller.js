@@ -351,7 +351,7 @@ async function writeGroupMatch(localId, comp) {
 }
 
 // ─── Find & Write Knockout Match to Firestore ───
-async function findAndWriteKnockout(comp) {
+async function findAndWriteKnockout(comp, forceWrite = false) {
   const teams = comp.competitors;
   const homeTeam = teams.find(t => t.homeAway === 'home');
   const awayTeam = teams.find(t => t.homeAway === 'away');
@@ -413,7 +413,7 @@ async function findAndWriteKnockout(comp) {
   const needsBackfill = existing.status === 'completed' &&
     (existing.winnerCode === undefined ||
      (existing.afterExtraTime === true && existing.penaltyScore === null));
-  if (existing.status === 'completed' && !needsBackfill) {
+  if (existing.status === 'completed' && !needsBackfill && !forceWrite) {
     console.log(`  ⏭️  ${matchDoc.id} ya completado, saltando`);
     return null;
   }
@@ -674,7 +674,7 @@ async function poll(dateStr, { forceWrite = false } = {}) {
 
       } else {
         // ─── KNOCKOUT MATCH ───
-        const result = await findAndWriteKnockout(comp);
+        const result = await findAndWriteKnockout(comp, !!opts.forceWrite);
         if (result) {
           const homeT = comp.competitors.find(t => t.homeAway === 'home');
           const awayT = comp.competitors.find(t => t.homeAway === 'away');
