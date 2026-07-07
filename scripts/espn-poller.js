@@ -674,7 +674,7 @@ async function poll(dateStr, { forceWrite = false } = {}) {
 
       } else {
         // ─── KNOCKOUT MATCH ───
-        const result = await findAndWriteKnockout(comp, !!opts.forceWrite);
+        const result = await findAndWriteKnockout(comp, !!forceWrite);
         if (result) {
           const homeT = comp.competitors.find(t => t.homeAway === 'home');
           const awayT = comp.competitors.find(t => t.homeAway === 'away');
