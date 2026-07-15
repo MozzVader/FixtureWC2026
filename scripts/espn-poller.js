@@ -564,8 +564,9 @@ async function propagateKnockoutWinners() {
     const awayFeeder = allMatches[feeders.away];
     if (!homeFeeder || !awayFeeder) continue;
 
-    const advancingHome = getAdvancing(homeFeeder, false);
-    const advancingAway = getAdvancing(awayFeeder, feeders.useLoser || false);
+    const isLoserMatch = !!feeders.useLoser;
+    const advancingHome = getAdvancing(homeFeeder, isLoserMatch);
+    const advancingAway = getAdvancing(awayFeeder, isLoserMatch);
 
     let needsUpdate = false;
 
