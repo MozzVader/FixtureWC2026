@@ -165,7 +165,6 @@ function getArtTodayDate() {
 
 /**
  * Merge a static knockout match with its live Firestore overlay.
- * Keeps static teams/label, overlays live scores/status/minute/home/away.
  */
 function mergeKnockoutMatch(staticMatch, liveKo) {
   if (!liveKo) return staticMatch;
@@ -183,78 +182,13 @@ function mergeKnockoutMatch(staticMatch, liveKo) {
 }
 
 /**
- * Build the HTML for a hero featured match (3rd place / Final).
- * Larger card with flag, team name, score, and status.
- */
-function buildHeroFeaturedCard(match, isFinal) {
-  const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
-  const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
-  const home = homeCode ? TEAMS[homeCode] : null;
-  const away = awayCode ? TEAMS[awayCode] : null;
-  const isTBD = !home || !away;
-  const labelParts = (match.label || '').split(' vs ');
-  const homeName = home ? home.name : (labelParts[0] || 'Por definir');
-  const awayName = away ? away.name : (labelParts[1] || 'Por definir');
-
-  const status = match.status || 'upcoming';
-  const isLive = status === 'live' || status === 'halftime';
-  const isCompleted = status === 'completed';
-  const isHalftime = match.minute === 'HT';
-  const hasScore = match.homeScore != null && match.awayScore != null;
-
-  const cardClass = isFinal ? 'hero-featured hero-featured--final' : 'hero-featured';
-  const roundLabel = isFinal ? 'FINAL' : '3er Puesto';
-
-  // Status / time display
-  let statusHtml;
-  if (isHalftime) statusHtml = '<span class="hero-featured__status hero-featured__status--ht"><span class="live-dot ht-dot"></span>HT</span>';
-  else if (isLive) statusHtml = `<span class="hero-featured__status hero-featured__status--live"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
-  else if (isCompleted) statusHtml = `<span class="hero-featured__status hero-featured__status--ft">FT${getCompletedBadgeHtml(match)}</span>`;
-  else statusHtml = `<span class="hero-featured__status">${match.date ? formatDateShort(match.date) : ''} · ${convertTime(match.time, match.date)}</span>`;
-
-  // Score display
-  let scoreHtml;
-  if (hasScore) {
-    scoreHtml = `
-      <span class="hero-featured__score">${match.homeScore}</span>
-      <span class="hero-featured__dash">-</span>
-      <span class="hero-featured__score">${match.awayScore}</span>
-    `;
-  } else {
-    scoreHtml = '<span class="hero-featured__vs">VS</span>';
-  }
-
-  return `
-    <div class="${cardClass}${isTBD ? ' hero-featured--tbd' : ''}${isLive ? ' hero-featured--live' : ''}${isCompleted ? ' hero-featured--completed' : ''}">
-      <div class="hero-featured__round">${roundLabel}</div>
-      <div class="hero-featured__body">
-        <div class="hero-featured__team">
-          ${home ? getFlagHtml(home.code) : '<i class="fas fa-question hero-featured__tbd-icon"></i>'}
-          <span class="hero-featured__name${isTBD ? ' hero-featured__tbd-name' : ''}">${homeName}</span>
-        </div>
-        <div class="hero-featured__score-wrap">${scoreHtml}</div>
-        <div class="hero-featured__team">
-          ${away ? getFlagHtml(away.code) : '<i class="fas fa-question hero-featured__tbd-icon"></i>'}
-          <span class="hero-featured__name${isTBD ? ' hero-featured__tbd-name' : ''}">${awayName}</span>
-        </div>
-      </div>
-      <div class="hero-featured__footer">${statusHtml}<span class="hero-featured__venue">${match.city || ''}</span></div>
-    </div>
-  `;
-}
-
-/**
- * Render featured matches (3rd Place + Final) and today's matches in the hero section.
- * Featured matches are always shown; today's matches appear below them.
+ * Render 3rd Place and Final matches in the hero section using calendar__match format.
+ * Uses the same card style as the calendar, with the Final slightly more prominent.
  */
 function renderTodayMatches() {
   const container = document.getElementById('today-matches');
   if (!container) return;
 
-  const todayStr = getArtTodayDate();
-  let html = '';
-
-  // ─── FEATURED MATCHES: 3rd Place + Final ───
   const liveKo = (typeof KNOCKOUT_LIVE !== 'undefined' && KNOCKOUT_LIVE) ? flattenKnockout(KNOCKOUT_LIVE) : null;
   let tpMatch = null, finalMatch = null;
 
@@ -265,108 +199,87 @@ function renderTodayMatches() {
     } catch(e) { /* skip */ }
   }
 
-  if (tpMatch || finalMatch) {
-    html += '<div class="hero-featured__container">';
-    if (tpMatch) html += buildHeroFeaturedCard(tpMatch, false);
-    if (finalMatch) html += buildHeroFeaturedCard(finalMatch, true);
-    html += '</div>';
-  }
-
-  // ─── TODAY'S MATCHES (group + knockout for today) ───
-  let todayGroupMatches = MATCHES.filter(m => m.date === todayStr);
-  let todayKnockoutMatches = [];
-  if (typeof KNOCKOUT !== 'undefined') {
-    try {
-      const staticKo = flattenKnockout(KNOCKOUT);
-      todayKnockoutMatches = staticKo.filter(m => m.date === todayStr);
-      if (liveKo && todayKnockoutMatches.length > 0) {
-        todayKnockoutMatches = todayKnockoutMatches.map(sm => mergeKnockoutMatch(sm, liveKo));
-      }
-    } catch(e) { /* skip */ }
-  }
-
-  const allToday = [...todayGroupMatches, ...todayKnockoutMatches];
-
-  if (allToday.length > 0) {
-    html += '<div class="calendar__match-list today-matches__list">';
-    allToday.forEach(match => {
-      const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
-      const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
-      const home = homeCode ? TEAMS[homeCode] : null;
-      const away = awayCode ? TEAMS[awayCode] : null;
-      const isTBD = !home || !away;
-      const labelParts = (match.label || '').split(' vs ');
-      const homeName = home ? home.name : (labelParts[0] || 'Por definir');
-      const awayName = away ? away.name : (labelParts[1] || 'Por definir');
-
-      const status = match.status || 'upcoming';
-      const isLive = status === 'live' || status === 'halftime';
-      const isCompleted = status === 'completed';
-      const isHalftime = match.minute === 'HT';
-      const isFullTime = status === 'full_time';
-      const hasScore = match.homeScore != null && match.awayScore != null;
-
-      const matchClasses = ['calendar__match'];
-      if (isLive) matchClasses.push('calendar__match--live');
-      if (isCompleted) matchClasses.push('calendar__match--completed');
-      if (isTBD) matchClasses.push('calendar__match--tbd');
-
-      let timeDisplay = convertTime(match.time, match.date);
-      if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
-      else if (isFullTime) timeDisplay = '<span class="ft-badge">90\'</span>';
-      else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
-      else if (isCompleted) timeDisplay = getCompletedBadgeHtml(match);
-
-      let scoreHtml;
-      if (hasScore) {
-        scoreHtml = `
-          <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
-          <span class="calendar__match-vs--dash">-</span>
-          <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
-        `;
-      } else {
-        scoreHtml = `
-          <div class="calendar__match-score"></div>
-          <span class="calendar__match-vs">VS</span>
-          <div class="calendar__match-score"></div>
-        `;
-      }
-
-      let groupLabel = match.group ? `Grupo ${match.group}` : '';
-      if (!groupLabel && match.stage) {
-        const stageNames = { r32: 'Dieciseisavos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semifinal', tp: '3er Puesto', final: 'Final' };
-        groupLabel = stageNames[match.stage] || match.stage || '';
-      }
-
-      html += `
-        <div class="${matchClasses.join(' ')}">
-          <div class="calendar__match-time">${timeDisplay}</div>
-          <div class="calendar__match-teams">
-            <div class="calendar__match-team">
-              ${home ? getFlagHtml(home.code) : '<i class="fas fa-question calendar__tbd-icon"></i>'}
-              <span class="${isTBD ? 'calendar__tbd-name' : ''}">${homeName}</span>
-            </div>
-            ${scoreHtml}
-            <div class="calendar__match-team">
-              ${away ? getFlagHtml(away.code) : '<i class="fas fa-question calendar__tbd-icon"></i>'}
-              <span class="${isTBD ? 'calendar__tbd-name' : ''}">${awayName}</span>
-            </div>
-          </div>
-          <div class="calendar__match-venue">
-            <span class="calendar__match-venue--city">${match.city || ''}</span>
-            ${groupLabel ? `<span class="calendar__match-group">${groupLabel}</span>` : ''}
-          </div>
-        </div>
-      `;
-    });
-    html += '</div>';
-  }
-
-  if (!html) {
-    container.innerHTML = '<div class="today-matches__empty">No hay partidos hoy</div>';
+  if (!tpMatch && !finalMatch) {
+    container.innerHTML = '';
     return;
   }
 
+  const matches = [];
+  if (tpMatch) matches.push({ ...tpMatch, _isFinal: false });
+  if (finalMatch) matches.push({ ...finalMatch, _isFinal: true });
+
+  let html = '<div class="calendar__match-list today-matches__list">';
+
+  matches.forEach(match => {
+    const homeCode = typeof match.home === 'object' && match.home !== null ? match.home.code : match.home;
+    const awayCode = typeof match.away === 'object' && match.away !== null ? match.away.code : match.away;
+    const home = homeCode ? TEAMS[homeCode] : null;
+    const away = awayCode ? TEAMS[awayCode] : null;
+    const isTBD = !home || !away;
+    const labelParts = (match.label || '').split(' vs ');
+    const homeName = home ? home.name : (labelParts[0] || 'Por definir');
+    const awayName = away ? away.name : (labelParts[1] || 'Por definir');
+
+    const status = match.status || 'upcoming';
+    const isLive = status === 'live' || status === 'halftime';
+    const isCompleted = status === 'completed';
+    const isHalftime = match.minute === 'HT';
+    const isFullTime = status === 'full_time';
+    const hasScore = match.homeScore != null && match.awayScore != null;
+
+    const matchClasses = ['calendar__match'];
+    if (match._isFinal) matchClasses.push('calendar__match--final');
+    if (isLive) matchClasses.push('calendar__match--live');
+    if (isCompleted) matchClasses.push('calendar__match--completed');
+    if (isTBD) matchClasses.push('calendar__match--tbd');
+
+    let timeDisplay = convertTime(match.time, match.date);
+    if (isHalftime) timeDisplay = '<span class="ht-badge"><span class="live-dot ht-dot"></span>HT</span>';
+    else if (isFullTime) timeDisplay = '<span class="ft-badge">90\'</span>';
+    else if (isLive) timeDisplay = `<span class="live-badge"><span class="live-dot"></span>EN VIVO ${match.minute ? match.minute + "'" : ''}</span>`;
+    else if (isCompleted) timeDisplay = getCompletedBadgeHtml(match);
+
+    let scoreHtml;
+    if (hasScore) {
+      scoreHtml = `
+        <span class="calendar__match-score calendar__match-score--filled">${match.homeScore}</span>
+        <span class="calendar__match-vs--dash">-</span>
+        <span class="calendar__match-score calendar__match-score--filled">${match.awayScore}</span>
+      `;
+    } else {
+      scoreHtml = `
+        <div class="calendar__match-score"></div>
+        <span class="calendar__match-vs">VS</span>
+        <div class="calendar__match-score"></div>
+      `;
+    }
+
+    const stageNames = { tp: '3er Puesto', final: 'Final' };
+    const groupLabel = match.stage ? (stageNames[match.stage] || match.stage) : '';
+
+    html += `
+      <div class="${matchClasses.join(' ')}">
+        <div class="calendar__match-time">${timeDisplay}</div>
+        <div class="calendar__match-teams">
+          <div class="calendar__match-team">
+            ${home ? getFlagHtml(home.code) : '<i class="fas fa-question calendar__tbd-icon"></i>'}
+            <span class="${isTBD ? 'calendar__tbd-name' : ''}">${homeName}</span>
+          </div>
+          ${scoreHtml}
+          <div class="calendar__match-team">
+            ${away ? getFlagHtml(away.code) : '<i class="fas fa-question calendar__tbd-icon"></i>'}
+            <span class="${isTBD ? 'calendar__tbd-name' : ''}">${awayName}</span>
+          </div>
+        </div>
+        <div class="calendar__match-venue">
+          <span class="calendar__match-venue--city">${match.city || ''}</span>
+          ${groupLabel ? `<span class="calendar__match-group">${groupLabel}</span>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
   container.innerHTML = html;
 }
 
@@ -1370,12 +1283,6 @@ function formatDate(dateStr) {
     month: 'short',
     timeZone: tz
   });
-}
-
-function formatDateShort(dateStr) {
-  const tz = getUserTimezone();
-  const date = new Date(dateStr + 'T12:00:00');
-  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', timeZone: tz });
 }
 
 function formatDateFull(dateStr) {

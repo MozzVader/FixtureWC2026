@@ -60,243 +60,8 @@
 /* ===== TODAY'S MATCHES (Hero) ===== */
 .today-matches {
   width: 100%;
-  max-width: 780px;
+  max-width: 750px;
   margin-bottom: 40px;
-}
-
-/* ===== HERO FEATURED CARDS (3rd Place + Final) ===== */
-.hero-featured__container {
-  width: 100%;
-  max-width: 550px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.hero-featured {
-  background: rgba(1, 87, 155, 0.35);
-  border: 1px solid var(--dorado-600);
-  border-radius: var(--radius-lg, 12px);
-  padding: 16px 20px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.hero-featured:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sombra-dorada, 0 0 20px rgba(255, 215, 0, 0.15));
-}
-
-/* Final card — bigger and more prominent */
-.hero-featured--final {
-  padding: 22px 28px;
-  border-width: 2px;
-  border-color: var(--dorado-500, #D4AF37);
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.12);
-}
-
-.hero-featured--live {
-  border-color: #4CAF50 !important;
-  box-shadow: 0 0 25px rgba(76, 175, 80, 0.2) !important;
-}
-
-.hero-featured--completed {
-  opacity: 0.85;
-}
-
-.hero-featured--tbd {
-  opacity: 0.7;
-  border-style: dashed;
-}
-
-.hero-featured__round {
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--dorado-500, #D4AF37);
-  margin-bottom: 10px;
-}
-
-.hero-featured--final .hero-featured__round {
-  font-size: 0.95rem;
-  letter-spacing: 4px;
-  margin-bottom: 14px;
-}
-
-.hero-featured__body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 10px;
-}
-
-.hero-featured--final .hero-featured__body {
-  gap: 24px;
-  margin-bottom: 12px;
-}
-
-.hero-featured__team {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 70px;
-}
-
-.hero-featured--final .hero-featured__team {
-  min-width: 90px;
-}
-
-.hero-featured__team img {
-  width: 32px;
-  height: 22px;
-  border-radius: 3px;
-}
-
-.hero-featured--final .hero-featured__team img {
-  width: 42px;
-  height: 28px;
-  border-radius: 4px;
-}
-
-.hero-featured__name {
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  letter-spacing: 0.5px;
-  color: var(--blanco, #fff);
-  font-weight: 600;
-}
-
-.hero-featured--final .hero-featured__name {
-  font-size: 1rem;
-  letter-spacing: 0.5px;
-}
-
-.hero-featured__tbd-name {
-  font-style: italic;
-  font-size: 0.75em !important;
-  color: var(--blanco-60, rgba(255,255,255,0.6));
-}
-
-.hero-featured__tbd-icon {
-  font-size: 1.4rem;
-  opacity: 0.3;
-}
-
-.hero-featured__score-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 60px;
-  justify-content: center;
-}
-
-.hero-featured--final .hero-featured__score-wrap {
-  gap: 14px;
-  min-width: 80px;
-}
-
-.hero-featured__score {
-  font-family: var(--font-display);
-  font-size: 1.4rem;
-  color: var(--dorado-500, #D4AF37);
-  letter-spacing: 1px;
-}
-
-.hero-featured--final .hero-featured__score {
-  font-size: 1.8rem;
-}
-
-.hero-featured__dash {
-  color: var(--blanco-60, rgba(255,255,255,0.6));
-  font-size: 1.2rem;
-}
-
-.hero-featured--final .hero-featured__dash {
-  font-size: 1.5rem;
-}
-
-.hero-featured__vs {
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  color: var(--dorado-500, #D4AF37);
-  letter-spacing: 3px;
-}
-
-.hero-featured--final .hero-featured__vs {
-  font-size: 1.1rem;
-}
-
-.hero-featured__footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 0.78rem;
-  color: var(--blanco-60, rgba(255,255,255,0.6));
-}
-
-.hero-featured__status {
-  font-family: var(--font-display);
-  letter-spacing: 1px;
-}
-
-.hero-featured__status--live {
-  color: #4CAF50;
-  font-weight: 700;
-}
-
-.hero-featured__status--ht {
-  color: #FFA726;
-  font-weight: 700;
-}
-
-.hero-featured__status--ft {
-  color: var(--blanco-80, rgba(255,255,255,0.8));
-}
-
-.hero-featured__venue {
-  color: var(--blanco-40, rgba(255,255,255,0.4));
-}
-
-/* ===== RESPONSIVE: Featured cards ===== */
-@media (max-width: 480px) {
-  .hero-featured {
-    padding: 12px 14px;
-  }
-  .hero-featured--final {
-    padding: 16px 18px;
-  }
-  .hero-featured__body {
-    gap: 10px;
-  }
-  .hero-featured--final .hero-featured__body {
-    gap: 14px;
-  }
-  .hero-featured__team {
-    min-width: 55px;
-  }
-  .hero-featured--final .hero-featured__team {
-    min-width: 65px;
-  }
-  .hero-featured__name {
-    font-size: 0.75rem;
-  }
-  .hero-featured--final .hero-featured__name {
-    font-size: 0.85rem;
-  }
-  .hero-featured--final .hero-featured__team img {
-    width: 36px;
-    height: 24px;
-  }
-  .hero-featured--final .hero-featured__score {
-    font-size: 1.5rem;
-  }
 }
 
 .today-matches__list {
@@ -308,6 +73,14 @@
   font-size: 0.9rem;
 }
 
+/* Final card — slightly more prominent */
+.today-matches__list .calendar__match--final {
+  padding: 14px 18px;
+  border-color: var(--dorado-500, #D4AF37);
+  border-width: 1.5px;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+}
+
 .today-matches__list .calendar__match-team img {
   width: 24px;
   height: 16px;
@@ -315,6 +88,15 @@
 
 .today-matches__list .calendar__match-team span {
   font-size: 0.85rem;
+}
+
+.today-matches__list .calendar__match--final .calendar__match-team span {
+  font-size: 0.9rem;
+}
+
+.today-matches__list .calendar__match--final .calendar__match-team img {
+  width: 28px;
+  height: 18px;
 }
 
 .today-matches__list .calendar__match-time {
