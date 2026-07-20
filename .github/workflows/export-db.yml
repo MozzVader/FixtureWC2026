@@ -7,6 +7,9 @@ name: Export DB to JSON
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   export:
     runs-on: ubuntu-latest
